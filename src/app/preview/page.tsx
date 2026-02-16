@@ -170,34 +170,25 @@ function Sheet({
 
   return (
     <div className="sheet bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm" }}>
-      {/* 헤더 */}
-      <div className="flex justify-between items-end mb-4 pb-2.5 border-b border-gray-300">
-        <div style={{ fontSize: "1.4rem", fontWeight: 900 }}>
-          {title}
-          {totalSheets > 1 && (
-            <span className="text-sm font-normal text-gray-400 ml-2">
-              ({sheetNum}/{totalSheets})
-            </span>
-          )}
+      {/* 1행: 날짜 · 이름 · 점수 */}
+      <div className="flex justify-between items-center text-sm mb-2">
+        <div className="flex" style={{ gap: 40 }}>
+          <span>날짜: ___________</span>
+          <span>이름: ___________</span>
         </div>
-        <div className="flex text-sm" style={{ gap: 120 }}>
-          <span>날짜: </span>
-          <span>이름: </span>
-          <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {count}</span>
-        </div>
+        <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {count}</span>
       </div>
 
-      {/* 지시문 */}
-      <div
-        style={{
-          borderLeft: "4px solid #ff9800",
-          padding: "8px 12px",
-          borderRadius: "0 8px 8px 0",
-          marginBottom: 24,
-          fontSize: ".9rem",
-          fontWeight: 700,
-        }}
-      >
+      {/* 2행: 제목 */}
+      <div className="mb-1" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
+        {title}
+        {totalSheets > 1 && (
+          <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>
+        )}
+      </div>
+
+      {/* 3행: 설명 */}
+      <div className="pb-3 mb-4 border-b border-gray-300" style={{ fontSize: ".9rem", fontWeight: 700, color: "#555" }}>
         {instruction}
       </div>
 
