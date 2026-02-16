@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { decodeParams, generateAllSheets, type Problem } from "@/lib/generator";
 import { saveWorksheet } from "@/lib/supabase";
 import { Printer, Share2, Copy, Check } from "lucide-react";
@@ -228,13 +228,27 @@ function PreviewContent() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [allSheets, setAllSheets] = useState<Problem[][]>([]);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
+  }
 
   useEffect(() => {
     if (!params || allSheets.length > 0) return;
     setAllSheets(generateAllSheets(params));
   }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => () => {
+    if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+  }, []);
 
   if (!params) {
     return (
@@ -247,39 +261,55 @@ function PreviewContent() {
     );
   }
 
-  const typeLabel = params.type === "sub" ? "빼기" : "더하기";
-  const title = `${typeLabel} ${params.operands.join(", ")}`;
+  const resolvedParams = params;
+  const typeLabel = resolvedParams.type === "sub" ? "빼기" : "더하기";
+  const title = `${typeLabel} ${resolvedParams.operands.join(", ")}`;
 
   async function handleShare() {
     if (shareUrl || saving) return;
-    setSaving(true);
-    const result = await saveWorksheet({
-      title,
-      type: params!.type,
-      operands: params!.operands,
-      rangeMin: params!.rangeMin,
-      rangeMax: params!.rangeMax,
-      problemCount: params!.count,
-      problems: allSheets,
-    });
-    setSaving(false);
-    if ("shortCode" in result) {
-      const url = `${window.location.origin}/s/${result.shortCode}`;
-      setShareUrl(url);
-    } else {
-      alert("저장 실패: " + result.error);
+    try {
+      setSaving(true);
+      const result = await saveWorksheet({
+        title,
+        type: resolvedParams.type,
+        operands: resolvedParams.operands,
+        rangeMin: resolvedParams.rangeMin,
+        rangeMax: resolvedParams.rangeMax,
+        problemCount: resolvedParams.count,
+        problems: allSheets,
+      });
+      if ("shortCode" in result) {
+        const url = `${window.location.origin}/s/${result.shortCode}`;
+        setShareUrl(url);
+      } else {
+        showToast("저장 실패: " + result.error);
+      }
+    } catch {
+      showToast("공유 링크 생성 중 오류가 발생했습니다");
+    } finally {
+      setSaving(false);
     }
   }
 
   async function handleCopy() {
     if (!shareUrl) return;
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+      copiedTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showToast("클립보드 복사에 실패했습니다");
+    }
   }
 
   return (
     <div>
+      {toast && (
+        <div className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
+          {toast}
+        </div>
+      )}
       {/* 상단 버튼 (인쇄 시 숨김) */}
       <div className="print:hidden max-w-[800px] mx-auto px-8 pt-6">
         <Link href="/match" className="inline-block mb-4 text-sm text-gray-400 hover:text-gray-600">← 돌아가기</Link>
@@ -311,7 +341,7 @@ function PreviewContent() {
       {shareUrl && (
         <div className="print:hidden text-center py-2 bg-green-50 border-b border-green-200">
           <span className="text-sm text-green-800">공유 링크: </span>
-          <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank">{shareUrl}</a>
+          <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">{shareUrl}</a>
         </div>
       )}
 
@@ -321,10 +351,10 @@ function PreviewContent() {
           <Sheet
             problems={problems}
             title={title}
-            count={params.count}
+            count={resolvedParams.count}
             sheetNum={i + 1}
-            totalSheets={params.sheets}
-            type={params.type}
+            totalSheets={resolvedParams.sheets}
+            type={resolvedParams.type}
           />
         </div>
       ))}

@@ -5,6 +5,30 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+export type WorksheetType =
+  | "add"
+  | "sub"
+  | "add_sub"
+  | "mul"
+  | "div"
+  | "mul_div";
+
+interface MatchProblem {
+  top: number[];
+  op: number;
+  bottom: number[];
+  type: "add" | "sub";
+}
+
+interface CalcProblem {
+  a: number;
+  b: number;
+  type: WorksheetType;
+  answer: number;
+}
+
+export type WorksheetProblems = MatchProblem[][] | CalcProblem[][];
+
 function generateShortCode(len = 8): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
@@ -18,23 +42,23 @@ export interface WorksheetRow {
   id: string;
   short_code: string;
   title: string;
-  type: "add" | "sub";
+  type: WorksheetType;
   operands: number[];
   range_min: number;
   range_max: number;
   problem_count: number;
-  problems: any;
+  problems: WorksheetProblems;
   created_at: string;
 }
 
 export async function saveWorksheet(data: {
   title: string;
-  type: "add" | "sub";
+  type: WorksheetType;
   operands: number[];
   rangeMin: number;
   rangeMax: number;
   problemCount: number;
-  problems: any;
+  problems: WorksheetProblems;
 }): Promise<{ shortCode: string } | { error: string }> {
   const shortCode = generateShortCode();
 

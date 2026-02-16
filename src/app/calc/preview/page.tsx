@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { saveWorksheet } from "@/lib/supabase";
 import { Printer, Share2, Copy, Check } from "lucide-react";
 import Link from "next/link";
@@ -183,10 +183,23 @@ function CalcSheet({
 }
 
 function CalcPreviewContent() {
+  const MAX_COUNT = 100;
+  const MAX_SHEETS = 10;
+  const MIN_RANGE = 1;
+  const MAX_RANGE = 9999;
   const searchParams = useSearchParams();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
+  }
 
   const params = useMemo(() => {
     const t = searchParams.get("t") as "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
@@ -196,9 +209,14 @@ function CalcPreviewContent() {
     const mx = Number(searchParams.get("mx"));
     const omn = Number(searchParams.get("omn"));
     const omx = Number(searchParams.get("omx"));
-    if (!t || !c || !s || !mn || !mx || !omn || !omx) return null;
+    const validTypes = new Set(["add", "sub", "add_sub", "mul", "div", "mul_div"]);
+    if (!validTypes.has(t)) return null;
+    if (!Number.isInteger(c) || c < 1 || c > MAX_COUNT) return null;
+    if (!Number.isInteger(s) || s < 1 || s > MAX_SHEETS) return null;
+    if (!Number.isInteger(mn) || !Number.isInteger(mx) || mn < MIN_RANGE || mx > MAX_RANGE || mn > mx) return null;
+    if (!Number.isInteger(omn) || !Number.isInteger(omx) || omn < MIN_RANGE || omx > MAX_RANGE || omn > omx) return null;
     return { type: t, count: c, sheets: s, rangeMin: mn, rangeMax: mx, opMin: omn, opMax: omx };
-  }, [searchParams]);
+  }, [searchParams, MAX_COUNT, MAX_SHEETS, MIN_RANGE, MAX_RANGE]);
 
   const [allSheets, setAllSheets] = useState<CalcProblem[][]>([]);
   
@@ -206,6 +224,11 @@ function CalcPreviewContent() {
     if (!params || allSheets.length > 0) return;
     setAllSheets(Array.from({ length: params.sheets }, () => generateCalcSheet(params)));
   }, [params]);
+
+  useEffect(() => () => {
+    if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+  }, []);
 
   if (!params) {
     return (
@@ -216,40 +239,56 @@ function CalcPreviewContent() {
     );
   }
 
+  const resolvedParams = params;
   const typeLabelMap: Record<string, string> = { add: "더하기", sub: "빼기", add_sub: "더하기·빼기 혼합", mul: "곱하기", div: "나누기", mul_div: "곱하기·나누기 혼합" };
-  const typeLabel = typeLabelMap[params.type] || "연산";
+  const typeLabel = typeLabelMap[resolvedParams.type] || "연산";
   const title = `${typeLabel} 연습`;
 
   async function handleShare() {
     if (shareUrl || saving) return;
-    setSaving(true);
-    const result = await saveWorksheet({
-      title,
-      type: params!.type,
-      operands: [params!.opMin, params!.opMax],
-      rangeMin: params!.rangeMin,
-      rangeMax: params!.rangeMax,
-      problemCount: params!.count,
-      problems: allSheets,
-    });
-    setSaving(false);
-    if ("shortCode" in result) {
-      const url = `${window.location.origin}/s/${result.shortCode}`;
-      setShareUrl(url);
-    } else {
-      alert("저장 실패: " + result.error);
+    try {
+      setSaving(true);
+      const result = await saveWorksheet({
+        title,
+        type: resolvedParams.type,
+        operands: [resolvedParams.opMin, resolvedParams.opMax],
+        rangeMin: resolvedParams.rangeMin,
+        rangeMax: resolvedParams.rangeMax,
+        problemCount: resolvedParams.count,
+        problems: allSheets,
+      });
+      if ("shortCode" in result) {
+        const url = `${window.location.origin}/s/${result.shortCode}`;
+        setShareUrl(url);
+      } else {
+        showToast("저장 실패: " + result.error);
+      }
+    } catch {
+      showToast("공유 링크 생성 중 오류가 발생했습니다");
+    } finally {
+      setSaving(false);
     }
   }
 
   async function handleCopy() {
     if (!shareUrl) return;
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+      copiedTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showToast("클립보드 복사에 실패했습니다");
+    }
   }
 
   return (
     <div>
+      {toast && (
+        <div className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
+          {toast}
+        </div>
+      )}
       <div className="print:hidden max-w-[800px] mx-auto px-8 pt-6">
         <Link href="/calc" className="inline-block mb-4 text-sm text-gray-400 hover:text-gray-600">← 돌아가기</Link>
       </div>
@@ -280,7 +319,7 @@ function CalcPreviewContent() {
       {shareUrl && (
         <div className="print:hidden text-center py-2 bg-green-50 border-b border-green-200">
           <span className="text-sm text-green-800">공유 링크: </span>
-          <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank">{shareUrl}</a>
+          <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">{shareUrl}</a>
         </div>
       )}
 
@@ -290,8 +329,8 @@ function CalcPreviewContent() {
             problems={problems}
             title={title}
             sheetNum={i + 1}
-            totalSheets={params.sheets}
-            type={params.type}
+            totalSheets={resolvedParams.sheets}
+            type={resolvedParams.type}
           />
         </div>
       ))}

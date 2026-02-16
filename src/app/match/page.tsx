@@ -3,60 +3,23 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-function Dropdown({ value, options, onChange }: { value: number; options: { value: number; label: string }[]; onChange: (v: number) => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const selected = options.find(o => o.value === value);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-2.5 px-4 border-2 border-gray-200 rounded-lg font-bold text-sm bg-white cursor-pointer focus:outline-none focus:border-gray-900 transition-colors"
-      >
-        <span>{selected?.label}</span>
-        <span className={`text-gray-400 text-xs transition-transform ${open ? "rotate-180" : ""}`}>▼</span>
-      </button>
-      {open && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
-          {options.map((o) => (
-            <div
-              key={o.value}
-              onClick={() => { onChange(o.value); setOpen(false); }}
-              className={`py-2.5 px-4 text-sm font-bold cursor-pointer transition-colors ${
-                value === o.value
-                  ? "bg-gray-900 text-white"
-                  : "hover:bg-gray-100 text-gray-700"
-              }`}
-            >
-              {o.label}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+import Dropdown from "@/components/Dropdown";
 import { encodeParams, type GeneratorParams } from "@/lib/generator";
 
 export default function Home() {
   const router = useRouter();
   const [type, setType] = useState<"add" | "sub" | null>("add");
   const [toast, setToast] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function showToast(msg: string) {
     setToast(msg);
-    setTimeout(() => setToast(null), 2500);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
   }
+  useEffect(() => () => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+  }, []);
   const [operands, setOperands] = useState("8,9");
   const [count, setCount] = useState(8);
   const [sheets, setSheets] = useState(1);

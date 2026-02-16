@@ -7,14 +7,14 @@ import { Printer } from "lucide-react";
 import Link from "next/link";
 
 const TOP_COLORS = [
-  { border: "#42a5f5" },
-  { border: "#66bb6a" },
-  { border: "#ffa726" },
+  { border: "#90caf9" },
+  { border: "#a5d6a7" },
+  { border: "#ffcc80" },
 ];
 const BOT_COLORS = [
-  { border: "#ef5350" },
-  { border: "#ab47bc" },
-  { border: "#26a69a" },
+  { border: "#ef9a9a" },
+  { border: "#ce93d8" },
+  { border: "#80cbc4" },
 ];
 
 interface Problem {

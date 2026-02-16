@@ -1,0 +1,60 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+interface DropdownOption {
+  value: number;
+  label: string;
+}
+
+interface DropdownProps {
+  value: number;
+  options: DropdownOption[];
+  onChange: (value: number) => void;
+}
+
+export default function Dropdown({ value, options, onChange }: DropdownProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find((o) => o.value === value);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-2.5 px-4 border-2 border-gray-200 rounded-lg font-bold text-sm bg-white cursor-pointer focus:outline-none focus:border-gray-900 transition-colors"
+      >
+        <span>{selected?.label}</span>
+        <span className={`text-gray-400 text-xs transition-transform ${open ? "rotate-180" : ""}`}>▼</span>
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
+          {options.map((o) => (
+            <div
+              key={o.value}
+              onClick={() => {
+                onChange(o.value);
+                setOpen(false);
+              }}
+              className={`py-2.5 px-4 text-sm font-bold cursor-pointer transition-colors ${
+                value === o.value
+                  ? "bg-gray-900 text-white"
+                  : "hover:bg-gray-100 text-gray-700"
+              }`}
+            >
+              {o.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
