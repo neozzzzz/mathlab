@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수학 문제 생성기</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#f5f5f5;font-family:'Noto Sans KR',sans-serif;padding:32px;max-width:600px;margin:0 auto;color:#222}
+h1{font-size:1.6rem;font-weight:900;text-align:center;margin-bottom:24px}
+.form{background:#fff;border-radius:16px;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.field{margin-bottom:20px}
+.field label{display:block;font-weight:700;font-size:.9rem;margin-bottom:6px}
+.field select,.field input{width:100%;padding:10px 12px;border:2px solid #e0e0e0;border-radius:8px;font-size:.95rem;font-family:inherit}
+.field select:focus,.field input:focus{outline:none;border-color:#ff9800}
+.row{display:flex;gap:12px}
+.row .field{flex:1}
+.type-btns{display:flex;gap:8px}
+.type-btn{flex:1;padding:12px;border:2px solid #e0e0e0;border-radius:8px;background:#fff;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;transition:all .2s}
+.type-btn.active{border-color:#ff9800;background:#fff3e0;color:#e65100}
+.type-btn:hover{border-color:#ffa726}
+.generate{width:100%;padding:14px;background:#ff9800;color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:900;cursor:pointer;margin-top:8px;transition:background .2s}
+.generate:hover{background:#f57c00}
+.preview{margin-top:24px;display:none}
+.preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.preview-header h2{font-size:1.1rem;font-weight:900}
+.print-btn{padding:8px 20px;background:#1565c0;color:#fff;border:none;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer}
+.print-btn:hover{background:#0d47a1}
+.sheets{display:flex;flex-direction:column;gap:16px}
+.sheet-link{display:block;padding:12px 16px;background:#f5f5f5;border-radius:8px;text-decoration:none;color:#222;font-weight:700;font-size:.9rem;border:1px solid #e0e0e0;transition:all .2s}
+.sheet-link:hover{background:#e3f2fd;border-color:#42a5f5}
+.hint{font-size:.75rem;color:#999;margin-top:4px}
+</style>
+</head>
+<body>
+<h1>📐 수학 문제 생성기</h1>
+
+<div class="form">
+  <div class="field">
+    <label>연산 유형</label>
+    <div class="type-btns">
+      <div class="type-btn" data-type="sub" onclick="selectType(this)">➖ 빼기</div>
+      <div class="type-btn" data-type="add" onclick="selectType(this)">➕ 더하기</div>
+      
+    </div>
+  </div>
+
+  <div class="field">
+    <label>연산 숫자 (쉼표로 구분)</label>
+    <input type="text" id="operands" placeholder="예: 6,7 또는 8,9" value="8,9">
+    <div class="hint">빼기: 빼는 수 / 더하기: 더하는 수</div>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label>문제 수 (장당)</label>
+      <select id="count">
+        <option value="6">6문제</option>
+        <option value="8" selected>8문제</option>
+        <option value="10">10문제</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>장 수</label>
+      <select id="sheets">
+        <option value="1">1장</option>
+        <option value="2" selected>2장</option>
+        <option value="3">3장</option>
+        <option value="4">4장</option>
+        <option value="5">5장</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>숫자 범위</label>
+    <div class="row">
+      <input type="number" id="rangeMin" value="11" min="2" max="50" style="text-align:center">
+      <span style="display:flex;align-items:center;font-weight:700">~</span>
+      <input type="number" id="rangeMax" value="18" min="2" max="50" style="text-align:center">
+    </div>
+    <div class="hint">윗줄에 표시되는 숫자의 범위</div>
+  </div>
+
+  <button class="generate" onclick="generate()">📝 문제 생성</button>
+</div>
+
+<div class="preview" id="preview">
+  <div class="preview-header">
+    <h2>생성 완료!</h2>
+  </div>
+  <div class="sheets" id="sheetLinks"></div>
+</div>
+
+<script>
+let selectedType = null;
+
+function selectType(el) {
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selectedType = el.dataset.type;
+}
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generate() {
+  if (!selectedType) { alert('연산 유형을 선택해주세요'); return; }
+  
+  const operands = document.getElementById('operands').value.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+  if (operands.length === 0) { alert('연산 숫자를 입력해주세요'); return; }
+  
+  const count = parseInt(document.getElementById('count').value);
+  const sheets = parseInt(document.getElementById('sheets').value);
+  const rangeMin = parseInt(document.getElementById('rangeMin').value);
+  const rangeMax = parseInt(document.getElementById('rangeMax').value);
+  
+  const typeLabel = selectedType === 'sub' ? '빼기' : '더하기';
+  const title = typeLabel + ' ' + operands.join(', ');
+  
+  const linksDiv = document.getElementById('sheetLinks');
+  linksDiv.innerHTML = '';
+  
+  for (let s = 0; s < sheets; s++) {
+    const problems = [];
+    const used = new Set();
+    let attempts = 0;
+    
+    while (problems.length < count && attempts < 500) {
+      attempts++;
+      const op = operands[Math.floor(Math.random() * operands.length)];
+      let type = selectedType;
+      
+      const range = [];
+      for (let i = rangeMin; i <= rangeMax; i++) range.push(i);
+      const tops = shuffle([...range]).slice(0, 3);
+      
+      let valid = true;
+      const bottoms = tops.map(n => {
+        const r = type === 'sub' ? n - op : n + op;
+        if (r < 0) valid = false;
+        return r;
+      });
+      if (!valid) continue;
+      
+      const key = tops.sort((a,b)=>a-b).join(',') + type + op;
+      if (used.has(key)) continue;
+      used.add(key);
+      
+      problems.push({ top: tops, op, bottom: shuffle([...bottoms]), type });
+    }
+    
+    const html = buildHTML(title, s + 1, count, problems);
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.className = 'sheet-link';
+    link.href = url;
+    link.target = '_blank';
+    link.textContent = '📄 ' + title + ' — ' + (s + 1) + '장 (' + problems.length + '문제)  →  클릭하여 열기';
+    linksDiv.appendChild(link);
+  }
+  
+  document.getElementById('preview').style.display = 'block';
+}
+
+function buildHTML(title, sheetNum, count, problems) {
+  const topColors = ['blue', 'green', 'orange'];
+  const bottomColors = ['red', 'purple', 'teal'];
+  
+  let cards = problems.map((p, i) => {
+    const symbol = p.type === 'sub' ? p.op : '+' + p.op;
+    const topBoxes = p.top.map((n, j) =>
+      '<div class="num-cell"><div class="num-box ' + topColors[j] + '">' + n + '</div><div class="dot"></div></div>'
+    ).join('');
+    const bottomBoxes = p.bottom.map((n, j) =>
+      '<div class="num-cell"><div class="dot"></div><div class="num-box ' + bottomColors[j] + '">' + n + '</div></div>'
+    ).join('');
+    return `
+  <div class="problem">
+    <div class="problem-num">${i + 1}</div>
+    <div class="circle">${p.type === 'sub' ? p.op : '+' + p.op}</div>
+    <div class="num-area">
+      <div class="num-row">${topBoxes}</div>
+      <div class="dot-area"></div>
+      <div class="num-row">${bottomBoxes}</div>
+    </div>
+  </div>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title} — ${sheetNum}장</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#fff;font-family:'Noto Sans KR',sans-serif;padding:32px;max-width:800px;margin:0 auto;color:#222}
+.instruction{background:#fff;border-left:4px solid #ff9800;padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:24px;font-size:.9rem;font-weight:700;color:#222}
+.problems{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px}
+@media(max-width:600px){.problems{grid-template-columns:1fr}}
+.problem{border:2px solid #e0e0e0;border-radius:12px;padding:20px 16px;position:relative;display:flex;align-items:center;gap:6px}
+.problem-num{position:absolute;top:-10px;left:12px;background:#ff9800;color:#fff;font-size:.7rem;font-weight:700;padding:2px 10px;border-radius:100px}
+.circle{width:57px;height:57px;min-width:57px;margin-left:8px;border-radius:50%;border:3px solid #e91e63;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900;color:#c2185b}
+.num-area{flex:1;display:flex;flex-direction:column;gap:0}
+.num-row{display:flex;justify-content:center;gap:20px}
+.num-cell{display:flex;flex-direction:column;align-items:center}
+.num-box{width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:1.1rem;font-weight:700}
+.num-box.blue{border:2px solid #42a5f5;color:#222;background:#fff}
+.num-box.green{border:2px solid #66bb6a;color:#222;background:#fff}
+.num-box.orange{border:2px solid #ffa726;color:#222;background:#fff}
+.num-box.red{border:2px solid #ef5350;color:#222;background:#fff}
+.num-box.purple{border:2px solid #ab47bc;color:#222;background:#fff}
+.num-box.teal{border:2px solid #26a69a;color:#222;background:#fff}
+.dot{width:6px;height:6px;border-radius:50%;background:#555;margin:4px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.dot-area{display:flex;justify-content:center;padding:14px 0;visibility:visible}
+@media print{body{padding:16px}.problems{gap:12px 10px}}
+</style>
+</head>
+<body>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;padding-bottom:10px;border-bottom:none"><div style="font-size:1.4rem;font-weight:900">📐 ${title}</div><div style="display:flex;gap:120px;font-size:.85rem"><span>날짜: </span><span>이름: </span><span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ ${count}</span></div></div>
+<div class="instruction">⭕의 수를 ${title.includes('더하기') ? '더해서' : '빼어서'} 나온 결과를 선으로 이어 보세요.</div>
+<div class="problems">${cards}
+</div>
+</body>
+</html>`;
+}
+</script>
+</body>
+</html>

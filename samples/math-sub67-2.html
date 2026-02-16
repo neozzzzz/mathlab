@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>빼기 6, 7 — 원리셈 초등1</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#fff;font-family:'Noto Sans KR',sans-serif;padding:32px;max-width:800px;margin:0 auto;color:#222}
+h1{font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:4px}
+.sub{text-align:center;color:#888;font-size:.8rem;margin-bottom:24px}
+.instruction{background:#fff;border-left:4px solid #ff9800;padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:24px;font-size:.9rem;font-weight:700;color:#222}
+.problems{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px}
+@media(max-width:600px){.problems{grid-template-columns:1fr}}
+.problem{border:2px solid #e0e0e0;border-radius:12px;padding:20px 16px;position:relative;display:flex;align-items:center;gap:6px}
+.problem-num{position:absolute;top:-10px;left:12px;background:#ff9800;color:#fff;font-size:.7rem;font-weight:700;padding:2px 10px;border-radius:100px}
+.circle{width:57px;height:57px;min-width:57px;margin-left:8px;border-radius:50%;border:3px solid #e91e63;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900;color:#c2185b}
+.num-area{flex:1;display:flex;flex-direction:column;gap:0}
+.num-row{display:flex;justify-content:center;gap:20px}
+.num-cell{display:flex;flex-direction:column;align-items:center}
+.num-box{width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:1.1rem;font-weight:700}
+.num-box.blue{border:2px solid #42a5f5;color:#222;background:#fff}
+.num-box.green{border:2px solid #66bb6a;color:#222;background:#fff}
+.num-box.orange{border:2px solid #ffa726;color:#222;background:#fff}
+.num-box.red{border:2px solid #ef5350;color:#222;background:#fff}
+.num-box.purple{border:2px solid #ab47bc;color:#222;background:#fff}
+.num-box.teal{border:2px solid #26a69a;color:#222;background:#fff}
+.dot{width:6px;height:6px;border-radius:50%;background:#555;margin:4px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.dot-area{display:flex;justify-content:center;padding:14px 0;visibility:visible}
+</style>
+</head>
+<body>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;padding-bottom:10px;border-bottom:none"><div style="font-size:1.4rem;font-weight:900">📐 빼기 6, 7</div><div style="display:flex;gap:120px;font-size:.85rem"><span>날짜: </span><span>이름: </span><span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ 8</span></div></div>
+<div class="instruction">⭕의 수를 빼어서 나온 결과를 선으로 이어 보세요.</div>
+<div class="problems">
+  <div class="problem">
+    <div class="problem-num">1</div>
+    <div class="circle">6</div>
+    <div class="num-area">
+      <div class="num-row"><div class="num-cell"><div class="num-box blue">11</div><div class="dot"></div></div><div class="num-cell"><div class="num-box green">12</div><div class="dot"></div></div><div class="num-cell"><div class="num-box orange">17</div><div class="dot"></div></div></div>
+      <div class="dot-area"></div>
+      <div class="num-row"><div class="num-cell"><div class="dot"></div><div class="num-box red">11</div></div><div class="num-cell"><div class="dot"></div><div class="num-box purple">6</div></div><div class="num-cell"><div class="dot"></div><div class="num-box teal">5</div></div></div>
+    </div>
+  </div>
+  <div class="problem">
+    <div class="problem-num">2</div>
+    <div class="circle">6</div>
+    <div class="num-area">
+      <div class="num-row"><div class="num-cell"><div class="num-box blue">12</div><div class="dot"></div></div><div class="num-cell"><div class="num-box green">14</div><div class="dot"></div></div><div class="num-cell"><div class="num-box orange">16</div><div class="dot"></div></div></div>
+      <div class="dot-area"></div>
+      <div class="num-row"><div class="num-cell"><div class="dot"></div><div class="num-box red">6</div></div><div class="num-cell"><div class="dot"></div><div class="num-box purple">10</div></div><div class="num-cell"><div class="dot"></div><div class="num-box teal">8</div></div></div>
+    </div>
+  </div>
+  <div class="problem">
+    <div class="problem-num">3</div>
+    <div class="circle">7</div>
+    <div class="num-area">
+      <div class="num-row"><div class="num-cell"><div class="num-box blue">15</div><div class="dot"></div></div><div class="num-cell"><div class="num-box green">16</div><div class="dot"></div></div><div class="num-cell"><div class="num-box orange">17</div><div class="dot"></div></div></div>
+      <div class="dot-area"></div>
+      <div class="num-row"><div class="num-cell"><div class="dot"></div><div class="num-box red">8</div></div><div class="num-cell"><div class="dot"></div><div class="num-box purple">10</div></div><div class="num-cell"><div class="dot"></div><div class="num-box teal">9</div></div></div>
+    </div>
+  </div>
+  <div class="problem">
+    <div class="problem-num">4</div>
+    <div class="circle">7</div>
+    <div class="num-area">
+      <div class="num-row"><div class="num-cell"><div class="num-box blue">14</div><div class="dot"></div></div><div class="num-cell"><div class="num-box green">16</div><div class="dot"></div></div><div class="num-cell"><div class="num-box orange">17</div><div class="dot"></div></div></div>
+      <div class="dot-area"></div>
+      <div class="num-row"><div class="num-cell"><div class="dot"></div><div class="num-box red">10</div></div><div class="num-cell"><div class="dot"></div><div class="num-box purple">7</div></div><div class="num-cell"><div class="dot"></div><div class="num-box teal">9</div></div></div>
+    </div>
+  </div>
+  <div class="problem">
+    <div class="problem-num">5</div>
+    <div class="circle">6</div>
+    <div class="num-area">
+      <div class="num-row"><div class="num-cell"><div class="num-box blue">11</div><div class="dot"></div></div><div class="num-cell"><div class="num-box green">12</div><div class="dot"></div></div><div class="num-cell"><div class="num-box orange">14</div><div class="dot"></div></div></div>
+      <div class="dot-area"></div>
+      <div class="num-row"><div class="num-cell"><div class="dot"></div><div class="num-box red">6</div></div><div class="num-cell"><div class="dot"></div><div class="num-box purple">5</div></div><div class="num-cell"><div class="dot"></div><div class="num-box teal">8</div></div></div>
+    </div>
+  </div>
+  <div class="problem">
+    <div class="problem-num">6</div>
+    <div class="circle">6</div>
+    <div class="num-area">
+      <div class="num-row"><div class="num-cell"><div class="num-box blue">13</div><div class="dot"></div></div><div class="num-cell"><div class="num-box green">15</div><div class="dot"></div></div><div class="num-cell"><div class="num-box orange">17</div><div class="dot"></div></div></div>
+      <div class="dot-area"></div>
+      <div class="num-row"><div class="num-cell"><div class="dot"></div><div class="num-box red">7</div></div><div class="num-cell"><div class="dot"></div><div class="num-box purple">11</div></div><div class="num-cell"><div class="dot"></div><div class="num-box teal">9</div></div></div>
+    </div>
+  </div>
+
+  <div class="problem">
+    <div class="problem-num">7</div>
+    <div class="circle">7</div>
+    <div class="num-area">
+      <div class="num-row"><div class="num-cell"><div class="num-box blue">13</div><div class="dot"></div></div><div class="num-cell"><div class="num-box green">16</div><div class="dot"></div></div><div class="num-cell"><div class="num-box orange">14</div><div class="dot"></div></div></div>
+      <div class="dot-area"></div>
+      <div class="num-row"><div class="num-cell"><div class="dot"></div><div class="num-box red">6</div></div><div class="num-cell"><div class="dot"></div><div class="num-box purple">9</div></div><div class="num-cell"><div class="dot"></div><div class="num-box teal">7</div></div></div>
+    </div>
+  </div>
+  <div class="problem">
+    <div class="problem-num">8</div>
+    <div class="circle">6</div>
+    <div class="num-area">
+      <div class="num-row"><div class="num-cell"><div class="num-box blue">13</div><div class="dot"></div></div><div class="num-cell"><div class="num-box green">16</div><div class="dot"></div></div><div class="num-cell"><div class="num-box orange">18</div><div class="dot"></div></div></div>
+      <div class="dot-area"></div>
+      <div class="num-row"><div class="num-cell"><div class="dot"></div><div class="num-box red">7</div></div><div class="num-cell"><div class="dot"></div><div class="num-box purple">12</div></div><div class="num-cell"><div class="dot"></div><div class="num-box teal">10</div></div></div>
+    </div>
+  </div>
+</div>
+<div style="margin-top:32px;text-align:center;color:#aaa;font-size:.7rem"></div>
+</body>
+</html>
