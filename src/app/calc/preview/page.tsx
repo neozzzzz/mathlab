@@ -116,22 +116,22 @@ function CalcSheet({
         padding: "10mm 12mm",
         fontFamily: "'Noto Sans KR', sans-serif",
       }}
-    >
-      {/* 1행: 날짜 · 이름 · 점수 */}
+    >      {/* 1행: 제목 */}
+      <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
+        {title}
+        {totalSheets > 1 && (
+          <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>
+        )}
+      </div>
+
+
+      {/* 2행: 날짜 · 이름 · 점수 */}
       <div className="flex justify-between items-center text-sm mb-2">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
           <span>이름: ___________</span>
         </div>
         <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {problems.length}</span>
-      </div>
-
-      {/* 2행: 제목 */}
-      <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
-        {title}
-        {totalSheets > 1 && (
-          <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>
-        )}
       </div>
 
       {/* 3행: 설명 */}
