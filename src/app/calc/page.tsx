@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function CalcPage() {
   const router = useRouter();
-  const [type, setType] = useState<"add" | "sub">("sub");
+  const [type, setType] = useState<"add" | "sub" | "add_sub" | "mul" | "div" | "mul_div">("sub");
   const [count, setCount] = useState(24);
   const [sheets, setSheets] = useState(1);
   const [rangeMin, setRangeMin] = useState(11);
@@ -55,28 +55,41 @@ export default function CalcPage() {
       <div className="bg-white rounded-2xl p-7 shadow-md">
         {/* 연산 유형 */}
         <div className="mb-5">
-          <label className="block font-bold text-sm mb-2">연산 유형</label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setType("add")}
-              className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                type === "add"
-                  ? "border-gray-900 bg-[#ddd]/50 text-black"
-                  : "border-gray-200 bg-white hover:border-gray-400"
-              }`}
-            >
-              + 더하기
-            </button>
-            <button
-              onClick={() => setType("sub")}
-              className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                type === "sub"
-                  ? "border-gray-900 bg-[#ddd]/50 text-black"
-                  : "border-gray-200 bg-white hover:border-gray-400"
-              }`}
-            >
-              - 빼기
-            </button>
+          <div className="mb-3">
+            <label className="block font-bold text-sm mb-2">더하기 · 빼기</label>
+            <div className="flex gap-2">
+              {([["add", "더하기"], ["sub", "빼기"], ["add_sub", "혼합"]] as const).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => setType(k)}
+                  className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                    type === k
+                      ? "border-gray-900 bg-[#ddd]/50 text-black"
+                      : "border-gray-200 bg-white hover:border-gray-400"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block font-bold text-sm mb-2">곱하기 · 나누기</label>
+            <div className="flex gap-2">
+              {([["mul", "곱하기"], ["div", "나누기"], ["mul_div", "혼합"]] as const).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => setType(k)}
+                  className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                    type === k
+                      ? "border-gray-900 bg-[#ddd]/50 text-black"
+                      : "border-gray-200 bg-white hover:border-gray-400"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -139,13 +152,14 @@ export default function CalcPage() {
                 inputMode="numeric"
                 value={rangeMax}
                 onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMax(v === '' ? 0 : parseInt(v, 10)); }}
+                onBlur={() => { if (rangeMax > 0 && rangeMax < rangeMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setRangeMax(rangeMin); } }}
                 onFocus={(e) => e.target.select()}
                 className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900"
               />
             </div>
           </div>
           <div className="flex-1">
-            <label className="block font-bold text-sm mb-2">{type === "sub" ? "빼는 수" : "더하는 수"} 범위</label>
+            <label className="block font-bold text-sm mb-2">둘째 수 범위</label>
             <div className="flex gap-2 items-center">
               <input
                 type="text"
@@ -161,6 +175,7 @@ export default function CalcPage() {
                 inputMode="numeric"
                 value={opMax}
                 onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setOpMax(v === '' ? 0 : parseInt(v, 10)); }}
+                onBlur={() => { if (opMax > 0 && opMax < opMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setOpMax(opMin); } }}
                 onFocus={(e) => e.target.select()}
                 className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900"
               />
@@ -171,16 +186,15 @@ export default function CalcPage() {
         {/* 미리보기 */}
         <div className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-200">
           <p className="text-xs text-gray-400 mb-3">미리보기</p>
-          <div className="grid grid-cols-3 gap-x-8 gap-y-3 text-lg font-semibold" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div className="flex gap-8 text-lg font-semibold" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
             {[0, 1, 2].map((i) => {
-              const a = rangeMin + i * 2;
-              const b = opMin + i;
-              const sign = type === "sub" ? "−" : "+";
+              const a = i === 0 ? rangeMin : i === 1 ? Math.round((rangeMin + rangeMax) / 2) : rangeMax;
+              const b = i === 0 ? opMin : i === 1 ? Math.round((opMin + opMax) / 2) : opMax;
+              const signs = { add: "+", sub: "−", add_sub: i === 0 ? "+" : "−", mul: "×", div: "÷", mul_div: i === 0 ? "×" : "÷" } as const;
               return (
                 <div key={i} className="flex items-center gap-1">
                   <span className="text-xs text-gray-400 w-5">{i + 1}</span>
-                  <span>{a} {sign} {b} =</span>
-                  <span className="border-b border-gray-300 w-8 inline-block ml-1"></span>
+                  <span>{a} {signs[type]} {b} =</span>
                 </div>
               );
             })}

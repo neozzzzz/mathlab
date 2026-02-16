@@ -9,7 +9,7 @@ import Link from "next/link";
 interface CalcProblem {
   a: number;
   b: number;
-  type: "add" | "sub";
+  type: "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
   answer: number;
 }
 
@@ -23,7 +23,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 function generateCalcSheet(params: {
-  type: "add" | "sub";
+  type: "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
   count: number;
   rangeMin: number;
   rangeMax: number;
@@ -36,14 +36,34 @@ function generateCalcSheet(params: {
 
   while (problems.length < params.count && attempts < 1000) {
     attempts++;
-    const a = params.rangeMin + Math.floor(Math.random() * (params.rangeMax - params.rangeMin + 1));
-    const b = params.opMin + Math.floor(Math.random() * (params.opMax - params.opMin + 1));
-    const answer = params.type === "sub" ? a - b : a + b;
+    // 혼합 타입이면 랜덤으로 선택
+    let op = params.type as string;
+    if (op === "add_sub") op = Math.random() < 0.5 ? "add" : "sub";
+    if (op === "mul_div") op = Math.random() < 0.5 ? "mul" : "div";
+
+    let a: number, b: number, answer: number;
+    if (op === "div") {
+      // 나누기: b * q = a (나누어 떨어지도록)
+      b = params.opMin + Math.floor(Math.random() * (params.opMax - params.opMin + 1));
+      if (b === 0) continue;
+      const qMin = Math.ceil(params.rangeMin / b);
+      const qMax = Math.floor(params.rangeMax / b);
+      if (qMin > qMax) continue;
+      const q = qMin + Math.floor(Math.random() * (qMax - qMin + 1));
+      a = b * q;
+      answer = q;
+    } else {
+      a = params.rangeMin + Math.floor(Math.random() * (params.rangeMax - params.rangeMin + 1));
+      b = params.opMin + Math.floor(Math.random() * (params.opMax - params.opMin + 1));
+      if (op === "sub") answer = a - b;
+      else if (op === "mul") answer = a * b;
+      else answer = a + b;
+    }
     if (answer < 0) continue;
-    const key = `${a}-${b}`;
+    const key = `${op}-${a}-${b}`;
     if (used.has(key)) continue;
     used.add(key);
-    problems.push({ a, b, type: params.type, answer });
+    problems.push({ a, b, type: op as CalcProblem["type"], answer });
   }
 
   return problems;
@@ -60,15 +80,20 @@ function CalcSheet({
   title: string;
   sheetNum: number;
   totalSheets: number;
-  type: "add" | "sub";
+  type: "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
 }) {
-  const sign = type === "sub" ? "−" : "+";
+  const signMap = { add: "+", sub: "−", mul: "×", div: "÷", add_sub: "+", mul_div: "×" } as const;
   const cols = 3;
   const rows = Math.ceil(problems.length / cols);
-  // A4 기준 py-12(8행)이 마지노선. 행 수에 따라 간격 조절
-  // py 단위 (1 = 4px). 8행=48px(py-12) 기준
-  const pyMap: Record<number, number> = { 4: 110, 6: 72, 8: 50, 12: 30 };
-  const pyValue = pyMap[rows] || Math.max(20, Math.floor(400 / rows));
+  // A4(210x297mm) 한 장 기준으로 그리드 영역을 고정하고, 행 수에 따라 균등 분배한다.
+  const PAGE_HEIGHT_MM = 297;
+  const PAGE_PADDING_Y_MM = 20; // 상하 패딩 10mm + 10mm
+  const HEADER_BLOCK_MM = 16;
+  const INSTRUCTION_BLOCK_MM = 18;
+  const gridHeightMm = Math.max(
+    120,
+    PAGE_HEIGHT_MM - PAGE_PADDING_Y_MM - HEADER_BLOCK_MM - INSTRUCTION_BLOCK_MM
+  );
 
   // 세로 방향으로 번호 매기기 (1열: 1~8, 2열: 9~16, 3열: 17~24)
   const grid: (CalcProblem | null)[][] = [];
@@ -82,7 +107,16 @@ function CalcSheet({
   }
 
   return (
-    <div className="bg-white max-w-[800px] mx-auto" style={{ padding: "32px 40px", fontFamily: "'Noto Sans KR', sans-serif" }}>
+    <div
+      className="bg-white mx-auto"
+      style={{
+        width: "210mm",
+        minHeight: "297mm",
+        boxSizing: "border-box",
+        padding: "10mm 12mm",
+        fontFamily: "'Noto Sans KR', sans-serif",
+      }}
+    >
       {/* 헤더 */}
       <div className="flex justify-between items-end mb-4 pb-2.5">
         <div style={{ fontSize: "1.4rem", fontWeight: 900 }}>
@@ -115,7 +149,14 @@ function CalcSheet({
       </div>
 
       {/* 문제 그리드 */}
-      <div className="grid grid-cols-3 gap-x-12" style={{ gap: "0 48px" }}>
+      <div
+        className="grid grid-cols-3 gap-x-12"
+        style={{
+          gap: "0 48px",
+          height: `${gridHeightMm}mm`,
+          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+        }}
+      >
         {grid.map((row, r) => (
           row.map((p, c) => {
             if (!p) return <div key={`${r}-${c}`} />;
@@ -123,15 +164,14 @@ function CalcSheet({
             return (
               <div
                 key={`${r}-${c}`}
-                className="flex items-center"
-                style={{ height: `${pyValue * 2 + 24}px` }}
+                className="flex items-center h-full"
                 style={{ borderBottom: "1px solid #f0f0f0" }}
               >
                 <span className="shrink-0 mr-4 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-700 text-xs font-bold">
                   {num}
                 </span>
                 <span className="text-lg font-semibold tracking-wide">
-                  {p.a} {sign} {p.b} =
+                  {p.a} {p.type === "sub" ? "−" : p.type === "mul" ? "×" : p.type === "div" ? "÷" : "+"} {p.b} =
                 </span>
               </div>
             );
@@ -149,7 +189,7 @@ function CalcPreviewContent() {
   const [copied, setCopied] = useState(false);
 
   const params = useMemo(() => {
-    const t = searchParams.get("t") as "add" | "sub";
+    const t = searchParams.get("t") as "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
     const c = Number(searchParams.get("c"));
     const s = Number(searchParams.get("s"));
     const mn = Number(searchParams.get("mn"));
@@ -176,7 +216,8 @@ function CalcPreviewContent() {
     );
   }
 
-  const typeLabel = params.type === "sub" ? "빼기" : "더하기";
+  const typeLabelMap: Record<string, string> = { add: "더하기", sub: "빼기", add_sub: "더하기·빼기 혼합", mul: "곱하기", div: "나누기", mul_div: "곱하기·나누기 혼합" };
+  const typeLabel = typeLabelMap[params.type] || "연산";
   const title = `${typeLabel} 연습`;
 
   async function handleShare() {
