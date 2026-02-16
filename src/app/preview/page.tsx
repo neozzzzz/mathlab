@@ -19,7 +19,7 @@ const BOT_COLORS = [
 ];
 
 function ProblemCard({ problem, index }: { problem: Problem; index: number }) {
-  const circleLabel = problem.type === "sub" ? String(problem.op) : `+${problem.op}`;
+  const circleLabel = String(problem.op);
   return (
     <div
       className="relative flex items-center gap-[6px]"
