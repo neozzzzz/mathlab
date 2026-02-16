@@ -137,7 +137,7 @@ function Calc3Sheet({
       </div>
 
       {/* 2행: 제목 */}
-      <div className="mb-1 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
+      <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
         {title}
         {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
       </div>
