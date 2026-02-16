@@ -171,7 +171,7 @@ function Sheet({
   return (
     <div className="sheet bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm" }}>
       {/* 1행: 날짜 · 이름 · 점수 */}
-      <div className="flex justify-between items-center text-sm mb-2">
+      <div className="flex justify-between items-center text-sm mb-4">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
           <span>이름: ___________</span>
