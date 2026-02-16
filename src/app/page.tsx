@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Link2, PenLine } from "lucide-react";
+import { Link2, PenLine, Layers } from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -9,7 +9,7 @@ export default function LandingPage() {
         <p className="text-gray-500 text-lg">초등 수학 연습 문제를 자동으로 만들어 보세요</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-[600px] w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-[900px] w-full">
         {/* 짝 맞추기 */}
         <Link
           href="/match"
@@ -37,6 +37,20 @@ export default function LandingPage() {
           </p>
           <div className="mt-4 inline-block px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
             더하기 · 빼기 · 곱하기 · 나누기
+          </div>
+        </Link>
+        {/* 일반 연산 (3개의 수) */}
+        <Link
+          href="/calc3"
+          className="group bg-white border-2 border-gray-200 rounded-2xl p-8 text-center hover:border-green-400 hover:shadow-lg transition-all"
+        >
+          <Layers className="w-10 h-10 mx-auto mb-4 text-gray-400 group-hover:text-green-500 transition-colors" strokeWidth={1.5} />
+          <h2 className="text-xl font-black mb-2 group-hover:text-green-600">일반 연산 (3수)</h2>
+          <p className="text-sm text-gray-500">
+            세 개의 수로 구성된<br />연산 연습 문제
+          </p>
+          <div className="mt-4 inline-block px-4 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+            a ○ b ○ c = ?
           </div>
         </Link>
       </div>
