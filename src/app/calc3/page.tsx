@@ -131,48 +131,52 @@ export default function Calc3Page() {
           </div>
         </div>
 
-        {/* 숫자 범위 3개 */}
-        <div className="mb-5">
-          <label className="block font-bold text-sm mb-2">첫째 수 범위</label>
-          <div className="flex gap-2 items-center mb-3">
-            <input type="text" inputMode="numeric" value={rangeMin}
-              onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMin(v === '' ? 0 : parseInt(v, 10)); }}
-              onFocus={(e) => e.target.select()}
-              className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
-            <span className="font-bold text-gray-400">~</span>
-            <input type="text" inputMode="numeric" value={rangeMax}
-              onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMax(v === '' ? 0 : parseInt(v, 10)); }}
-              onBlur={() => { if (rangeMax > 0 && rangeMax < rangeMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setRangeMax(rangeMin); } }}
-              onFocus={(e) => e.target.select()}
-              className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
+        {/* 숫자 범위 3개 (한 줄) */}
+        <div className="flex gap-3 mb-5">
+          <div className="flex-1">
+            <label className="block font-bold text-sm mb-2">첫째 수</label>
+            <div className="flex gap-1 items-center">
+              <input type="text" inputMode="numeric" value={rangeMin}
+                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMin(v === '' ? 0 : parseInt(v, 10)); }}
+                onFocus={(e) => e.target.select()}
+                className="w-14 p-2 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
+              <span className="font-bold text-gray-400 text-xs">~</span>
+              <input type="text" inputMode="numeric" value={rangeMax}
+                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMax(v === '' ? 0 : parseInt(v, 10)); }}
+                onBlur={() => { if (rangeMax > 0 && rangeMax < rangeMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setRangeMax(rangeMin); } }}
+                onFocus={(e) => e.target.select()}
+                className="w-14 p-2 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
+            </div>
           </div>
-
-          <label className="block font-bold text-sm mb-2">둘째 수 범위</label>
-          <div className="flex gap-2 items-center mb-3">
-            <input type="text" inputMode="numeric" value={opMin}
-              onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setOpMin(v === '' ? 0 : parseInt(v, 10)); }}
-              onFocus={(e) => e.target.select()}
-              className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
-            <span className="font-bold text-gray-400">~</span>
-            <input type="text" inputMode="numeric" value={opMax}
-              onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setOpMax(v === '' ? 0 : parseInt(v, 10)); }}
-              onBlur={() => { if (opMax > 0 && opMax < opMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setOpMax(opMin); } }}
-              onFocus={(e) => e.target.select()}
-              className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
+          <div className="flex-1">
+            <label className="block font-bold text-sm mb-2">둘째 수</label>
+            <div className="flex gap-1 items-center">
+              <input type="text" inputMode="numeric" value={opMin}
+                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setOpMin(v === '' ? 0 : parseInt(v, 10)); }}
+                onFocus={(e) => e.target.select()}
+                className="w-14 p-2 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
+              <span className="font-bold text-gray-400 text-xs">~</span>
+              <input type="text" inputMode="numeric" value={opMax}
+                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setOpMax(v === '' ? 0 : parseInt(v, 10)); }}
+                onBlur={() => { if (opMax > 0 && opMax < opMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setOpMax(opMin); } }}
+                onFocus={(e) => e.target.select()}
+                className="w-14 p-2 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
+            </div>
           </div>
-
-          <label className="block font-bold text-sm mb-2">셋째 수 범위</label>
-          <div className="flex gap-2 items-center">
-            <input type="text" inputMode="numeric" value={op2Min}
-              onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setOp2Min(v === '' ? 0 : parseInt(v, 10)); }}
-              onFocus={(e) => e.target.select()}
-              className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
-            <span className="font-bold text-gray-400">~</span>
-            <input type="text" inputMode="numeric" value={op2Max}
-              onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setOp2Max(v === '' ? 0 : parseInt(v, 10)); }}
-              onBlur={() => { if (op2Max > 0 && op2Max < op2Min) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setOp2Max(op2Min); } }}
-              onFocus={(e) => e.target.select()}
-              className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
+          <div className="flex-1">
+            <label className="block font-bold text-sm mb-2">셋째 수</label>
+            <div className="flex gap-1 items-center">
+              <input type="text" inputMode="numeric" value={op2Min}
+                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setOp2Min(v === '' ? 0 : parseInt(v, 10)); }}
+                onFocus={(e) => e.target.select()}
+                className="w-14 p-2 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
+              <span className="font-bold text-gray-400 text-xs">~</span>
+              <input type="text" inputMode="numeric" value={op2Max}
+                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setOp2Max(v === '' ? 0 : parseInt(v, 10)); }}
+                onBlur={() => { if (op2Max > 0 && op2Max < op2Min) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setOp2Max(op2Min); } }}
+                onFocus={(e) => e.target.select()}
+                className="w-14 p-2 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900" />
+            </div>
           </div>
         </div>
 
