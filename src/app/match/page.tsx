@@ -7,16 +7,22 @@ import { encodeParams, type GeneratorParams } from "@/lib/generator";
 
 export default function Home() {
   const router = useRouter();
-  const [type, setType] = useState<"add" | "sub" | null>(null);
+  const [type, setType] = useState<"add" | "sub" | null>("add");
+  const [toast, setToast] = useState<string | null>(null);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }
   const [operands, setOperands] = useState("8,9");
   const [count, setCount] = useState(8);
-  const [sheets, setSheets] = useState(2);
+  const [sheets, setSheets] = useState(1);
   const [rangeMin, setRangeMin] = useState(11);
   const [rangeMax, setRangeMax] = useState(18);
 
   const generate = () => {
     if (!type) {
-      alert("연산 유형을 선택해주세요");
+      showToast("연산 유형을 선택해주세요");
       return;
     }
     const ops = operands
@@ -24,7 +30,7 @@ export default function Home() {
       .map((n) => parseInt(n.trim()))
       .filter((n) => !isNaN(n));
     if (ops.length === 0) {
-      alert("연산 숫자를 입력해주세요");
+      showToast("계산 결과 값을 입력해주세요");
       return;
     }
     const params: GeneratorParams = {
@@ -39,7 +45,12 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-[600px] mx-auto p-8">
+    <div className="max-w-[600px] mx-auto p-8 relative">
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
+          {toast}
+        </div>
+      )}
       <Link href="/" className="inline-block mb-4 text-sm text-gray-400 hover:text-gray-600">← 메인으로</Link>
       <h1 className="text-2xl font-black text-center mb-6">짝 맞추기</h1>
 
@@ -49,101 +60,153 @@ export default function Home() {
           <label className="block font-bold text-sm mb-2">연산 유형</label>
           <div className="flex gap-2">
             <button
-              onClick={() => setType("sub")}
-              className={`flex-1 py-3 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                type === "sub"
-                  ? "border-orange-500 bg-orange-50 text-orange-800"
-                  : "border-gray-200 bg-white hover:border-orange-300"
-              }`}
-            >
-              ➖ 빼기
-            </button>
-            <button
               onClick={() => setType("add")}
               className={`flex-1 py-3 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
                 type === "add"
-                  ? "border-orange-500 bg-orange-50 text-orange-800"
-                  : "border-gray-200 bg-white hover:border-orange-300"
+                  ? "border-gray-900 bg-[#ddd]/50 text-black"
+                  : "border-gray-200 bg-white hover:border-gray-400"
               }`}
             >
-              ➕ 더하기
+              + 더하기
+            </button>
+            <button
+              onClick={() => setType("sub")}
+              className={`flex-1 py-3 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                type === "sub"
+                  ? "border-gray-900 bg-[#ddd]/50 text-black"
+                  : "border-gray-200 bg-white hover:border-gray-400"
+              }`}
+            >
+              - 빼기
             </button>
           </div>
-        </div>
-
-        {/* 연산 숫자 */}
-        <div className="mb-5">
-          <label className="block font-bold text-sm mb-2">연산 숫자 (쉼표로 구분)</label>
-          <input
-            type="text"
-            value={operands}
-            onChange={(e) => setOperands(e.target.value)}
-            placeholder="예: 6,7 또는 8,9"
-            className="w-full p-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-orange-500"
-          />
-          <p className="text-xs text-gray-400 mt-1">빼기: 빼는 수 / 더하기: 더하는 수</p>
         </div>
 
         {/* 문제 수 & 장 수 */}
         <div className="flex gap-3 mb-5">
           <div className="flex-1">
             <label className="block font-bold text-sm mb-2">문제 수 (장당)</label>
-            <select
-              value={count}
-              onChange={(e) => setCount(Number(e.target.value))}
-              className="w-full p-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-orange-500"
-            >
-              <option value={6}>6문제</option>
-              <option value={8}>8문제</option>
-            </select>
+            <div className="flex gap-2">
+              {[6, 8].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setCount(n)}
+                  className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                    count === n
+                      ? "border-gray-900 bg-[#ddd]/50 text-black"
+                      : "border-gray-200 bg-white hover:border-gray-400"
+                  }`}
+                >
+                  {n}문제
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex-1">
             <label className="block font-bold text-sm mb-2">장 수</label>
-            <select
-              value={sheets}
-              onChange={(e) => setSheets(Number(e.target.value))}
-              className="w-full p-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-orange-500"
-            >
+            <div className="flex gap-1.5">
               {[1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>
-                  {n}장
-                </option>
+                <button
+                  key={n}
+                  onClick={() => setSheets(n)}
+                  className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                    sheets === n
+                      ? "border-gray-900 bg-[#ddd]/50 text-black"
+                      : "border-gray-200 bg-white hover:border-gray-400"
+                  }`}
+                >
+                  {n}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
         </div>
 
-        {/* 숫자 범위 */}
-        <div className="mb-5">
-          <label className="block font-bold text-sm mb-2">숫자 범위</label>
-          <div className="flex gap-3 items-center">
+        {/* 숫자 범위 & 계산 결과 값 */}
+        <div className="flex gap-3 mb-5">
+          <div className="flex-1">
+            <label className="block font-bold text-sm mb-2">숫자 범위</label>
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={rangeMin}
+                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMin(v === '' ? 0 : parseInt(v, 10)); }}
+                onFocus={(e) => e.target.select()}
+                className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900"
+              />
+              <span className="font-bold text-gray-400">~</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={rangeMax}
+                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMax(v === '' ? 0 : parseInt(v, 10)); }}
+                onFocus={(e) => e.target.select()}
+                className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900"
+              />
+            </div>
+          </div>
+          <div className="flex-1">
+            <label className="block font-bold text-sm mb-2">계산 결과 값</label>
             <input
-              type="number"
-              value={rangeMin}
-              onChange={(e) => setRangeMin(Number(e.target.value))}
-              min={2}
-              max={50}
-              className="flex-1 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-orange-500"
-            />
-            <span className="font-bold">~</span>
-            <input
-              type="number"
-              value={rangeMax}
-              onChange={(e) => setRangeMax(Number(e.target.value))}
-              min={2}
-              max={50}
-              className="flex-1 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-orange-500"
+              type="text"
+              value={operands}
+              inputMode="numeric"
+              onChange={(e) => setOperands(e.target.value.replace(/[^\d,]/g, ''))}
+              placeholder="예: 6,7"
+              className="w-full p-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-900"
             />
           </div>
-          <p className="text-xs text-gray-400 mt-1">윗줄에 표시되는 숫자의 범위</p>
         </div>
+
+        {/* 미리보기 카드 */}
+        {(
+          <div className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <p className="text-xs text-gray-400 mb-3">미리보기</p>
+            <div className="flex items-center gap-[6px]" style={{ transform: "scale(0.85)", transformOrigin: "left center" }}>
+              <div style={{ width: 57, height: 57, minWidth: 57, marginLeft: 8, borderRadius: "50%", border: "3px solid #e91e63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem", fontWeight: 900, color: "#c2185b" }}>
+                {(operands.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n))[0]) || "?"}
+              </div>
+              <div className="flex-1 flex flex-col">
+                <div className="flex justify-center" style={{ gap: 20 }}>
+                  {(() => {
+                    const tops = rangeMin > 0 && rangeMax > 0 ? [rangeMin, rangeMin + 2, rangeMax] : [11, 13, 18];
+                    const borders = ["#42a5f5", "#66bb6a", "#ffa726"];
+                    return tops.map((n, j) => (
+                      <div key={j} className="flex flex-col items-center">
+                        <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: "1.1rem", fontWeight: 700, border: `2px solid ${borders[j]}`, color: "#222", background: "#fff" }}>{n}</div>
+                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#555", margin: "4px 0" }} />
+                      </div>
+                    ));
+                  })()}
+                </div>
+                <div style={{ padding: "10px 0" }} />
+                <div className="flex justify-center" style={{ gap: 20 }}>
+                  {(() => {
+                    const op = operands.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n))[0];
+                    const tops = rangeMin > 0 && rangeMax > 0 ? [rangeMin, rangeMin + 2, rangeMax] : [11, 13, 18];
+                    const hasAll = type && op !== undefined;
+                    const results = hasAll ? tops.map(n => type === "sub" ? n - op : n + op) : null;
+                    const borders = ["#ef5350", "#ab47bc", "#26a69a"];
+                    return [0, 1, 2].map((j) => (
+                      <div key={j} className="flex flex-col items-center">
+                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#555", margin: "4px 0" }} />
+                        <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: "1.1rem", fontWeight: 700, border: `2px solid ${borders[j]}`, color: "#222", background: "#fff" }}>{results ? results[j] : "?"}</div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 생성 버튼 */}
         <button
           onClick={generate}
-          className="w-full py-3.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-black text-base cursor-pointer transition-colors mt-2"
+          className="w-full py-3.5 bg-gray-900 hover:bg-black text-white rounded-xl font-black text-base cursor-pointer transition-colors mt-2"
         >
-          📝 문제 생성
+          문제 생성
         </button>
       </div>
     </div>

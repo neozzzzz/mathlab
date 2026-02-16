@@ -99,7 +99,7 @@ export default function SharePage() {
     <div>
       <div className="print:hidden flex justify-center items-center gap-3 py-4 bg-white border-b">
         <Link href="/" className="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-300">← 새로 만들기</Link>
-        <button onClick={() => window.print()} className="px-5 py-2 bg-blue-700 text-white rounded-lg font-bold text-sm hover:bg-blue-800 cursor-pointer"><Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄</button>
+        <button onClick={() => window.print()} className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"><Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄</button>
       </div>
 
       {sheets.map((problems, i) => (

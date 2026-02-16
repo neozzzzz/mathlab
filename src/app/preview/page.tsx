@@ -229,7 +229,7 @@ function PreviewContent() {
     return (
       <div className="text-center py-20">
         <p className="text-lg font-bold mb-4">잘못된 접근입니다</p>
-        <Link href="/" className="text-blue-600 underline">
+        <Link href="/match" className="text-blue-600 underline">
           메인으로 돌아가기
         </Link>
       </div>
@@ -270,16 +270,13 @@ function PreviewContent() {
   return (
     <div>
       {/* 상단 버튼 (인쇄 시 숨김) */}
+      <div className="print:hidden max-w-[800px] mx-auto px-8 pt-6">
+        <Link href="/match" className="inline-block mb-4 text-sm text-gray-400 hover:text-gray-600">← 돌아가기</Link>
+      </div>
       <div className="print:hidden flex justify-center items-center gap-3 py-4 bg-white border-b flex-wrap">
-        <Link
-          href="/"
-          className="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-300"
-        >
-          ← 돌아가기
-        </Link>
         <button
           onClick={() => window.print()}
-          className="px-5 py-2 bg-blue-700 text-white rounded-lg font-bold text-sm hover:bg-blue-800 cursor-pointer"
+          className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
         >
           인쇄
         </button>
@@ -287,14 +284,14 @@ function PreviewContent() {
           <button
             onClick={handleShare}
             disabled={saving}
-            className="px-5 py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 cursor-pointer disabled:opacity-50"
+            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer disabled:opacity-50"
           >
             {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
           </button>
         ) : (
           <button
             onClick={handleCopy}
-            className="px-5 py-2 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 cursor-pointer"
+            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
           >
             {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
           </button>
