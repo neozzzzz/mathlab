@@ -1,21 +1,21 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { decodeParams, generateAllSheets, type Problem } from "@/lib/generator";
 import { saveWorksheet } from "@/lib/supabase";
 import { Printer, Share2, Copy, Check } from "lucide-react";
 import Link from "next/link";
 
 const TOP_COLORS = [
-  { border: "#42a5f5", label: "blue" },
-  { border: "#66bb6a", label: "green" },
-  { border: "#ffa726", label: "orange" },
+  { border: "#90caf9", label: "blue" },
+  { border: "#a5d6a7", label: "green" },
+  { border: "#ffcc80", label: "orange" },
 ];
 const BOT_COLORS = [
-  { border: "#ef5350", label: "red" },
-  { border: "#ab47bc", label: "purple" },
-  { border: "#26a69a", label: "teal" },
+  { border: "#ef9a9a", label: "red" },
+  { border: "#ce93d8", label: "purple" },
+  { border: "#80cbc4", label: "teal" },
 ];
 
 function ProblemCard({ problem, index }: { problem: Problem; index: number }) {
@@ -166,6 +166,7 @@ function Sheet({
     type === "sub"
       ? "⭕의 수를 빼어서 나온 결과를 선으로 이어 보세요."
       : "⭕의 수를 더해서 나온 결과를 선으로 이어 보세요.";
+  const rowCount = Math.ceil(problems.length / 2);
 
   return (
     <div className="sheet bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm" }}>
@@ -202,11 +203,19 @@ function Sheet({
 
       {/* 문제 그리드 */}
       <div
-        className="grid grid-cols-2 max-[600px]:grid-cols-1"
-        style={{ gap: "16px 12px" }}
+        className="grid grid-cols-2"
+        style={{
+          height: "243mm",
+          gap: "16px 12px",
+          gridTemplateRows: `repeat(${rowCount}, minmax(0, 1fr))`,
+        }}
       >
         {problems.map((p, i) => (
-          <ProblemCard key={i} problem={p} index={i} />
+          <div key={i} className="h-full flex items-center">
+            <div className="w-full">
+              <ProblemCard problem={p} index={i} />
+            </div>
+          </div>
         ))}
       </div>
     </div>
@@ -220,10 +229,12 @@ function PreviewContent() {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const allSheets = useMemo(() => {
-    if (!params) return [];
-    return generateAllSheets(params);
-  }, [searchParams.toString()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [allSheets, setAllSheets] = useState<Problem[][]>([]);
+
+  useEffect(() => {
+    if (!params || allSheets.length > 0) return;
+    setAllSheets(generateAllSheets(params));
+  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!params) {
     return (

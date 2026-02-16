@@ -1,8 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
+function Dropdown({ value, options, onChange }: { value: number; options: { value: number; label: string }[]; onChange: (v: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-2.5 px-4 border-2 border-gray-200 rounded-lg font-bold text-sm bg-white cursor-pointer focus:outline-none focus:border-gray-900 transition-colors"
+      >
+        <span>{selected?.label}</span>
+        <span className={`text-gray-400 text-xs transition-transform ${open ? "rotate-180" : ""}`}>▼</span>
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
+          {options.map((o) => (
+            <div
+              key={o.value}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              className={`py-2.5 px-4 text-sm font-bold cursor-pointer transition-colors ${
+                value === o.value
+                  ? "bg-gray-900 text-white"
+                  : "hover:bg-gray-100 text-gray-700"
+              }`}
+            >
+              {o.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 import { encodeParams, type GeneratorParams } from "@/lib/generator";
 
 export default function Home() {
@@ -86,39 +129,19 @@ export default function Home() {
         <div className="flex gap-3 mb-5">
           <div className="flex-1">
             <label className="block font-bold text-sm mb-2">문제 수 (장당)</label>
-            <div className="flex gap-2">
-              {[6, 8].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setCount(n)}
-                  className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    count === n
-                      ? "border-gray-900 bg-[#ddd]/50 text-black"
-                      : "border-gray-200 bg-white hover:border-gray-400"
-                  }`}
-                >
-                  {n}문제
-                </button>
-              ))}
-            </div>
+            <Dropdown
+              value={count}
+              options={[6, 8].map(n => ({ value: n, label: `${n}문제` }))}
+              onChange={setCount}
+            />
           </div>
           <div className="flex-1">
             <label className="block font-bold text-sm mb-2">장 수</label>
-            <div className="flex gap-1.5">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setSheets(n)}
-                  className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    sheets === n
-                      ? "border-gray-900 bg-[#ddd]/50 text-black"
-                      : "border-gray-200 bg-white hover:border-gray-400"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
+            <Dropdown
+              value={sheets}
+              options={[1, 2, 3, 4, 5].map(n => ({ value: n, label: `${n}장` }))}
+              onChange={setSheets}
+            />
           </div>
         </div>
 
@@ -164,14 +187,14 @@ export default function Home() {
           <div className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-200">
             <p className="text-xs text-gray-400 mb-3">미리보기</p>
             <div className="flex items-center gap-[6px]" style={{ transform: "scale(0.85)", transformOrigin: "left center" }}>
-              <div style={{ width: 57, height: 57, minWidth: 57, marginLeft: 8, borderRadius: "50%", border: "3px solid #e91e63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem", fontWeight: 900, color: "#c2185b" }}>
+              <div style={{ width: 57, height: 57, minWidth: 57, marginLeft: 80, borderRadius: "50%", border: "3px solid #e91e63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem", fontWeight: 900, color: "#c2185b" }}>
                 {(operands.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n))[0]) || "?"}
               </div>
               <div className="flex-1 flex flex-col">
                 <div className="flex justify-center" style={{ gap: 20 }}>
                   {(() => {
                     const tops = rangeMin > 0 && rangeMax > 0 ? [rangeMin, rangeMin + 2, rangeMax] : [11, 13, 18];
-                    const borders = ["#42a5f5", "#66bb6a", "#ffa726"];
+                    const borders = ["#90caf9", "#a5d6a7", "#ffcc80"];
                     return tops.map((n, j) => (
                       <div key={j} className="flex flex-col items-center">
                         <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: "1.1rem", fontWeight: 700, border: `2px solid ${borders[j]}`, color: "#222", background: "#fff" }}>{n}</div>
@@ -187,7 +210,7 @@ export default function Home() {
                     const tops = rangeMin > 0 && rangeMax > 0 ? [rangeMin, rangeMin + 2, rangeMax] : [11, 13, 18];
                     const hasAll = type && op !== undefined;
                     const results = hasAll ? tops.map(n => type === "sub" ? n - op : n + op) : null;
-                    const borders = ["#ef5350", "#ab47bc", "#26a69a"];
+                    const borders = ["#ef9a9a", "#ce93d8", "#80cbc4"];
                     return [0, 1, 2].map((j) => (
                       <div key={j} className="flex flex-col items-center">
                         <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#555", margin: "4px 0" }} />
