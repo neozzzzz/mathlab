@@ -133,13 +133,13 @@ function Calc3Sheet({
           <span>날짜: ___________</span>
           <span>이름: ___________</span>
         </div>
+        <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {problems.length}</span>
+      </div>
 
       {/* 2행: 제목 */}
       <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
         {title}
         {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
-      </div>
-        <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {problems.length}</span>
       </div>
 
       {/* 3행: 설명 */}
