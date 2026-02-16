@@ -1,8 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
+function Dropdown({ value, options, onChange }: { value: number; options: { value: number; label: string }[]; onChange: (v: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find(o => o.value === value);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between py-2.5 px-4 border-2 border-gray-200 rounded-lg font-bold text-sm bg-white cursor-pointer focus:outline-none focus:border-gray-900 transition-colors"
+      >
+        <span>{selected?.label}</span>
+        <span className={`text-gray-400 text-xs transition-transform ${open ? "rotate-180" : ""}`}>▼</span>
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
+          {options.map((o) => (
+            <div
+              key={o.value}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              className={`py-2.5 px-4 text-sm font-bold cursor-pointer transition-colors ${
+                value === o.value
+                  ? "bg-gray-900 text-white"
+                  : "hover:bg-gray-100 text-gray-700"
+              }`}
+            >
+              {o.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CalcPage() {
   const router = useRouter();
@@ -97,39 +140,19 @@ export default function CalcPage() {
         <div className="flex gap-3 mb-5">
           <div className="flex-1">
             <label className="block font-bold text-sm mb-2">문제 수 (장당)</label>
-            <div className="flex gap-1.5">
-              {[12, 18, 24, 36].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setCount(n)}
-                  className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    count === n
-                      ? "border-gray-900 bg-[#ddd]/50 text-black"
-                      : "border-gray-200 bg-white hover:border-gray-400"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
+            <Dropdown
+              value={count}
+              options={[12, 18, 24, 36].map(n => ({ value: n, label: `${n}문제` }))}
+              onChange={setCount}
+            />
           </div>
           <div className="flex-1">
             <label className="block font-bold text-sm mb-2">장 수</label>
-            <div className="flex gap-1.5">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setSheets(n)}
-                  className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    sheets === n
-                      ? "border-gray-900 bg-[#ddd]/50 text-black"
-                      : "border-gray-200 bg-white hover:border-gray-400"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
+            <Dropdown
+              value={sheets}
+              options={[1, 2, 3, 4, 5].map(n => ({ value: n, label: `${n}장` }))}
+              onChange={setSheets}
+            />
           </div>
         </div>
 
@@ -193,7 +216,7 @@ export default function CalcPage() {
               const signs = { add: "+", sub: "−", add_sub: i === 0 ? "+" : "−", mul: "×", div: "÷", mul_div: i === 0 ? "×" : "÷" } as const;
               return (
                 <div key={i} className="flex items-center gap-1">
-                  <span className="text-xs text-gray-400 w-5">{i + 1}</span>
+                  <span className="shrink-0 mr-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">{i + 1}</span>
                   <span>{a} {signs[type]} {b} =</span>
                 </div>
               );

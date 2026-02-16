@@ -168,9 +168,9 @@ function Sheet({
       : "⭕의 수를 더해서 나온 결과를 선으로 이어 보세요.";
 
   return (
-    <div className="sheet bg-white max-w-[800px] mx-auto" style={{ padding: 32 }}>
+    <div className="sheet bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm" }}>
       {/* 헤더 */}
-      <div className="flex justify-between items-end mb-4 pb-2.5">
+      <div className="flex justify-between items-end mb-4 pb-2.5 border-b border-gray-300">
         <div style={{ fontSize: "1.4rem", fontWeight: 900 }}>
           {title}
           {totalSheets > 1 && (
@@ -278,7 +278,7 @@ function PreviewContent() {
           onClick={() => window.print()}
           className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
         >
-          인쇄
+          <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
         </button>
         {!shareUrl ? (
           <button

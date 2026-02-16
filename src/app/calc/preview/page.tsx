@@ -118,7 +118,7 @@ function CalcSheet({
       }}
     >
       {/* 헤더 */}
-      <div className="flex justify-between items-end mb-4 pb-2.5">
+      <div className="flex justify-between items-end mb-4 pb-2.5 border-b border-gray-300">
         <div style={{ fontSize: "1.4rem", fontWeight: 900 }}>
           {title}
           {totalSheets > 1 && (
@@ -167,7 +167,7 @@ function CalcSheet({
                 className="flex items-center h-full"
                 style={{ borderBottom: "1px solid #f0f0f0" }}
               >
-                <span className="shrink-0 mr-4 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-700 text-xs font-bold">
+                <span className="shrink-0 mr-4 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">
                   {num}
                 </span>
                 <span className="text-lg font-semibold tracking-wide">
