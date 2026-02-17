@@ -14,6 +14,7 @@ export default function CalcPage() {
   const [rangeMax, setRangeMax] = useState(18);
   const [opMin, setOpMin] = useState(2);
   const [opMax, setOpMax] = useState(9);
+  const [layout, setLayout] = useState<"a" | "b">("a");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -26,6 +27,7 @@ export default function CalcPage() {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
   }, []);
 
+  const countOptions = [12, 18, 24, 36];
   function generate() {
     if (rangeMin <= 0 || rangeMax <= 0) {
       showToast("숫자 범위를 입력해주세요");
@@ -44,6 +46,7 @@ export default function CalcPage() {
       mx: String(rangeMax),
       omn: String(opMin),
       omx: String(opMax),
+      layout,
     });
     router.push(`/calc/preview?${params.toString()}`);
   }
@@ -100,12 +103,31 @@ export default function CalcPage() {
         </div>
 
         {/* 문제 수 & 장 수 */}
+        <div className="mb-5">
+          <label className="block font-bold text-sm mb-2">페이지 레이아웃</label>
+          <div className="flex gap-2">
+            {(["a", "b"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setLayout(v)}
+                className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                  layout === v
+                    ? "border-gray-900 bg-[#ddd]/50 text-black"
+                    : "border-gray-200 bg-white hover:border-gray-400"
+                }`}
+              >
+                {v === "a" ? "레이아웃 A" : "레이아웃 B"}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">레이아웃 A는 기존 3열, B는 2열 + 정답칸이 포함됩니다.</p>
+        </div>
         <div className="flex gap-3 mb-5">
           <div className="flex-1">
             <label className="block font-bold text-sm mb-2">문제 수 (장당)</label>
             <Dropdown
               value={count}
-              options={[12, 18, 24, 36].map(n => ({ value: n, label: `${n}문제` }))}
+              options={countOptions.map(n => ({ value: n, label: `${n}문제` }))}
               onChange={setCount}
             />
           </div>

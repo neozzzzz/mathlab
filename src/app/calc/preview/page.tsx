@@ -75,15 +75,17 @@ function CalcSheet({
   sheetNum,
   totalSheets,
   type,
+  layout,
 }: {
   problems: CalcProblem[];
   title: string;
   sheetNum: number;
   totalSheets: number;
   type: "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
+  layout: "a" | "b";
 }) {
   const signMap = { add: "+", sub: "−", mul: "×", div: "÷", add_sub: "+", mul_div: "×" } as const;
-  const cols = 3;
+  const cols = layout === "a" ? 3 : 2;
   const rows = Math.ceil(problems.length / cols);
   // A4(210x297mm) 한 장 기준으로 그리드 영역을 고정하고, 행 수에 따라 균등 분배한다.
   const PAGE_HEIGHT_MM = 297;
@@ -95,12 +97,11 @@ function CalcSheet({
     PAGE_HEIGHT_MM - PAGE_PADDING_Y_MM - HEADER_BLOCK_MM - INSTRUCTION_BLOCK_MM
   );
 
-  // 세로 방향으로 번호 매기기 (1열: 1~8, 2열: 9~16, 3열: 17~24)
   const grid: (CalcProblem | null)[][] = [];
   for (let r = 0; r < rows; r++) {
     const row: (CalcProblem | null)[] = [];
     for (let c = 0; c < cols; c++) {
-      const idx = c * rows + r;
+      const idx = layout === "a" ? c * rows + r : r * cols + c;
       row.push(idx < problems.length ? problems[idx] : null);
     }
     grid.push(row);
@@ -108,7 +109,7 @@ function CalcSheet({
 
   return (
     <div
-      className="bg-white mx-auto"
+      className={`bg-white mx-auto ${layout === "b" ? "layout-b" : ""}`}
       style={{
         width: "210mm",
         minHeight: "297mm",
@@ -141,9 +142,11 @@ function CalcSheet({
 
       {/* 문제 그리드 */}
       <div
-        className="grid grid-cols-3 gap-x-12"
+        className="grid"
         style={{
-          gap: "0 48px",
+          display: "grid",
+          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+          gap: `0 ${layout === "b" ? "24px" : "48px"}`,
           height: `${gridHeightMm}mm`,
           gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
         }}
@@ -155,14 +158,18 @@ function CalcSheet({
             return (
               <div
                 key={`${r}-${c}`}
-                className="flex items-center h-full"
+                className="flex items-center h-full gap-0"
                 style={{ borderBottom: "1px solid #f0f0f0" }}
               >
-                <span className="shrink-0 mr-4 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">
+                <span className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">
                   {num}
                 </span>
-                <span className="text-lg font-semibold tracking-wide">
-                  {p.a} {p.type === "sub" ? "−" : p.type === "mul" ? "×" : p.type === "div" ? "÷" : "+"} {p.b} =
+                <span className="inline-flex items-center text-lg font-semibold tracking-wide whitespace-nowrap" style={{ marginLeft: '30px' }}>
+                  <span className="ml-0.5">{p.a}</span>
+                  <span className="mx-3">{p.type === "sub" ? "−" : p.type === "mul" ? "×" : p.type === "div" ? "÷" : "+"}</span>
+                  <span className="mr-3">{p.b}</span>
+                  <span className="mr-3">=</span>
+                  {layout === "b" ? <span className="inline-flex h-9 w-11 border-2 border-gray-700 rounded" /> : null}
                 </span>
               </div>
             );
@@ -174,6 +181,7 @@ function CalcSheet({
 }
 
 function CalcPreviewContent() {
+  type LayoutMode = "a" | "b";
   const MAX_COUNT = 100;
   const MAX_SHEETS = 10;
   const MIN_RANGE = 1;
@@ -200,13 +208,17 @@ function CalcPreviewContent() {
     const mx = Number(searchParams.get("mx"));
     const omn = Number(searchParams.get("omn"));
     const omx = Number(searchParams.get("omx"));
+    const layout = searchParams.get("layout") || "a";
     const validTypes = new Set(["add", "sub", "add_sub", "mul", "div", "mul_div"]);
     if (!validTypes.has(t)) return null;
-    if (!Number.isInteger(c) || c < 1 || c > MAX_COUNT) return null;
+    if (layout !== "a" && layout !== "b") return null;
+    const normalizedCount = layout === "b" ? Math.min(c, 24) : c;
+    if (!Number.isInteger(normalizedCount) || normalizedCount < 1 || normalizedCount > MAX_COUNT) return null;
     if (!Number.isInteger(s) || s < 1 || s > MAX_SHEETS) return null;
     if (!Number.isInteger(mn) || !Number.isInteger(mx) || mn < MIN_RANGE || mx > MAX_RANGE || mn > mx) return null;
     if (!Number.isInteger(omn) || !Number.isInteger(omx) || omn < MIN_RANGE || omx > MAX_RANGE || omn > omx) return null;
-    return { type: t, count: c, sheets: s, rangeMin: mn, rangeMax: mx, opMin: omn, opMax: omx };
+    if (layout !== "a" && layout !== "b") return null;
+    return { type: t, count: c, sheets: s, rangeMin: mn, rangeMax: mx, opMin: omn, opMax: omx, layout: layout as LayoutMode };
   }, [searchParams, MAX_COUNT, MAX_SHEETS, MIN_RANGE, MAX_RANGE]);
 
   const [allSheets, setAllSheets] = useState<CalcProblem[][]>([]);
@@ -322,6 +334,7 @@ function CalcPreviewContent() {
             sheetNum={i + 1}
             totalSheets={resolvedParams.sheets}
             type={resolvedParams.type}
+            layout={resolvedParams.layout}
           />
         </div>
       ))}
