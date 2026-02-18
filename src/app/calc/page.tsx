@@ -322,7 +322,7 @@ export default function CalcPage() {
         <div className="rounded-xl border border-slate-200/80 bg-white p-3 mb-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block font-bold text-sm mb-2">레이아웃</label>
+              <p className="block text-xs text-slate-500 font-bold mb-2">레이아웃</p>
               <Dropdown
                 value={layout === "a" ? 1 : 2}
                 options={[
@@ -333,7 +333,7 @@ export default function CalcPage() {
               />
             </div>
             <div>
-              <label className="block font-bold text-sm mb-2">문제수</label>
+              <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
               <Dropdown
                 value={count}
                 options={countOptions.map((n) => ({ value: n, label: `${n}문제` }))}
@@ -341,7 +341,7 @@ export default function CalcPage() {
               />
             </div>
             <div>
-              <label className="block font-bold text-sm mb-2">장수</label>
+              <p className="block text-xs text-slate-500 font-bold mb-2">장수</p>
               <Dropdown
                 value={sheets}
                 options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}장` }))}
