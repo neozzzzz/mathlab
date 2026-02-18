@@ -318,8 +318,8 @@ export default function CalcPage() {
       <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">일반 연산</h1>
 
       <div className="max-w-[600px] mx-auto bg-white rounded-3xl border border-slate-200/80 shadow-[0_8px_40px_rgba(15,23,42,0.06)] p-6 md:p-7">
+        <label className="block font-bold text-sm mb-2">기본 설정</label>
         <div className="rounded-xl border border-slate-200/80 bg-white p-3 mb-5">
-          <p className="text-xs text-slate-500 font-bold mb-2">기본 설정</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block font-bold text-sm mb-2">레이아웃</label>
