@@ -434,6 +434,7 @@ export default function CalcPage() {
         </div>
 
 
+        <label className="block text-sm font-bold mb-2">수 범위</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
           <div className="rounded-xl border border-slate-200/80 bg-white p-3">
             <p className="block text-xs text-slate-500 font-bold mb-2">첫째 수 범위</p>
