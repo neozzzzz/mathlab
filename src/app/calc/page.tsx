@@ -42,7 +42,7 @@ function NumberInput({
       disabled={disabled}
       className={
         className ??
-        "w-24 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
+        "w-full flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
       }
     />
   );
@@ -447,7 +447,7 @@ export default function CalcPage() {
                 }}
                 onBlur={() => normalizeRangeOnBlur("range")}
                 onFocus={(e) => e.target.select()}
-                className="w-24 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
               <span className="font-bold text-gray-400">~</span>
               <input
@@ -459,7 +459,7 @@ export default function CalcPage() {
                 }}
                 onBlur={() => normalizeRangeOnBlur("range")}
                 onFocus={(e) => e.target.select()}
-                className="w-24 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
             </div>
           </div>
@@ -473,7 +473,7 @@ export default function CalcPage() {
                 onChange={(e) => setOpMin(parseNumericInput(e.target.value))}
                 onBlur={() => normalizeRangeOnBlur("op")}
                 onFocus={(e) => e.target.select()}
-                className="w-24 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
               <span className="font-bold text-gray-400">~</span>
               <input
@@ -483,7 +483,7 @@ export default function CalcPage() {
                 onChange={(e) => setOpMax(parseNumericInput(e.target.value))}
                 onBlur={() => normalizeRangeOnBlur("op")}
                 onFocus={(e) => e.target.select()}
-                className="w-24 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
             </div>
           </div>
@@ -494,7 +494,7 @@ export default function CalcPage() {
             {isMixedAddSub ? (
               <div className="rounded-xl border border-slate-200/80 bg-white p-3">
                 <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기 결과값 범위</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
                     title="더하기 결과값 범위"
                     left={answerAddMin}
@@ -536,7 +536,7 @@ export default function CalcPage() {
             ) : isMixedMulDiv ? (
               <div className="rounded-xl border border-slate-200/80 bg-white p-3">
                 <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기 결과값 범위</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
                     title="곱하기 결과값 범위"
                     left={answerMulMin}
@@ -570,7 +570,7 @@ export default function CalcPage() {
             ) : type === "add" || type === "sub" ? (
               <div className="rounded-xl border border-slate-200/80 bg-white p-3">
                 <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기 결과값 범위</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
                     title="더하기 결과값 범위"
                     left={answerAddMin}
@@ -612,7 +612,7 @@ export default function CalcPage() {
             ) : (
               <div className="rounded-xl border border-slate-200/80 bg-white p-3">
                 <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기 결과값 범위</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
                     title="곱하기 결과값 범위"
                     left={type === "mul" ? answerMulMin : answerDivMin}
