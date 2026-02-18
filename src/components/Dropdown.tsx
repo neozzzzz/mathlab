@@ -30,13 +30,13 @@ export default function Dropdown({ value, options, onChange }: DropdownProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-2.5 px-4 border-2 border-gray-200 rounded-lg font-bold text-sm bg-white cursor-pointer focus:outline-none focus:border-gray-900 transition-colors"
+        className="w-full flex items-center justify-between py-2.5 px-4 border-2 border-slate-200 rounded-lg font-bold text-sm bg-white cursor-pointer focus:outline-none focus:border-slate-900 transition-colors"
       >
         <span>{selected?.label}</span>
         <span className={`text-gray-400 text-xs transition-transform ${open ? "rotate-180" : ""}`}>▼</span>
       </button>
       {open && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border-2 border-slate-200 rounded-lg shadow-lg overflow-hidden">
           {options.map((o) => (
             <div
               key={o.value}
@@ -46,8 +46,8 @@ export default function Dropdown({ value, options, onChange }: DropdownProps) {
               }}
               className={`py-2.5 px-4 text-sm font-bold cursor-pointer transition-colors ${
                 value === o.value
-                  ? "bg-gray-900 text-white"
-                  : "hover:bg-gray-100 text-gray-700"
+                  ? "bg-slate-900 text-white"
+                  : "hover:bg-slate-100 text-slate-700"
               }`}
             >
               {o.label}

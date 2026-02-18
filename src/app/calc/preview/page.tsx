@@ -29,6 +29,16 @@ function generateCalcSheet(params: {
   rangeMax: number;
   opMin: number;
   opMax: number;
+  answerMin?: number;
+  answerMax?: number;
+  answerAddMin?: number;
+  answerAddMax?: number;
+  answerSubMin?: number;
+  answerSubMax?: number;
+  answerMulMin?: number;
+  answerMulMax?: number;
+  answerDivMin?: number;
+  answerDivMax?: number;
 }): CalcProblem[] {
   const problems: CalcProblem[] = [];
   const used = new Set<string>();
@@ -60,6 +70,48 @@ function generateCalcSheet(params: {
       else answer = a + b;
     }
     if (answer < 0) continue;
+    if (params.type === "add_sub") {
+      if (
+        op === "add" &&
+        params.answerAddMin !== undefined &&
+        params.answerAddMax !== undefined &&
+        (answer < params.answerAddMin || answer > params.answerAddMax)
+      ) {
+        continue;
+      }
+      if (
+        op === "sub" &&
+        params.answerSubMin !== undefined &&
+        params.answerSubMax !== undefined &&
+        (answer < params.answerSubMin || answer > params.answerSubMax)
+      ) {
+        continue;
+      }
+    } else if (params.type === "mul_div") {
+      if (
+        params.answerMulMin !== undefined &&
+        params.answerMulMax !== undefined &&
+        params.answerDivMin !== undefined &&
+        params.answerDivMax !== undefined
+      ) {
+        if (
+          op === "mul" &&
+          (answer < params.answerMulMin || answer > params.answerMulMax)
+        ) {
+          continue;
+        }
+        if (
+          op === "div" &&
+          (answer < params.answerDivMin || answer > params.answerDivMax)
+        ) {
+          continue;
+        }
+      } else if (params.answerMin !== undefined && params.answerMax !== undefined) {
+        if (answer < params.answerMin || answer > params.answerMax) continue;
+      }
+    } else if (params.answerMin !== undefined && params.answerMax !== undefined) {
+      if (answer < params.answerMin || answer > params.answerMax) continue;
+    }
     const key = `${op}-${a}-${b}`;
     if (used.has(key)) continue;
     used.add(key);
@@ -106,6 +158,12 @@ function CalcSheet({
     }
     grid.push(row);
   }
+
+  const maxOperandDigits = problems.reduce(
+    (acc, p) => Math.max(acc, String(p.a).length, String(p.b).length),
+    2
+  );
+  const operandColWidth = `${Math.min(4, Math.max(2, maxOperandDigits))}ch`;
 
   return (
     <div
@@ -155,6 +213,8 @@ function CalcSheet({
           row.map((p, c) => {
             if (!p) return <div key={`${r}-${c}`} />;
             const num = c * rows + r + 1;
+            const firstNum = String(p.a);
+            const secondNum = String(p.b);
             return (
               <div
                 key={`${r}-${c}`}
@@ -164,12 +224,27 @@ function CalcSheet({
                 <span className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">
                   {num}
                 </span>
-                <span className="inline-flex items-center text-lg font-semibold tracking-wide whitespace-nowrap" style={{ marginLeft: '30px' }}>
-                  <span className="ml-0.5">{p.a}</span>
-                  <span className="mx-3">{p.type === "sub" ? "−" : p.type === "mul" ? "×" : p.type === "div" ? "÷" : "+"}</span>
-                  <span className="mr-3">{p.b}</span>
-                  <span className="mr-3">=</span>
-                  {layout === "b" ? <span className="inline-flex h-9 w-11 border-2 border-gray-700 rounded" /> : null}
+                <span className="inline-flex items-center text-lg font-semibold whitespace-nowrap" style={{ marginLeft: "30px" }}>
+                  <span
+                    className="inline-grid items-center text-lg font-semibold"
+                    style={{
+                      gridTemplateColumns:
+                        layout === "b"
+                          ? `${operandColWidth} 30px ${operandColWidth} 44px 72px`
+                          : `${operandColWidth} 22px ${operandColWidth} 24px 56px`,
+                      fontFamily: "'SFMono-Regular', 'Consolas', 'Menlo', 'Monaco', 'ui-monospace', 'Noto Sans KR', sans-serif",
+                      fontVariantNumeric: "tabular-nums",
+                      letterSpacing: "0",
+                    }}
+                  >
+                    <span className="justify-self-end">{firstNum}</span>
+                    <span className="justify-self-center">{p.type === "sub" ? "−" : p.type === "mul" ? "×" : p.type === "div" ? "÷" : "+"}</span>
+                    <span className="justify-self-end">{secondNum}</span>
+                    <span className="justify-self-center">=</span>
+                    {layout === "b" ? (
+                      <span className="inline-flex h-9 w-11 border-2 border-gray-700 rounded" />
+                    ) : null}
+                  </span>
                 </span>
               </div>
             );
@@ -187,6 +262,7 @@ function CalcPreviewContent() {
   const MIN_RANGE = 1;
   const MAX_RANGE = 9999;
   const searchParams = useSearchParams();
+  const queryString = useMemo(() => searchParams.toString(), [searchParams]);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -208,23 +284,139 @@ function CalcPreviewContent() {
     const mx = Number(searchParams.get("mx"));
     const omn = Number(searchParams.get("omn"));
     const omx = Number(searchParams.get("omx"));
+    const amn = searchParams.get("amn");
+    const amx = searchParams.get("amx");
+    const amnA = searchParams.get("amnA");
+    const amxA = searchParams.get("amxA");
+    const amnS = searchParams.get("amnS");
+    const amxS = searchParams.get("amxS");
+    const amnM = searchParams.get("amnM");
+    const amxM = searchParams.get("amxM");
+    const amnD = searchParams.get("amnD");
+    const amxD = searchParams.get("amxD");
     const layout = searchParams.get("layout") || "a";
     const validTypes = new Set(["add", "sub", "add_sub", "mul", "div", "mul_div"]);
+    const parsedAnswerMin = amn !== null ? Number(amn) : undefined;
+    const parsedAnswerMax = amx !== null ? Number(amx) : undefined;
+    const parsedAnswerAddMin = amnA !== null ? Number(amnA) : undefined;
+    const parsedAnswerAddMax = amxA !== null ? Number(amxA) : undefined;
+    const parsedAnswerSubMin = amnS !== null ? Number(amnS) : undefined;
+    const parsedAnswerSubMax = amxS !== null ? Number(amxS) : undefined;
+    const parsedAnswerMulMin = amnM !== null ? Number(amnM) : undefined;
+    const parsedAnswerMulMax = amxM !== null ? Number(amxM) : undefined;
+    const parsedAnswerDivMin = amnD !== null ? Number(amnD) : undefined;
+    const parsedAnswerDivMax = amxD !== null ? Number(amxD) : undefined;
+    const hasAnswerRange = parsedAnswerMin !== undefined && parsedAnswerMax !== undefined;
+    const hasAddAnswerRange = parsedAnswerAddMin !== undefined && parsedAnswerAddMax !== undefined;
+    const hasSubAnswerRange = parsedAnswerSubMin !== undefined && parsedAnswerSubMax !== undefined;
+    const hasMulAnswerRange = parsedAnswerMulMin !== undefined && parsedAnswerMulMax !== undefined;
+    const hasDivAnswerRange = parsedAnswerDivMin !== undefined && parsedAnswerDivMax !== undefined;
     if (!validTypes.has(t)) return null;
     if (layout !== "a" && layout !== "b") return null;
-    const normalizedCount = layout === "b" ? Math.min(c, 24) : c;
+    const normalizedCount = c;
     if (!Number.isInteger(normalizedCount) || normalizedCount < 1 || normalizedCount > MAX_COUNT) return null;
     if (!Number.isInteger(s) || s < 1 || s > MAX_SHEETS) return null;
     if (!Number.isInteger(mn) || !Number.isInteger(mx) || mn < MIN_RANGE || mx > MAX_RANGE || mn > mx) return null;
     if (!Number.isInteger(omn) || !Number.isInteger(omx) || omn < MIN_RANGE || omx > MAX_RANGE || omn > omx) return null;
-    if (layout !== "a" && layout !== "b") return null;
-    return { type: t, count: c, sheets: s, rangeMin: mn, rangeMax: mx, opMin: omn, opMax: omx, layout: layout as LayoutMode };
-  }, [searchParams, MAX_COUNT, MAX_SHEETS, MIN_RANGE, MAX_RANGE]);
+    const finalAnswerMin = hasAnswerRange ? parsedAnswerMin : undefined;
+    const finalAnswerMax = hasAnswerRange ? parsedAnswerMax : undefined;
+    const finalAnswerAddMin = hasAddAnswerRange ? parsedAnswerAddMin : hasAnswerRange ? parsedAnswerMin : undefined;
+    const finalAnswerAddMax = hasAddAnswerRange ? parsedAnswerAddMax : hasAnswerRange ? parsedAnswerMax : undefined;
+    const finalAnswerSubMin = hasSubAnswerRange ? parsedAnswerSubMin : hasAnswerRange ? parsedAnswerMin : undefined;
+    const finalAnswerSubMax = hasSubAnswerRange ? parsedAnswerSubMax : hasAnswerRange ? parsedAnswerMax : undefined;
+    const finalAnswerMulMin = hasMulAnswerRange ? parsedAnswerMulMin : hasAnswerRange ? parsedAnswerMin : undefined;
+    const finalAnswerMulMax = hasMulAnswerRange ? parsedAnswerMulMax : hasAnswerRange ? parsedAnswerMax : undefined;
+    const finalAnswerDivMin = hasDivAnswerRange ? parsedAnswerDivMin : hasAnswerRange ? parsedAnswerMin : undefined;
+    const finalAnswerDivMax = hasDivAnswerRange ? parsedAnswerDivMax : hasAnswerRange ? parsedAnswerMax : undefined;
+    const hasMixedAnswerRange =
+      t === "add_sub" && (hasAddAnswerRange || hasSubAnswerRange || hasAnswerRange);
+    const hasMixedMulDivAnswerRange =
+      t === "mul_div" && (hasMulAnswerRange || hasDivAnswerRange || hasAnswerRange);
+
+    if (hasMixedAnswerRange) {
+      if (
+        typeof finalAnswerAddMin !== "number" ||
+        typeof finalAnswerAddMax !== "number" ||
+        typeof finalAnswerSubMin !== "number" ||
+        typeof finalAnswerSubMax !== "number" ||
+        !Number.isInteger(finalAnswerAddMin) ||
+        !Number.isInteger(finalAnswerAddMax) ||
+        !Number.isInteger(finalAnswerSubMin) ||
+        !Number.isInteger(finalAnswerSubMax)
+      ) {
+        return null;
+      }
+      if (
+        finalAnswerAddMin < MIN_RANGE ||
+        finalAnswerAddMax > MAX_RANGE ||
+        finalAnswerSubMin < MIN_RANGE ||
+        finalAnswerSubMax > MAX_RANGE ||
+        finalAnswerAddMin > finalAnswerAddMax ||
+        finalAnswerSubMin > finalAnswerSubMax
+      ) {
+        return null;
+      }
+    } else if (hasMixedMulDivAnswerRange) {
+      if (
+        typeof finalAnswerMulMin !== "number" ||
+        typeof finalAnswerMulMax !== "number" ||
+        typeof finalAnswerDivMin !== "number" ||
+        typeof finalAnswerDivMax !== "number" ||
+        !Number.isInteger(finalAnswerMulMin) ||
+        !Number.isInteger(finalAnswerMulMax) ||
+        !Number.isInteger(finalAnswerDivMin) ||
+        !Number.isInteger(finalAnswerDivMax)
+      ) {
+        return null;
+      }
+      if (
+        finalAnswerMulMin < MIN_RANGE ||
+        finalAnswerMulMax > MAX_RANGE ||
+        finalAnswerDivMin < MIN_RANGE ||
+        finalAnswerDivMax > MAX_RANGE ||
+        finalAnswerMulMin > finalAnswerMulMax ||
+        finalAnswerDivMin > finalAnswerDivMax
+      ) {
+        return null;
+      }
+    } else if (hasAnswerRange) {
+      if (
+        !Number.isInteger(parsedAnswerMin) ||
+        !Number.isInteger(parsedAnswerMax) ||
+        parsedAnswerMin < MIN_RANGE ||
+        parsedAnswerMax > MAX_RANGE ||
+        parsedAnswerMin > parsedAnswerMax
+      ) {
+        return null;
+      }
+    }
+
+    return {
+      type: t,
+      count: normalizedCount,
+      sheets: s,
+      rangeMin: mn,
+      rangeMax: mx,
+      opMin: omn,
+      opMax: omx,
+      answerMin: hasAnswerRange ? parsedAnswerMin : undefined,
+      answerMax: hasAnswerRange ? parsedAnswerMax : undefined,
+      answerAddMin: finalAnswerAddMin,
+      answerAddMax: finalAnswerAddMax,
+      answerSubMin: finalAnswerSubMin,
+      answerSubMax: finalAnswerSubMax,
+      answerMulMin: finalAnswerMulMin,
+      answerMulMax: finalAnswerMulMax,
+      answerDivMin: finalAnswerDivMin,
+      answerDivMax: finalAnswerDivMax,
+      layout: layout as LayoutMode,
+    };
+  }, [queryString, MAX_COUNT, MAX_SHEETS, MIN_RANGE, MAX_RANGE]);
 
   const [allSheets, setAllSheets] = useState<CalcProblem[][]>([]);
   
   useEffect(() => {
-    if (!params || allSheets.length > 0) return;
+    if (!params) return;
     setAllSheets(Array.from({ length: params.sheets }, () => generateCalcSheet(params)));
   }, [params]);
 

@@ -2,18 +2,123 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Dropdown from "@/components/Dropdown";
+
+type CalcType = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
+
+type AnswerRangeType = {
+  min: number;
+  max: number;
+};
+
+function parseNumericInput(v: string) {
+  const raw = v.replace(/\D/g, "");
+  return raw === "" ? 0 : parseInt(raw, 10);
+}
+
+function NumberInput({
+  value,
+  onChange,
+  onBlur,
+  disabled,
+  onFocus,
+  className,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  onBlur?: () => void;
+  disabled?: boolean;
+  onFocus?: (el: HTMLInputElement) => void;
+  className?: string;
+}) {
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={value}
+      onChange={(e) => onChange(parseNumericInput(e.target.value))}
+      onBlur={onBlur}
+      onFocus={(e) => onFocus?.(e.target)}
+      disabled={disabled}
+      className={
+        className ??
+        "w-24 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
+      }
+    />
+  );
+}
+
+function RangePair({
+  title,
+  left,
+  right,
+  disabledLeft,
+  disabledRight,
+  leftTitleClassName,
+  rightTitleClassName,
+  onLeftChange,
+  onRightChange,
+  onValidate,
+  onFocus,
+}: {
+  title: string;
+  left: number;
+  right: number;
+  disabledLeft?: boolean;
+  disabledRight?: boolean;
+  leftTitleClassName?: string;
+  rightTitleClassName?: string;
+  onLeftChange: (value: number) => void;
+  onRightChange: (value: number) => void;
+  onValidate: (left: number, right: number, label: string) => void;
+  onFocus?: (el: HTMLInputElement) => void;
+}) {
+  return (
+    <div>
+      <p className={`font-bold text-sm mb-2 ${leftTitleClassName ?? ""}`}>{title}</p>
+      <div className="flex gap-2">
+        <NumberInput
+          value={left}
+          onChange={onLeftChange}
+          onBlur={() => onValidate(left, right, "min")}
+          onFocus={onFocus}
+          disabled={disabledLeft}
+        />
+        <span className="font-bold text-gray-400">~</span>
+        <NumberInput
+          value={right}
+          onChange={onRightChange}
+          onBlur={() => onValidate(left, right, "max")}
+          onFocus={onFocus}
+          disabled={disabledRight}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function CalcPage() {
   const router = useRouter();
-  const [type, setType] = useState<"add" | "sub" | "add_sub" | "mul" | "div" | "mul_div">("sub");
+  const [type, setType] = useState<CalcType>("add");
   const [count, setCount] = useState(24);
   const [sheets, setSheets] = useState(1);
   const [rangeMin, setRangeMin] = useState(11);
   const [rangeMax, setRangeMax] = useState(18);
   const [opMin, setOpMin] = useState(2);
   const [opMax, setOpMax] = useState(9);
+
+  const [answerMin, setAnswerMin] = useState(1);
+  const [answerMax, setAnswerMax] = useState(99);
+
+  const [answerAddMin, setAnswerAddMin] = useState(1);
+  const [answerAddMax, setAnswerAddMax] = useState(99);
+  const [answerSubMin, setAnswerSubMin] = useState(1);
+  const [answerSubMax, setAnswerSubMax] = useState(99);
+  const [answerMulMin, setAnswerMulMin] = useState(1);
+  const [answerMulMax, setAnswerMulMax] = useState(99);
+  const [answerDivMin, setAnswerDivMin] = useState(1);
+  const [answerDivMax, setAnswerDivMax] = useState(99);
+
   const [layout, setLayout] = useState<"a" | "b">("a");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -23,20 +128,128 @@ export default function CalcPage() {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
   }
+
   useEffect(() => () => {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
   }, []);
 
   const countOptions = [12, 18, 24, 36];
+  const isArithmeticResultRange =
+    type === "add" || type === "sub" || type === "add_sub" || type === "mul" || type === "div" || type === "mul_div";
+  const isMixedAddSub = type === "add_sub";
+  const isMixedMulDiv = type === "mul_div";
+  const isAdd = type === "add";
+  const isSub = type === "sub";
+  const isMul = type === "mul";
+  const isDiv = type === "div";
+
+  function validatePairRange(
+    label: string,
+    range: AnswerRangeType,
+    counterpart?: AnswerRangeType
+  ) {
+    if (range.max > 0 && range.max < range.min) {
+      showToast(`${label} 최대가 최소보다 작을 수 없습니다`);
+      return { ...counterpart, max: range.min };
+    }
+    return range;
+  }
+
+  function normalizeRangeOnBlur(minName: "range" | "op") {
+    if (minName === "range") {
+      if (rangeMax > 0 && rangeMax < rangeMin) {
+        showToast("뒷 수가 앞 수보다 작을 수 없습니다");
+        setRangeMax(rangeMin);
+      }
+      return;
+    }
+
+    if (minName === "op") {
+      if (opMax > 0 && opMax < opMin) {
+        showToast("뒷 수가 앞 수보다 작을 수 없습니다");
+        setOpMax(opMin);
+      }
+    }
+  }
+
   function generate() {
     if (rangeMin <= 0 || rangeMax <= 0) {
       showToast("숫자 범위를 입력해주세요");
       return;
     }
+
     if (opMin <= 0 || opMax <= 0) {
       showToast("연산 숫자 범위를 입력해주세요");
       return;
     }
+
+    if (isMixedAddSub) {
+      if (answerAddMin <= 0 || answerAddMax <= 0 || answerSubMin <= 0 || answerSubMax <= 0) {
+        showToast("혼합의 결과값 범위를 입력해주세요");
+        return;
+      }
+      if (answerAddMax < answerAddMin) {
+        showToast("더하기 결과값 최소가 최대보다 클 수 없습니다");
+        return;
+      }
+      if (answerSubMax < answerSubMin) {
+        showToast("빼기 결과값 최소가 최대보다 클 수 없습니다");
+        return;
+      }
+    } else if (isMixedMulDiv) {
+      if (answerMulMin <= 0 || answerMulMax <= 0 || answerDivMin <= 0 || answerDivMax <= 0) {
+        showToast("혼합의 결과값 범위를 입력해주세요");
+        return;
+      }
+      if (answerMulMax < answerMulMin) {
+        showToast("곱하기 결과값 최소가 최대보다 클 수 없습니다");
+        return;
+      }
+      if (answerDivMax < answerDivMin) {
+        showToast("나누기 결과값 최소가 최대보다 클 수 없습니다");
+        return;
+      }
+    } else if (isAdd) {
+      if (answerAddMin <= 0 || answerAddMax <= 0) {
+        showToast("더하기 결과값 범위를 입력해주세요");
+        return;
+      }
+      if (answerAddMax < answerAddMin) {
+        showToast("더하기 결과값 최소가 최대보다 클 수 없습니다");
+        return;
+      }
+    } else if (isSub) {
+      if (answerSubMin <= 0 || answerSubMax <= 0) {
+        showToast("빼기 결과값 범위를 입력해주세요");
+        return;
+      }
+      if (answerSubMax < answerSubMin) {
+        showToast("빼기 결과값 최소가 최대보다 클 수 없습니다");
+        return;
+      }
+    } else if (isMul) {
+      if (answerMulMin <= 0 || answerMulMax <= 0) {
+        showToast("곱하기 결과값 범위를 입력해주세요");
+        return;
+      }
+      if (answerMulMax < answerMulMin) {
+        showToast("곱하기 결과값 최소가 최대보다 클 수 없습니다");
+        return;
+      }
+    } else if (isDiv) {
+      if (answerDivMin <= 0 || answerDivMax <= 0) {
+        showToast("나누기 결과값 범위를 입력해주세요");
+        return;
+      }
+      if (answerDivMax < answerDivMin) {
+        showToast("나누기 결과값 최소가 최대보다 클 수 없습니다");
+        return;
+      }
+    } else if (isArithmeticResultRange && (answerMin <= 0 || answerMax <= 0)) {
+      showToast("결과값 범위를 입력해주세요");
+      return;
+    }
+
     const params = new URLSearchParams({
       mode: "calc",
       t: type,
@@ -48,152 +261,411 @@ export default function CalcPage() {
       omx: String(opMax),
       layout,
     });
+
+    if (isMixedAddSub) {
+      params.set("amnA", String(answerAddMin));
+      params.set("amxA", String(answerAddMax));
+      params.set("amnS", String(answerSubMin));
+      params.set("amxS", String(answerSubMax));
+    } else if (isMixedMulDiv) {
+      params.set("amnM", String(answerMulMin));
+      params.set("amxM", String(answerMulMax));
+      params.set("amnD", String(answerDivMin));
+      params.set("amxD", String(answerDivMax));
+    } else if (isAdd) {
+      params.set("amn", String(answerAddMin));
+      params.set("amx", String(answerAddMax));
+    } else if (isSub) {
+      params.set("amn", String(answerSubMin));
+      params.set("amx", String(answerSubMax));
+    } else if (isMul) {
+      params.set("amn", String(answerMulMin));
+      params.set("amx", String(answerMulMax));
+    } else if (isDiv) {
+      params.set("amn", String(answerDivMin));
+      params.set("amx", String(answerDivMax));
+    } else if (isArithmeticResultRange) {
+      params.set("amn", String(answerMin));
+      params.set("amx", String(answerMax));
+    }
+
     router.push(`/calc/preview?${params.toString()}`);
   }
 
   return (
-    <div className="max-w-[600px] mx-auto p-8 relative">
+    <div className="min-h-[100dvh] bg-slate-100/80 px-4 py-8">
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-semibold animate-fade-in">
           {toast}
         </div>
       )}
-      <Link href="/" className="inline-block mb-4 text-sm text-gray-400 hover:text-gray-600">← 메인으로</Link>
-      <h1 className="text-2xl font-black text-center mb-6">일반 연산</h1>
+      <div className="max-w-[600px] mx-auto mb-4">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined" && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push("/");
+            }
+          }}
+          className="group block w-fit text-sm text-slate-500 hover:text-slate-700 cursor-pointer font-semibold"
+        >
+          <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
+          <span className="ml-1 transition-all duration-150 group-hover:font-bold">메인으로</span>
+        </button>
+      </div>
+      <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">일반 연산</h1>
 
-      <div className="bg-white rounded-2xl p-7 shadow-md">
-        {/* 연산 유형 */}
-        <div className="mb-5">
-          <div className="mb-3">
-            <label className="block font-bold text-sm mb-2">더하기 · 빼기</label>
-            <div className="flex gap-2">
-              {([["add", "더하기"], ["sub", "빼기"], ["add_sub", "혼합"]] as const).map(([k, label]) => (
-                <button
-                  key={k}
-                  onClick={() => setType(k)}
-                  className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    type === k
-                      ? "border-gray-900 bg-[#ddd]/50 text-black"
-                      : "border-gray-200 bg-white hover:border-gray-400"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+      <div className="max-w-[600px] mx-auto bg-white rounded-3xl border border-slate-200/80 shadow-[0_8px_40px_rgba(15,23,42,0.06)] p-6 md:p-7">
+        <div className="rounded-xl border border-slate-200/80 bg-white p-3 mb-5">
+          <p className="text-xs text-slate-500 font-bold mb-2">기본 설정</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block font-bold text-sm mb-2">레이아웃</label>
+              <Dropdown
+                value={layout === "a" ? 1 : 2}
+                options={[
+                  { value: 1, label: "3열" },
+                  { value: 2, label: "2열" },
+                ]}
+                onChange={(v) => setLayout(v === 1 ? "a" : "b")}
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-sm mb-2">문제수</label>
+              <Dropdown
+                value={count}
+                options={countOptions.map((n) => ({ value: n, label: `${n}문제` }))}
+                onChange={setCount}
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-sm mb-2">장수</label>
+              <Dropdown
+                value={sheets}
+                options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}장` }))}
+                onChange={setSheets}
+              />
             </div>
           </div>
-          <div>
-            <label className="block font-bold text-sm mb-2">곱하기 · 나누기</label>
-            <div className="flex gap-2">
-              {([["mul", "곱하기"], ["div", "나누기"], ["mul_div", "혼합"]] as const).map(([k, label]) => (
+        </div>
+
+        <div className="mb-5">
+          <label className="block font-bold text-sm mb-2">연산 유형</label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+              <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기 혼합</p>
+              <div className="grid grid-cols-3 gap-2">
                 <button
-                  key={k}
-                  onClick={() => setType(k)}
-                  className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    type === k
-                      ? "border-gray-900 bg-[#ddd]/50 text-black"
-                      : "border-gray-200 bg-white hover:border-gray-400"
+                  type="button"
+                  onClick={() => setType("add")}
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                    type === "add"
+                      ? "border-slate-900 bg-slate-900/5 text-slate-900"
+                      : "border-slate-200 bg-white hover:border-slate-400"
                   }`}
                 >
-                  {label}
+                  +더하기
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setType("sub")}
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                    type === "sub"
+                      ? "border-slate-900 bg-slate-900/5 text-slate-900"
+                      : "border-slate-200 bg-white hover:border-slate-400"
+                  }`}
+                >
+                  −빼기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType("add_sub")}
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                    type === "add_sub"
+                      ? "border-slate-900 bg-slate-900/5 text-slate-900"
+                      : "border-slate-200 bg-white hover:border-slate-400"
+                  }`}
+                >
+                  혼합
+                </button>
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+              <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기 혼합</p>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setType("mul")}
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                    type === "mul"
+                      ? "border-slate-900 bg-slate-900/5 text-slate-900"
+                      : "border-slate-200 bg-white hover:border-slate-400"
+                  }`}
+                >
+                  ×곱하기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType("div")}
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                    type === "div"
+                      ? "border-slate-900 bg-slate-900/5 text-slate-900"
+                      : "border-slate-200 bg-white hover:border-slate-400"
+                  }`}
+                >
+                  ÷나누기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType("mul_div")}
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                    type === "mul_div"
+                      ? "border-slate-900 bg-slate-900/5 text-slate-900"
+                      : "border-slate-200 bg-white hover:border-slate-400"
+                  }`}
+                >
+                  혼합
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 문제 수 & 장 수 */}
-        <div className="mb-5">
-          <label className="block font-bold text-sm mb-2">페이지 레이아웃</label>
-          <div className="flex gap-2">
-            {(["a", "b"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setLayout(v)}
-                className={`flex-1 py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                  layout === v
-                    ? "border-gray-900 bg-[#ddd]/50 text-black"
-                    : "border-gray-200 bg-white hover:border-gray-400"
-                }`}
-              >
-                {v === "a" ? "레이아웃 A" : "레이아웃 B"}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-gray-500 mt-2">레이아웃 A는 기존 3열, B는 2열 + 정답칸이 포함됩니다.</p>
-        </div>
-        <div className="flex gap-3 mb-5">
-          <div className="flex-1">
-            <label className="block font-bold text-sm mb-2">문제 수 (장당)</label>
-            <Dropdown
-              value={count}
-              options={countOptions.map(n => ({ value: n, label: `${n}문제` }))}
-              onChange={setCount}
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block font-bold text-sm mb-2">장 수</label>
-            <Dropdown
-              value={sheets}
-              options={[1, 2, 3, 4, 5].map(n => ({ value: n, label: `${n}장` }))}
-              onChange={setSheets}
-            />
-          </div>
-        </div>
 
-        {/* 숫자 범위 & 연산 숫자 범위 */}
-        <div className="flex gap-3 mb-5">
-          <div className="flex-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
             <label className="block font-bold text-sm mb-2">첫째 수 범위</label>
             <div className="flex gap-2 items-center">
               <input
                 type="text"
                 inputMode="numeric"
                 value={rangeMin}
-                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMin(v === '' ? 0 : parseInt(v, 10)); }}
+                onChange={(e) => {
+                  setRangeMin(parseNumericInput(e.target.value));
+                }}
+                onBlur={() => normalizeRangeOnBlur("range")}
                 onFocus={(e) => e.target.select()}
-                className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900"
+                className="w-24 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
               <span className="font-bold text-gray-400">~</span>
               <input
                 type="text"
                 inputMode="numeric"
                 value={rangeMax}
-                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMax(v === '' ? 0 : parseInt(v, 10)); }}
-                onBlur={() => { if (rangeMax > 0 && rangeMax < rangeMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setRangeMax(rangeMin); } }}
+                onChange={(e) => {
+                  setRangeMax(parseNumericInput(e.target.value));
+                }}
+                onBlur={() => normalizeRangeOnBlur("range")}
                 onFocus={(e) => e.target.select()}
-                className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900"
+                className="w-24 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
             </div>
           </div>
-          <div className="flex-1">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
             <label className="block font-bold text-sm mb-2">둘째 수 범위</label>
             <div className="flex gap-2 items-center">
               <input
                 type="text"
                 inputMode="numeric"
                 value={opMin}
-                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setOpMin(v === '' ? 0 : parseInt(v, 10)); }}
+                onChange={(e) => setOpMin(parseNumericInput(e.target.value))}
+                onBlur={() => normalizeRangeOnBlur("op")}
                 onFocus={(e) => e.target.select()}
-                className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900"
+                className="w-24 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
               <span className="font-bold text-gray-400">~</span>
               <input
                 type="text"
                 inputMode="numeric"
                 value={opMax}
-                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setOpMax(v === '' ? 0 : parseInt(v, 10)); }}
-                onBlur={() => { if (opMax > 0 && opMax < opMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setOpMax(opMin); } }}
+                onChange={(e) => setOpMax(parseNumericInput(e.target.value))}
+                onBlur={() => normalizeRangeOnBlur("op")}
                 onFocus={(e) => e.target.select()}
-                className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900"
+                className="w-24 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
             </div>
           </div>
         </div>
 
-        {/* 미리보기 */}
-        <div className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-200">
-          <p className="text-xs text-gray-400 mb-3">미리보기</p>
+        {isArithmeticResultRange ? (
+          <div className="mb-5 transition-opacity opacity-100 space-y-4">
+            {isMixedAddSub ? (
+              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기 결과값 범위</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <RangePair
+                    title="더하기 결과값 범위"
+                    left={answerAddMin}
+                    right={answerAddMax}
+                    disabledLeft={isSub}
+                    disabledRight={isSub}
+                    leftTitleClassName={isSub ? "text-gray-400" : ""}
+                    rightTitleClassName={isSub ? "text-gray-400" : ""}
+                    onLeftChange={setAnswerAddMin}
+                    onRightChange={setAnswerAddMax}
+                    onValidate={(l, r) => {
+                      if (r > 0 && r < l) {
+                        showToast("더하기 결과값 최대가 최소보다 작을 수 없습니다");
+                        setAnswerAddMax(l);
+                      }
+                    }}
+                    onFocus={(el) => el.select()}
+                  />
+                  <RangePair
+                    title="빼기 결과값 범위"
+                    left={answerSubMin}
+                    right={answerSubMax}
+                    disabledLeft={isAdd}
+                    disabledRight={isAdd}
+                    leftTitleClassName={isAdd ? "text-gray-400" : ""}
+                    rightTitleClassName={isAdd ? "text-gray-500" : ""}
+                    onLeftChange={setAnswerSubMin}
+                    onRightChange={setAnswerSubMax}
+                    onValidate={(l, r) => {
+                      if (r > 0 && r < l) {
+                        showToast("빼기 결과값 최대가 최소보다 작을 수 없습니다");
+                        setAnswerSubMax(l);
+                      }
+                    }}
+                    onFocus={(el) => el.select()}
+                  />
+                </div>
+              </div>
+            ) : isMixedMulDiv ? (
+              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기 결과값 범위</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <RangePair
+                    title="곱하기 결과값 범위"
+                    left={answerMulMin}
+                    right={answerMulMax}
+                    onLeftChange={setAnswerMulMin}
+                    onRightChange={setAnswerMulMax}
+                    onValidate={(l, r) => {
+                      if (r > 0 && r < l) {
+                        showToast("곱하기 결과값 최대가 최소보다 작을 수 없습니다");
+                        setAnswerMulMax(l);
+                      }
+                    }}
+                    onFocus={(el) => el.select()}
+                  />
+                  <RangePair
+                    title="나누기 결과값 범위"
+                    left={answerDivMin}
+                    right={answerDivMax}
+                    onLeftChange={setAnswerDivMin}
+                    onRightChange={setAnswerDivMax}
+                    onValidate={(l, r) => {
+                      if (r > 0 && r < l) {
+                        showToast("나누기 결과값 최대가 최소보다 작을 수 없습니다");
+                        setAnswerDivMax(l);
+                      }
+                    }}
+                    onFocus={(el) => el.select()}
+                  />
+                </div>
+              </div>
+            ) : type === "add" || type === "sub" ? (
+              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기 결과값 범위</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <RangePair
+                    title="더하기 결과값 범위"
+                    left={answerAddMin}
+                    right={answerAddMax}
+                    disabledLeft={isSub}
+                    disabledRight={isSub}
+                    leftTitleClassName={isSub ? "text-gray-400" : ""}
+                    rightTitleClassName={isSub ? "text-gray-400" : ""}
+                    onLeftChange={setAnswerAddMin}
+                    onRightChange={setAnswerAddMax}
+                    onValidate={(l, r) => {
+                      if (r > 0 && r < l) {
+                        showToast("더하기 결과값 최대가 최소보다 작을 수 없습니다");
+                        setAnswerAddMax(l);
+                      }
+                    }}
+                    onFocus={(el) => el.select()}
+                  />
+                  <RangePair
+                    title="빼기 결과값 범위"
+                    left={answerSubMin}
+                    right={answerSubMax}
+                    disabledLeft={isAdd}
+                    disabledRight={isAdd}
+                    leftTitleClassName={isAdd ? "text-gray-400" : ""}
+                    rightTitleClassName={isAdd ? "text-gray-500" : ""}
+                    onLeftChange={setAnswerSubMin}
+                    onRightChange={setAnswerSubMax}
+                    onValidate={(l, r) => {
+                      if (r > 0 && r < l) {
+                        showToast("빼기 결과값 최대가 최소보다 작을 수 없습니다");
+                        setAnswerSubMax(l);
+                      }
+                    }}
+                    onFocus={(el) => el.select()}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+                <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기 결과값 범위</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <RangePair
+                    title="곱하기 결과값 범위"
+                    left={type === "mul" ? answerMulMin : answerDivMin}
+                    right={type === "mul" ? answerMulMax : answerDivMax}
+                    disabledLeft={isDiv}
+                    disabledRight={isDiv}
+                    leftTitleClassName={isDiv ? "text-gray-400" : ""}
+                    rightTitleClassName={isDiv ? "text-gray-500" : ""}
+                    onLeftChange={(v) => {
+                      if (type === "mul") setAnswerMulMin(v);
+                      else if (type === "div") setAnswerDivMin(v);
+                    }}
+                    onRightChange={(v) => {
+                      if (type === "mul") setAnswerMulMax(v);
+                      else if (type === "div") setAnswerDivMax(v);
+                    }}
+                    onValidate={(l, r) => {
+                      if (r > 0 && r < l) {
+                        showToast(type === "mul" ? "곱하기 결과값 최대가 최소보다 작을 수 없습니다" : "나누기 결과값 최대가 최소보다 작을 수 없습니다");
+                        if (type === "div") setAnswerDivMax(l);
+                        else setAnswerMulMax(l);
+                      }
+                    }}
+                    onFocus={(el) => el.select()}
+                  />
+                  <RangePair
+                    title="나누기 결과값 범위"
+                    left={type === "mul" ? answerDivMin : answerDivMin}
+                    right={type === "mul" ? answerDivMax : answerDivMax}
+                    disabledLeft={isMul}
+                    disabledRight={isMul}
+                    leftTitleClassName={isMul ? "text-gray-400" : ""}
+                    rightTitleClassName={isMul ? "text-gray-500" : ""}
+                    onLeftChange={setAnswerDivMin}
+                    onRightChange={setAnswerDivMax}
+                    onValidate={(l, r) => {
+                      if (r > 0 && r < l) {
+                        showToast("나누기 결과값 최대가 최소보다 작을 수 없습니다");
+                        setAnswerDivMax(l);
+                      }
+                    }}
+                    onFocus={(el) => el.select()}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-slate-500 mb-5">* 더하기/빼기/혼합 또는 곱하기/나누기 혼합에서 결과값 범위를 지원합니다.</p>
+        )}
+
+        <div className="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200/70">
+          <p className="text-xs text-slate-500 mb-3 font-medium">미리보기</p>
           <div className="flex gap-8 text-lg font-semibold" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
             {[0, 1, 2].map((i) => {
               const a = i === 0 ? rangeMin : i === 1 ? Math.round((rangeMin + rangeMax) / 2) : rangeMax;
@@ -202,7 +674,9 @@ export default function CalcPage() {
               return (
                 <div key={i} className="flex items-center gap-1">
                   <span className="shrink-0 mr-2 inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">{i + 1}</span>
-                  <span>{a} {signs[type]} {b} =</span>
+                  <span>
+                    {a} {signs[type]} {b} =
+                  </span>
                 </div>
               );
             })}
@@ -211,7 +685,7 @@ export default function CalcPage() {
 
         <button
           onClick={generate}
-          className="w-full py-3.5 bg-gray-900 hover:bg-black text-white rounded-xl font-black text-base cursor-pointer transition-colors mt-2"
+          className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-base cursor-pointer transition-colors mt-2"
         >
           문제 생성
         </button>
