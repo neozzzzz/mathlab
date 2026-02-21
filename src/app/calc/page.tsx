@@ -318,117 +318,42 @@ export default function CalcPage() {
       <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">일반 연산</h1>
 
       <div className="max-w-[600px] mx-auto bg-white rounded-3xl border border-slate-200/80 shadow-[0_8px_40px_rgba(15,23,42,0.06)] p-6 md:p-7">
-        <label className="block font-bold text-sm mb-2">기본 설정</label>
-        <div className="rounded-xl border border-slate-200/80 bg-white p-3 mb-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <p className="block text-xs text-slate-500 font-bold mb-2">레이아웃</p>
-              <Dropdown
-                value={layout === "a" ? 1 : 2}
-                options={[
-                  { value: 1, label: "3열" },
-                  { value: 2, label: "2열" },
-                ]}
-                onChange={(v) => setLayout(v === 1 ? "a" : "b")}
-              />
-            </div>
-            <div>
-              <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
-              <Dropdown
-                value={count}
-                options={countOptions.map((n) => ({ value: n, label: `${n}문제` }))}
-                onChange={setCount}
-              />
-            </div>
-            <div>
-              <p className="block text-xs text-slate-500 font-bold mb-2">장수</p>
-              <Dropdown
-                value={sheets}
-                options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}장` }))}
-                onChange={setSheets}
-              />
-            </div>
-          </div>
-        </div>
-
         <div className="mb-5">
           <label className="block font-bold text-sm mb-2">연산 유형</label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-200/80 bg-white p-3">
-              <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기 혼합</p>
-              <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+            <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기</p>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {([["add", "+더하기"], ["sub", "−빼기"], ["add_sub", "혼합"]] as [CalcType, string][]).map(([k, label]) => (
                 <button
+                  key={k}
                   type="button"
-                  onClick={() => setType("add")}
+                  onClick={() => setType(k)}
                   className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    type === "add"
+                    type === k
                       ? "border-slate-900 bg-slate-900/5 text-slate-900"
                       : "border-slate-200 bg-white hover:border-slate-400"
                   }`}
                 >
-                  +더하기
+                  {label}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setType("sub")}
-                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    type === "sub"
-                      ? "border-slate-900 bg-slate-900/5 text-slate-900"
-                      : "border-slate-200 bg-white hover:border-slate-400"
-                  }`}
-                >
-                  −빼기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType("add_sub")}
-                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    type === "add_sub"
-                      ? "border-slate-900 bg-slate-900/5 text-slate-900"
-                      : "border-slate-200 bg-white hover:border-slate-400"
-                  }`}
-                >
-                  혼합
-                </button>
-              </div>
+              ))}
             </div>
-            <div className="rounded-xl border border-slate-200/80 bg-white p-3">
-              <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기 혼합</p>
-              <div className="grid grid-cols-3 gap-2">
+            <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([["mul", "×곱하기"], ["div", "÷나누기"], ["mul_div", "혼합"]] as [CalcType, string][]).map(([k, label]) => (
                 <button
+                  key={k}
                   type="button"
-                  onClick={() => setType("mul")}
+                  onClick={() => setType(k)}
                   className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    type === "mul"
+                    type === k
                       ? "border-slate-900 bg-slate-900/5 text-slate-900"
                       : "border-slate-200 bg-white hover:border-slate-400"
                   }`}
                 >
-                  ×곱하기
+                  {label}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setType("div")}
-                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    type === "div"
-                      ? "border-slate-900 bg-slate-900/5 text-slate-900"
-                      : "border-slate-200 bg-white hover:border-slate-400"
-                  }`}
-                >
-                  ÷나누기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType("mul_div")}
-                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                    type === "mul_div"
-                      ? "border-slate-900 bg-slate-900/5 text-slate-900"
-                      : "border-slate-200 bg-white hover:border-slate-400"
-                  }`}
-                >
-                  혼합
-                </button>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -664,6 +589,39 @@ export default function CalcPage() {
         ) : (
           <p className="text-xs text-slate-500 mb-5">* 더하기/빼기/혼합 또는 곱하기/나누기 혼합에서 결과값 범위를 지원합니다.</p>
         )}
+
+        <label className="block font-bold text-sm mb-2">기본 설정</label>
+        <div className="rounded-xl border border-slate-200/80 bg-white p-3 mb-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <p className="block text-xs text-slate-500 font-bold mb-2">레이아웃</p>
+              <Dropdown
+                value={layout === "a" ? 1 : 2}
+                options={[
+                  { value: 1, label: "3열" },
+                  { value: 2, label: "2열" },
+                ]}
+                onChange={(v) => setLayout(v === 1 ? "a" : "b")}
+              />
+            </div>
+            <div>
+              <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
+              <Dropdown
+                value={count}
+                options={countOptions.map((n) => ({ value: n, label: `${n}문제` }))}
+                onChange={setCount}
+              />
+            </div>
+            <div>
+              <p className="block text-xs text-slate-500 font-bold mb-2">장수</p>
+              <Dropdown
+                value={sheets}
+                options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}장` }))}
+                onChange={setSheets}
+              />
+            </div>
+          </div>
+        </div>
 
         <div className="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200/70">
           <p className="text-xs text-slate-500 mb-3 font-medium">미리보기</p>

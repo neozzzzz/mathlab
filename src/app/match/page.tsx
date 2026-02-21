@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Dropdown from "@/components/Dropdown";
 import { encodeParams, type GeneratorParams } from "@/lib/generator";
 
@@ -20,6 +19,7 @@ export default function Home() {
   useEffect(() => () => {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
   }, []);
+
   const [operands, setOperands] = useState("8,9");
   const [count, setCount] = useState(8);
   const [sheets, setSheets] = useState(1);
@@ -51,75 +51,69 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-[600px] mx-auto p-8 relative">
+    <div className="min-h-[100dvh] bg-slate-100/80 px-4 py-8">
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-semibold animate-fade-in">
           {toast}
         </div>
       )}
-      <Link href="/" className="inline-block mb-4 text-sm text-gray-400 hover:text-gray-600">← 메인으로</Link>
-      <h1 className="text-2xl font-black text-center mb-6">짝 맞추기</h1>
+      <div className="max-w-[600px] mx-auto mb-4">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined" && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push("/");
+            }
+          }}
+          className="group block w-fit text-sm text-slate-500 hover:text-slate-700 cursor-pointer font-semibold"
+        >
+          <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
+          <span className="ml-1 transition-all duration-150 group-hover:font-bold">메인으로</span>
+        </button>
+      </div>
+      <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">짝 맞추기</h1>
 
-      <div className="bg-white rounded-2xl p-7 shadow-md">
+      <div className="max-w-[600px] mx-auto bg-white rounded-3xl border border-slate-200/80 shadow-[0_8px_40px_rgba(15,23,42,0.06)] p-6 md:p-7">
         {/* 연산 유형 */}
         <div className="mb-5">
           <label className="block font-bold text-sm mb-2">연산 유형</label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setType("add")}
-              className={`flex-1 py-3 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                type === "add"
-                  ? "border-gray-900 bg-[#ddd]/50 text-black"
-                  : "border-gray-200 bg-white hover:border-gray-400"
-              }`}
-            >
-              + 더하기
-            </button>
-            <button
-              onClick={() => setType("sub")}
-              className={`flex-1 py-3 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
-                type === "sub"
-                  ? "border-gray-900 bg-[#ddd]/50 text-black"
-                  : "border-gray-200 bg-white hover:border-gray-400"
-              }`}
-            >
-              - 빼기
-            </button>
+          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+            <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기</p>
+            <div className="grid grid-cols-2 gap-2">
+              {([["add", "+더하기"], ["sub", "−빼기"]] as ["add" | "sub", string][]).map(([k, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setType(k)}
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                    type === k
+                      ? "border-slate-900 bg-slate-900/5 text-slate-900"
+                      : "border-slate-200 bg-white hover:border-slate-400"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* 문제 수 & 장 수 */}
-        <div className="flex gap-3 mb-5">
-          <div className="flex-1">
-            <label className="block font-bold text-sm mb-2">문제 수 (장당)</label>
-            <Dropdown
-              value={count}
-              options={[6, 8].map(n => ({ value: n, label: `${n}문제` }))}
-              onChange={setCount}
-            />
-          </div>
-          <div className="flex-1">
-            <label className="block font-bold text-sm mb-2">장 수</label>
-            <Dropdown
-              value={sheets}
-              options={[1, 2, 3, 4, 5].map(n => ({ value: n, label: `${n}장` }))}
-              onChange={setSheets}
-            />
-          </div>
-        </div>
-
-        {/* 숫자 범위 & 계산 결과 값 */}
-        <div className="flex gap-3 mb-5">
-          <div className="flex-1">
-            <label className="block font-bold text-sm mb-2">숫자 범위</label>
+        {/* 수 범위 */}
+        <label className="block font-bold text-sm mb-2">수 범위</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+            <p className="block text-xs text-slate-500 font-bold mb-2">숫자 범위</p>
             <div className="flex gap-2 items-center">
               <input
                 type="text"
                 inputMode="numeric"
                 value={rangeMin}
                 onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMin(v === '' ? 0 : parseInt(v, 10)); }}
+                onBlur={() => { if (rangeMax > 0 && rangeMax < rangeMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setRangeMax(rangeMin); } }}
                 onFocus={(e) => e.target.select()}
-                className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900"
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
               <span className="font-bold text-gray-400">~</span>
               <input
@@ -127,70 +121,92 @@ export default function Home() {
                 inputMode="numeric"
                 value={rangeMax}
                 onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMax(v === '' ? 0 : parseInt(v, 10)); }}
+                onBlur={() => { if (rangeMax > 0 && rangeMax < rangeMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setRangeMax(rangeMin); } }}
                 onFocus={(e) => e.target.select()}
-                className="w-16 p-2.5 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-gray-900"
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
             </div>
           </div>
-          <div className="flex-1">
-            <label className="block font-bold text-sm mb-2">계산 결과 값</label>
+          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+            <p className="block text-xs text-slate-500 font-bold mb-2">계산 결과 값</p>
             <input
               type="text"
               value={operands}
               inputMode="numeric"
               onChange={(e) => setOperands(e.target.value.replace(/[^\d,]/g, ''))}
               placeholder="예: 6,7"
-              className="w-full p-2.5 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-900"
+              className="w-full p-2.5 border-2 border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-400 bg-white"
             />
           </div>
         </div>
 
-        {/* 미리보기 카드 */}
-        {(
-          <div className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-200">
-            <p className="text-xs text-gray-400 mb-3">미리보기</p>
-            <div className="flex items-center gap-[6px]" style={{ transform: "scale(0.85)", transformOrigin: "left center" }}>
-              <div style={{ width: 57, height: 57, minWidth: 57, marginLeft: 80, borderRadius: "50%", border: "3px solid #e91e63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem", fontWeight: 900, color: "#c2185b" }}>
-                {(operands.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n))[0]) || "?"}
+        {/* 기본 설정 */}
+        <label className="block font-bold text-sm mb-2">기본 설정</label>
+        <div className="rounded-xl border border-slate-200/80 bg-white p-3 mb-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
+              <Dropdown
+                value={count}
+                options={[6, 8].map((n) => ({ value: n, label: `${n}문제` }))}
+                onChange={setCount}
+              />
+            </div>
+            <div>
+              <p className="block text-xs text-slate-500 font-bold mb-2">장수</p>
+              <Dropdown
+                value={sheets}
+                options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}장` }))}
+                onChange={setSheets}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 미리보기 */}
+        <div className="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200/70">
+          <p className="text-xs text-slate-500 mb-3 font-medium">미리보기</p>
+          <div className="flex items-center gap-[6px]" style={{ transform: "scale(0.85)", transformOrigin: "left center" }}>
+            <div style={{ width: 57, height: 57, minWidth: 57, marginLeft: 80, borderRadius: "50%", border: "3px solid #e91e63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem", fontWeight: 900, color: "#c2185b" }}>
+              {(operands.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n))[0]) || "?"}
+            </div>
+            <div className="flex-1 flex flex-col">
+              <div className="flex justify-center" style={{ gap: 20 }}>
+                {(() => {
+                  const tops = rangeMin > 0 && rangeMax > 0 ? [rangeMin, rangeMin + 2, rangeMax] : [11, 13, 18];
+                  const borders = ["#90caf9", "#a5d6a7", "#ffcc80"];
+                  return tops.map((n, j) => (
+                    <div key={j} className="flex flex-col items-center">
+                      <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: "1.1rem", fontWeight: 700, border: `2px solid ${borders[j]}`, color: "#222", background: "#fff" }}>{n}</div>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#555", margin: "4px 0" }} />
+                    </div>
+                  ));
+                })()}
               </div>
-              <div className="flex-1 flex flex-col">
-                <div className="flex justify-center" style={{ gap: 20 }}>
-                  {(() => {
-                    const tops = rangeMin > 0 && rangeMax > 0 ? [rangeMin, rangeMin + 2, rangeMax] : [11, 13, 18];
-                    const borders = ["#90caf9", "#a5d6a7", "#ffcc80"];
-                    return tops.map((n, j) => (
-                      <div key={j} className="flex flex-col items-center">
-                        <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: "1.1rem", fontWeight: 700, border: `2px solid ${borders[j]}`, color: "#222", background: "#fff" }}>{n}</div>
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#555", margin: "4px 0" }} />
-                      </div>
-                    ));
-                  })()}
-                </div>
-                <div style={{ padding: "10px 0" }} />
-                <div className="flex justify-center" style={{ gap: 20 }}>
-                  {(() => {
-                    const op = operands.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n))[0];
-                    const tops = rangeMin > 0 && rangeMax > 0 ? [rangeMin, rangeMin + 2, rangeMax] : [11, 13, 18];
-                    const hasAll = type && op !== undefined;
-                    const results = hasAll ? tops.map(n => type === "sub" ? n - op : n + op) : null;
-                    const borders = ["#ef9a9a", "#ce93d8", "#80cbc4"];
-                    return [0, 1, 2].map((j) => (
-                      <div key={j} className="flex flex-col items-center">
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#555", margin: "4px 0" }} />
-                        <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: "1.1rem", fontWeight: 700, border: `2px solid ${borders[j]}`, color: "#222", background: "#fff" }}>{results ? results[j] : "?"}</div>
-                      </div>
-                    ));
-                  })()}
-                </div>
+              <div style={{ padding: "10px 0" }} />
+              <div className="flex justify-center" style={{ gap: 20 }}>
+                {(() => {
+                  const op = operands.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n))[0];
+                  const tops = rangeMin > 0 && rangeMax > 0 ? [rangeMin, rangeMin + 2, rangeMax] : [11, 13, 18];
+                  const hasAll = type && op !== undefined;
+                  const results = hasAll ? tops.map(n => type === "sub" ? n - op : n + op) : null;
+                  const borders = ["#ef9a9a", "#ce93d8", "#80cbc4"];
+                  return [0, 1, 2].map((j) => (
+                    <div key={j} className="flex flex-col items-center">
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#555", margin: "4px 0" }} />
+                      <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, fontSize: "1.1rem", fontWeight: 700, border: `2px solid ${borders[j]}`, color: "#222", background: "#fff" }}>{results ? results[j] : "?"}</div>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* 생성 버튼 */}
         <button
           onClick={generate}
-          className="w-full py-3.5 bg-gray-900 hover:bg-black text-white rounded-xl font-black text-base cursor-pointer transition-colors mt-2"
+          className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-base cursor-pointer transition-colors mt-2"
         >
           문제 생성
         </button>
