@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Dropdown from "@/components/Dropdown";
 
@@ -78,20 +79,13 @@ export default function Calc3Page() {
         </div>
       )}
       <div className="max-w-[600px] mx-auto mb-4">
-        <button
-          type="button"
-          onClick={() => {
-            if (typeof window !== "undefined" && window.history.length > 1) {
-              router.back();
-            } else {
-              router.push("/");
-            }
-          }}
-          className="group block w-fit text-sm text-slate-500 hover:text-slate-700 cursor-pointer font-semibold"
+        <Link
+          href="/"
+          className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold"
         >
           <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
           <span className="ml-1 transition-all duration-150 group-hover:font-bold">메인으로</span>
-        </button>
+        </Link>
       </div>
       <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">일반 연산 (3개의 수)</h1>
 
