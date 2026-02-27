@@ -17,6 +17,18 @@ export default function RootLayout({
     <html lang="ko">
       <head>
         <meta name="google-adsense-account" content="ca-pub-1873835300306825" />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-L8P5B3G306"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-L8P5B3G306');
+          `}
+        </Script>
       </head>
       <body className="bg-gray-50 text-gray-900">
         {children}
