@@ -1,5 +1,6 @@
-import Link from "next/link";
 import { Link2, PenLine, Layers } from "lucide-react";
+import TrackedLink from "@/components/TrackedLink";
+import { GA_EVENTS } from "@/lib/ga";
 
 export default function LandingPage() {
   return (
@@ -11,8 +12,10 @@ export default function LandingPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-[900px] w-full">
         {/* 짝 맞추기 */}
-        <Link
+        <TrackedLink
           href="/match"
+          gaEvent={GA_EVENTS.SELECT_MENU}
+          gaParams={{ menu: 'match' }}
           className="group bg-white border-2 border-gray-200 rounded-2xl p-8 text-center hover:border-orange-400 hover:shadow-lg transition-all"
         >
           <Link2 className="w-10 h-10 mx-auto mb-4 text-gray-400 group-hover:text-orange-500 transition-colors" strokeWidth={1.5} />
@@ -23,11 +26,13 @@ export default function LandingPage() {
           <div className="mt-4 inline-block px-4 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold">
             더하기 · 빼기
           </div>
-        </Link>
+        </TrackedLink>
 
         {/* 일반 연산 */}
-        <Link
+        <TrackedLink
           href="/calc"
+          gaEvent={GA_EVENTS.SELECT_MENU}
+          gaParams={{ menu: 'calc' }}
           className="group bg-white border-2 border-gray-200 rounded-2xl p-8 text-center hover:border-blue-400 hover:shadow-lg transition-all"
         >
           <PenLine className="w-10 h-10 mx-auto mb-4 text-gray-400 group-hover:text-blue-500 transition-colors" strokeWidth={1.5} />
@@ -38,10 +43,12 @@ export default function LandingPage() {
           <div className="mt-4 inline-block px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
             더하기 · 빼기 · 곱하기 · 나누기
           </div>
-        </Link>
+        </TrackedLink>
         {/* 일반 연산 (3개의 수) */}
-        <Link
+        <TrackedLink
           href="/calc3"
+          gaEvent={GA_EVENTS.SELECT_MENU}
+          gaParams={{ menu: 'calc3' }}
           className="group bg-white border-2 border-gray-200 rounded-2xl p-8 text-center hover:border-green-400 hover:shadow-lg transition-all"
         >
           <Layers className="w-10 h-10 mx-auto mb-4 text-gray-400 group-hover:text-green-500 transition-colors" strokeWidth={1.5} />
@@ -52,7 +59,7 @@ export default function LandingPage() {
           <div className="mt-4 inline-block px-4 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">
             a ○ b ○ c = ?
           </div>
-        </Link>
+        </TrackedLink>
       </div>
 
       <p className="mt-12 text-xs text-gray-300">무료 · 로그인 불필요 · 인쇄 최적화</p>

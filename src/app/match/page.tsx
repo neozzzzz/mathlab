@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Dropdown from "@/components/Dropdown";
+import { trackEvent, GA_EVENTS } from "@/lib/ga";
 import { encodeParams, type GeneratorParams } from "@/lib/generator";
 
 export default function Home() {
@@ -48,6 +48,7 @@ export default function Home() {
       rangeMin,
       rangeMax,
     };
+    trackEvent(GA_EVENTS.GENERATE, { page: 'match', type, count, sheets, range_min: rangeMin, range_max: rangeMax });
     router.push(`/preview?${encodeParams(params)}`);
   };
 
@@ -59,13 +60,21 @@ export default function Home() {
         </div>
       )}
       <div className="max-w-[600px] mx-auto mb-4">
-        <Link
-          href="/"
-          className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold"
+        <button
+          type="button"
+          onClick={() => {
+            trackEvent(GA_EVENTS.NAV_HOME, { from: 'match' });
+            if (typeof window !== "undefined" && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push("/");
+            }
+          }}
+          className="group block w-fit text-sm text-slate-500 hover:text-slate-700 cursor-pointer font-semibold"
         >
           <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
           <span className="ml-1 transition-all duration-150 group-hover:font-bold">메인으로</span>
-        </Link>
+        </button>
       </div>
       <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">짝 맞추기</h1>
 

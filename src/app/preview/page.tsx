@@ -6,6 +6,7 @@ import { decodeParams, generateAllSheets, type Problem } from "@/lib/generator";
 import { saveWorksheet } from "@/lib/supabase";
 import { Printer, Share2, Copy, Check } from "lucide-react";
 import Link from "next/link";
+import { trackEvent, GA_EVENTS } from "@/lib/ga";
 
 const TOP_COLORS = [
   { border: "#90caf9", label: "blue" },
@@ -258,6 +259,7 @@ function PreviewContent() {
 
   async function handleShare() {
     if (shareUrl || saving) return;
+    trackEvent(GA_EVENTS.SHARE_CREATE, { page: 'match' });
     try {
       setSaving(true);
       const result = await saveWorksheet({
@@ -284,6 +286,7 @@ function PreviewContent() {
 
   async function handleCopy() {
     if (!shareUrl) return;
+    trackEvent(GA_EVENTS.SHARE_COPY, { page: 'match' });
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
@@ -303,14 +306,11 @@ function PreviewContent() {
       )}
       {/* 상단 버튼 (인쇄 시 숨김) */}
       <div className="print:hidden max-w-[800px] mx-auto px-8 pt-6">
-        <Link href="/match" className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
-          <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
-          <span className="ml-1 transition-all duration-150 group-hover:font-bold">돌아가기</span>
-        </Link>
+        <Link href="/match" onClick={() => trackEvent(GA_EVENTS.NAV_BACK, { from: 'match' })} className="inline-block mb-4 text-sm text-gray-400 hover:text-gray-600">← 돌아가기</Link>
       </div>
       <div className="print:hidden flex justify-center items-center gap-3 py-4 bg-white border-b flex-wrap">
         <button
-          onClick={() => window.print()}
+          onClick={() => { trackEvent(GA_EVENTS.PRINT, { page: 'match' }); window.print(); }}
           className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
         >
           <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
