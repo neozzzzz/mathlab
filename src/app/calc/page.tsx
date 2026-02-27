@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Dropdown from "@/components/Dropdown";
+import { trackEvent, GA_EVENTS } from "@/lib/ga";
 
 type CalcType = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
 
@@ -289,6 +290,7 @@ export default function CalcPage() {
       params.set("amx", String(answerMax));
     }
 
+    trackEvent(GA_EVENTS.GENERATE, { page: 'calc', type, count, sheets, range_min: rangeMin, range_max: rangeMax, layout });
     router.push(`/calc/preview?${params.toString()}`);
   }
 
@@ -303,6 +305,7 @@ export default function CalcPage() {
         <button
           type="button"
           onClick={() => {
+            trackEvent(GA_EVENTS.NAV_HOME, { from: 'calc' });
             if (typeof window !== "undefined" && window.history.length > 1) {
               router.back();
             } else {

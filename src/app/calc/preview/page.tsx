@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { saveWorksheet } from "@/lib/supabase";
 import { Printer, Share2, Copy, Check } from "lucide-react";
 import Link from "next/link";
+import { trackEvent, GA_EVENTS } from "@/lib/ga";
 
 interface CalcProblem {
   a: number;
@@ -441,6 +442,7 @@ function CalcPreviewContent() {
 
   async function handleShare() {
     if (shareUrl || saving) return;
+    trackEvent(GA_EVENTS.SHARE_CREATE, { page: 'calc' });
     try {
       setSaving(true);
       const result = await saveWorksheet({

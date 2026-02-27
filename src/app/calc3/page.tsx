@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Dropdown from "@/components/Dropdown";
+import { trackEvent, GA_EVENTS } from "@/lib/ga";
 
 type OpType3 = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
 
@@ -58,6 +59,7 @@ export default function Calc3Page() {
       o2mn: String(op2Min),
       o2mx: String(op2Max),
     });
+    trackEvent(GA_EVENTS.GENERATE, { page: 'calc3', type, count, sheets, range_min: rangeMin, range_max: rangeMax });
     router.push(`/calc3/preview?${params.toString()}`);
   }
 
@@ -81,6 +83,7 @@ export default function Calc3Page() {
         <button
           type="button"
           onClick={() => {
+            trackEvent(GA_EVENTS.NAV_HOME, { from: 'calc3' });
             if (typeof window !== "undefined" && window.history.length > 1) {
               router.back();
             } else {

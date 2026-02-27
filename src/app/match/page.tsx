@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Dropdown from "@/components/Dropdown";
+import { trackEvent, GA_EVENTS } from "@/lib/ga";
 import { encodeParams, type GeneratorParams } from "@/lib/generator";
 
 export default function Home() {
@@ -47,6 +48,7 @@ export default function Home() {
       rangeMin,
       rangeMax,
     };
+    trackEvent(GA_EVENTS.GENERATE, { page: 'match', type, count, sheets, range_min: rangeMin, range_max: rangeMax });
     router.push(`/preview?${encodeParams(params)}`);
   };
 
@@ -61,6 +63,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => {
+            trackEvent(GA_EVENTS.NAV_HOME, { from: 'match' });
             if (typeof window !== "undefined" && window.history.length > 1) {
               router.back();
             } else {

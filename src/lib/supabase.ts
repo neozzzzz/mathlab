@@ -62,7 +62,7 @@ export async function saveWorksheet(data: {
 }): Promise<{ shortCode: string } | { error: string }> {
   const shortCode = generateShortCode();
 
-  const { error } = await supabase.from("worksheets").insert({
+  const { error } = await supabase.from("mathlab_worksheets").insert({
     short_code: shortCode,
     title: data.title,
     type: data.type,
@@ -81,7 +81,7 @@ export async function getWorksheet(
   shortCode: string
 ): Promise<WorksheetRow | null> {
   const { data, error } = await supabase
-    .from("worksheets")
+    .from("mathlab_worksheets")
     .select("*")
     .eq("short_code", shortCode)
     .single();
