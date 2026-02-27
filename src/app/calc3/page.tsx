@@ -84,11 +84,7 @@ export default function Calc3Page() {
           type="button"
           onClick={() => {
             trackEvent(GA_EVENTS.NAV_HOME, { from: 'calc3' });
-            if (typeof window !== "undefined" && window.history.length > 1) {
-              router.back();
-            } else {
-              router.push("/");
-            }
+            router.push("/");
           }}
           className="group block w-fit text-sm text-slate-500 hover:text-slate-700 cursor-pointer font-semibold"
         >
