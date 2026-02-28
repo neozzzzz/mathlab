@@ -299,7 +299,7 @@ function PreviewContent() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-100/80 via-white to-slate-50">
       {toast && (
         <div className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
           {toast}
@@ -307,10 +307,10 @@ function PreviewContent() {
       )}
       {/* 상단 버튼 (인쇄 시 숨김) */}
       <NavBack href="/match" label="돌아가기" gaEvent={GA_EVENTS.NAV_BACK} gaFrom="match" />
-      <div className="print:hidden flex justify-center items-center gap-3 py-4 bg-white border-b flex-wrap">
+      <div className="print:hidden max-w-[820px] mx-auto px-6 flex flex-wrap justify-center items-center gap-3 py-4">
         <button
           onClick={() => { trackEvent(GA_EVENTS.PRINT, { page: 'match' }); window.print(); }}
-          className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
+          className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200"
         >
           <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
         </button>
@@ -318,14 +318,14 @@ function PreviewContent() {
           <button
             onClick={handleShare}
             disabled={saving}
-            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer disabled:opacity-50"
+            className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200 disabled:opacity-50"
           >
             {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
           </button>
         ) : (
           <button
             onClick={handleCopy}
-            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
+            className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200"
           >
             {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
           </button>

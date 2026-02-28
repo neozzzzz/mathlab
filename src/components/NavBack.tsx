@@ -20,10 +20,10 @@ export default function NavBack({ href, label, gaEvent, gaFrom }: NavBackProps) 
             trackEvent(gaEvent, { from: gaFrom });
           }
         }}
-        className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold"
+        className="group inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white/85 backdrop-blur px-3 py-2 text-sm text-slate-700 hover:text-slate-900 hover:border-slate-400 shadow-sm transition-all duration-200"
       >
-        <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
-        <span className="ml-1 transition-all duration-150 group-hover:font-bold">{label}</span>
+        <span className="inline-block transition-transform duration-150 group-hover:-translate-x-0.5">←</span>
+        <span className="transition-all duration-150 group-hover:font-bold">{label}</span>
       </Link>
     </div>
   );

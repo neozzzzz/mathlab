@@ -54,16 +54,16 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-slate-100/80 px-4 pb-8">
+    <div className="min-h-[100dvh] bg-gradient-to-b from-slate-100/80 via-white to-slate-50 px-4 pb-8">
       {toast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-semibold animate-fade-in">
           {toast}
         </div>
       )}
       <NavBack href="/" label="메인으로" gaEvent={GA_EVENTS.NAV_HOME} gaFrom="match" />
-      <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">짝 맞추기</h1>
+      <h1 className="text-3xl font-black text-slate-900 text-center mb-6 tracking-tight">짝 맞추기</h1>
 
-      <div className="max-w-[600px] mx-auto bg-white rounded-3xl border border-slate-200/80 shadow-[0_8px_40px_rgba(15,23,42,0.06)] p-6 md:p-7">
+      <div className="max-w-[680px] mx-auto bg-white/90 backdrop-blur border border-slate-200/90 rounded-[28px] shadow-[0_20px_60px_rgba(15,23,42,0.08)] p-6 md:p-7">
         {/* 연산 유형 */}
         <div className="mb-5">
           <label className="block font-bold text-sm mb-2">연산 유형</label>
@@ -75,7 +75,7 @@ export default function Home() {
                   key={k}
                   type="button"
                   onClick={() => setType(k)}
-                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-xl font-bold text-sm cursor-pointer transition-all ${
                     type === k
                       ? "border-slate-900 bg-slate-900/5 text-slate-900"
                       : "border-slate-200 bg-white hover:border-slate-400"
@@ -101,7 +101,7 @@ export default function Home() {
                 onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMin(v === '' ? 0 : parseInt(v, 10)); }}
                 onBlur={() => { if (rangeMax > 0 && rangeMax < rangeMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setRangeMax(rangeMin); } }}
                 onFocus={(e) => e.target.select()}
-                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
               <span className="font-bold text-gray-400">~</span>
               <input
@@ -111,7 +111,7 @@ export default function Home() {
                 onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMax(v === '' ? 0 : parseInt(v, 10)); }}
                 onBlur={() => { if (rangeMax > 0 && rangeMax < rangeMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setRangeMax(rangeMin); } }}
                 onFocus={(e) => e.target.select()}
-                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
               />
             </div>
           </div>
@@ -123,7 +123,7 @@ export default function Home() {
               inputMode="numeric"
               onChange={(e) => setOperands(e.target.value.replace(/[^\d,]/g, ''))}
               placeholder="예: 6,7"
-              className="w-full p-2.5 border-2 border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-400 bg-white"
+              className="w-full p-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-400 bg-white"
             />
           </div>
         </div>
@@ -194,7 +194,7 @@ export default function Home() {
         {/* 생성 버튼 */}
         <button
           onClick={generate}
-          className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-base cursor-pointer transition-colors mt-2"
+          className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 hover:from-slate-800 hover:to-slate-900 text-white font-bold text-base cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl mt-2"
         >
           문제 생성
         </button>
