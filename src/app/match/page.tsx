@@ -28,6 +28,38 @@ export default function Home() {
   const [rangeMin, setRangeMin] = useState(11);
   const [rangeMax, setRangeMax] = useState(18);
 
+  const teacherPresets = [
+    {
+      label: "저학년 입문",
+      desc: "숫자 범위가 넓지 않게 정답 체크 쉬움",
+      data: { operands: "8,9", rangeMin: 11, rangeMax: 18, count: 8, sheets: 1 },
+    },
+    {
+      label: "학습지 연동",
+      desc: "반 수업용으로 균형 있게 뽑기",
+      data: { operands: "6,7,8,9", rangeMin: 1, rangeMax: 20, count: 12, sheets: 1 },
+    },
+    {
+      label: "반별 퀴즈",
+      desc: "문항 수를 늘려 수업 끝맺음 활동용",
+      data: { operands: "9", rangeMin: 1, rangeMax: 99, count: 16, sheets: 2 },
+    },
+    {
+      label: "심화 활동",
+      desc: "두 자릿수 계산 연계",
+      data: { operands: "7,8,9", rangeMin: 1, rangeMax: 200, count: 20, sheets: 2 },
+    },
+  ] as const;
+
+  function applyPreset(preset: (typeof teacherPresets)[number]["data"]) {
+    setType(type || "add");
+    setOperands(preset.operands);
+    setRangeMin(preset.rangeMin);
+    setRangeMax(preset.rangeMax);
+    setCount(preset.count);
+    setSheets(preset.sheets);
+  }
+
   const generate = () => {
     if (!type) {
       showToast("연산 유형을 선택해주세요");
@@ -64,8 +96,26 @@ export default function Home() {
       <div className="max-w-[860px] mx-auto mb-6">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold">Mathlab • Match</p>
         <h1 className="mt-2 text-4xl font-black text-slate-900">짝 맞추기</h1>
-        <p className="mt-2 text-sm text-slate-600">문제 생성과 동시에 결과형 연결 방식까지 한 번에 준비.</p>
+        <p className="mt-2 text-sm text-slate-600">부모님/선생님이 아이별 난이도에 맞춰 숫자 범위·문항 수를 바로 조정합니다.</p>
       </div>
+
+      <section className="max-w-[860px] mx-auto mb-6 bg-white/95 rounded-[22px] border border-slate-200 p-5">
+        <p className="text-xs font-bold text-slate-500">초등교사/학부모 모드</p>
+        <h2 className="mt-2 text-lg font-black text-slate-900">빠른 시작 프리셋</h2>
+        <p className="mt-1 text-sm text-slate-600">운영 방식이 바뀌어도 버튼 하나로 즉시 전환됩니다.</p>
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {teacherPresets.map((preset) => (
+            <button
+              key={preset.label}
+              onClick={() => applyPreset(preset.data)}
+              className="text-left rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 hover:border-slate-900 transition-all"
+            >
+              <p className="text-sm font-bold text-slate-900">{preset.label}</p>
+              <p className="text-xs text-slate-500 mt-1">{preset.desc}</p>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <div className="max-w-[860px] mx-auto bg-white/95 rounded-[28px] border border-slate-200 shadow-[0_20px_54px_rgba(15,23,42,0.08)] p-6 md:p-8">
         {/* 연산 유형 */}

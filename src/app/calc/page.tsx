@@ -174,6 +174,48 @@ export default function CalcPage() {
     }
   }
 
+  const teacherPresets = [
+    {
+      label: "엄마 추천: 한자리 기본",
+      desc: "첫째/둘째 수를 한 자릿수로, 결과도 작게",
+      data: { rangeMin: 1, rangeMax: 10, opMin: 1, opMax: 9, answerMin: 1, answerMax: 18, count: 12, sheets: 1 },
+    },
+    {
+      label: "학교 숙제(소량)",
+      desc: "반복연습용, 혼합형에도 적합",
+      data: { rangeMin: 10, rangeMax: 30, opMin: 1, opMax: 12, answerMin: 1, answerMax: 50, count: 24, sheets: 1 },
+    },
+    {
+      label: "반 친구 활동(중간)",
+      desc: "복습용으로 여러 장 인쇄",
+      data: { rangeMin: 1, rangeMax: 20, opMin: 2, opMax: 15, answerMin: 1, answerMax: 99, count: 36, sheets: 2 },
+    },
+    {
+      label: "심화: 곱/나눗셈 집중",
+      desc: "곱/나눗셈 학습단계",
+      data: { rangeMin: 10, rangeMax: 80, opMin: 1, opMax: 12, answerMin: 1, answerMax: 200, count: 24, sheets: 1 },
+    },
+  ] as const;
+
+  function applyPreset(preset: (typeof teacherPresets)[number]["data"]) {
+    setRangeMin(preset.rangeMin);
+    setRangeMax(preset.rangeMax);
+    setOpMin(preset.opMin);
+    setOpMax(preset.opMax);
+    setCount(preset.count);
+    setSheets(preset.sheets);
+    setAnswerMin(preset.answerMin);
+    setAnswerMax(preset.answerMax);
+    setAnswerAddMin(preset.answerMin);
+    setAnswerAddMax(preset.answerMax);
+    setAnswerSubMin(preset.answerMin);
+    setAnswerSubMax(preset.answerMax);
+    setAnswerMulMin(preset.answerMin);
+    setAnswerMulMax(preset.answerMax);
+    setAnswerDivMin(preset.answerMin);
+    setAnswerDivMax(preset.answerMax);
+  }
+
   function generate() {
     if (rangeMin <= 0 || rangeMax <= 0) {
       showToast("숫자 범위를 입력해주세요");
@@ -306,8 +348,26 @@ export default function CalcPage() {
       <div className="max-w-[860px] mx-auto mb-6">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold">Mathlab • Calculator</p>
         <h1 className="mt-2 text-4xl font-black text-slate-900">일반 연산</h1>
-        <p className="mt-2 text-sm text-slate-600">연산 범위를 정하면 즉시 미리보기가 업데이트됩니다.</p>
+        <p className="mt-2 text-sm text-slate-600">교재처럼 숫자범위를 잡고, 수업/숙제에 맞는 문제수를 바로 생성하세요.</p>
       </div>
+
+      <section className="max-w-[860px] mx-auto mb-6 bg-white/95 rounded-[22px] border border-slate-200 p-5">
+        <p className="text-xs font-bold text-slate-500">초등교사/학부모 모드</p>
+        <h2 className="mt-2 text-lg font-black text-slate-900">빠른 시작 프리셋</h2>
+        <p className="mt-1 text-sm text-slate-600">상황에 맞는 연습지 설정을 버튼 한 번에 적용하세요.</p>
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {teacherPresets.map((preset) => (
+            <button
+              key={preset.label}
+              onClick={() => applyPreset(preset.data)}
+              className="text-left rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 hover:border-slate-900 transition-all"
+            >
+              <p className="text-sm font-bold text-slate-900">{preset.label}</p>
+              <p className="text-xs text-slate-500 mt-1">{preset.desc}</p>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <div className="max-w-[860px] mx-auto bg-white/95 rounded-[28px] border border-slate-200 shadow-[0_20px_54px_rgba(15,23,42,0.08)] p-6 md:p-8">
         <div className="mb-5">

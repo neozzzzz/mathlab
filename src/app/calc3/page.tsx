@@ -43,6 +43,40 @@ export default function Calc3Page() {
     }
   }
 
+  const teacherPresets = [
+    {
+      label: "초1~초2 반 기본",
+      desc: "연속 수 계산 연습",
+      data: { rangeMin: 1, rangeMax: 10, opMin: 1, opMax: 9, op2Min: 1, op2Max: 5, count: 12, sheets: 1 },
+    },
+    {
+      label: "반별 반복 연습",
+      desc: "두 자리 숫자+한 자리 보강",
+      data: { rangeMin: 5, rangeMax: 20, opMin: 2, opMax: 12, op2Min: 2, op2Max: 12, count: 24, sheets: 1 },
+    },
+    {
+      label: "수업 전용 집중",
+      desc: "연산 순서(3수) 강화",
+      data: { rangeMin: 10, rangeMax: 40, opMin: 1, opMax: 10, op2Min: 1, op2Max: 10, count: 24, sheets: 2 },
+    },
+    {
+      label: "심화 응용",
+      desc: "복합 수식 연습량 확대",
+      data: { rangeMin: 20, rangeMax: 80, opMin: 5, opMax: 15, op2Min: 2, op2Max: 12, count: 36, sheets: 2 },
+    },
+  ] as const;
+
+  function applyPreset(preset: (typeof teacherPresets)[number]["data"]) {
+    setRangeMin(preset.rangeMin);
+    setRangeMax(preset.rangeMax);
+    setOpMin(preset.opMin);
+    setOpMax(preset.opMax);
+    setOp2Min(preset.op2Min);
+    setOp2Max(preset.op2Max);
+    setCount(preset.count);
+    setSheets(preset.sheets);
+  }
+
   function generate() {
     if (rangeMin <= 0 || rangeMax <= 0 || opMin <= 0 || opMax <= 0 || op2Min <= 0 || op2Max <= 0) {
       showToast("숫자 범위를 입력해주세요");
@@ -84,8 +118,26 @@ export default function Calc3Page() {
       <div className="max-w-[860px] mx-auto mb-6">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold">Mathlab • Triple Flow</p>
         <h1 className="mt-2 text-4xl font-black text-slate-900">일반 연산 (3개의 수)</h1>
-        <p className="mt-2 text-sm text-slate-600">3개 숫자 연산은 단계 사고 연습에 최적화되어 있습니다.</p>
+        <p className="mt-2 text-sm text-slate-600">3개의 숫자로 단계별 사고를 훈련할 수 있게 구성해 주세요.</p>
       </div>
+
+      <section className="max-w-[860px] mx-auto mb-6 bg-white/95 rounded-[22px] border border-slate-200 p-5">
+        <p className="text-xs font-bold text-slate-500">초등교사/학부모 모드</p>
+        <h2 className="mt-2 text-lg font-black text-slate-900">빠른 시작 프리셋</h2>
+        <p className="mt-1 text-sm text-slate-600">교실·가정 수업 난이도에 맞춰 3수 연산을 바로 설정하세요.</p>
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {teacherPresets.map((preset) => (
+            <button
+              key={preset.label}
+              onClick={() => applyPreset(preset.data)}
+              className="text-left rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 hover:border-slate-900 transition-all"
+            >
+              <p className="text-sm font-bold text-slate-900">{preset.label}</p>
+              <p className="text-xs text-slate-500 mt-1">{preset.desc}</p>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <div className="max-w-[860px] mx-auto bg-white/95 rounded-[28px] border border-slate-200 shadow-[0_20px_54px_rgba(15,23,42,0.08)] p-6 md:p-8">
         {/* 연산 유형 */}
