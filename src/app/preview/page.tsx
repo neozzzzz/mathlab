@@ -306,7 +306,10 @@ function PreviewContent() {
       )}
       {/* 상단 버튼 (인쇄 시 숨김) */}
       <div className="print:hidden max-w-[800px] mx-auto px-8 pt-6">
-        <Link href="/match" onClick={() => trackEvent(GA_EVENTS.NAV_BACK, { from: 'match' })} className="inline-block mb-4 text-sm text-gray-400 hover:text-gray-600">← 돌아가기</Link>
+        <Link href="/match" onClick={() => trackEvent(GA_EVENTS.NAV_BACK, { from: 'match' })} className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
+          <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
+          <span className="ml-1 transition-all duration-150 group-hover:font-bold">돌아가기</span>
+        </Link>
       </div>
       <div className="print:hidden flex justify-center items-center gap-3 py-4 bg-white border-b flex-wrap">
         <button
