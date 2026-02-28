@@ -296,7 +296,7 @@ export default function CalcPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-slate-100/80 px-4 py-8">
+    <div className="min-h-[100dvh] bg-slate-100/80 px-4 pb-8">
       {toast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-semibold animate-fade-in">
           {toast}
