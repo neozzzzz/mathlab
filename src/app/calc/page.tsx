@@ -296,19 +296,23 @@ export default function CalcPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-slate-100/80 via-white to-slate-50 px-4 pb-8">
+    <div className="min-h-[100dvh] bg-slate-100/70 px-4 pb-8">
       {toast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-semibold animate-fade-in">
           {toast}
         </div>
       )}
       <NavBack href="/" label="메인으로" gaEvent={GA_EVENTS.NAV_HOME} gaFrom="calc" />
-      <h1 className="text-3xl font-black text-slate-900 text-center mb-6 tracking-tight">일반 연산</h1>
+      <div className="max-w-[860px] mx-auto mb-6">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold">Mathlab • Calculator</p>
+        <h1 className="mt-2 text-4xl font-black text-slate-900">일반 연산</h1>
+        <p className="mt-2 text-sm text-slate-600">연산 범위를 정하면 즉시 미리보기가 업데이트됩니다.</p>
+      </div>
 
-      <div className="max-w-[680px] mx-auto bg-white/90 backdrop-blur border border-slate-200/90 rounded-[28px] shadow-[0_20px_60px_rgba(15,23,42,0.08)] p-6 md:p-7">
+      <div className="max-w-[860px] mx-auto bg-white/95 rounded-[28px] border border-slate-200 shadow-[0_20px_54px_rgba(15,23,42,0.08)] p-6 md:p-8">
         <div className="mb-5">
           <label className="block font-bold text-sm mb-2">연산 유형</label>
-          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
             <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기</p>
             <div className="grid grid-cols-3 gap-2 mb-3">
               {([["add", "+더하기"], ["sub", "−빼기"], ["add_sub", "혼합"]] as [CalcType, string][]).map(([k, label]) => (
@@ -316,7 +320,7 @@ export default function CalcPage() {
                   key={k}
                   type="button"
                   onClick={() => setType(k)}
-                  className={`w-full text-center py-2.5 px-2 border-2 rounded-xl font-bold text-sm cursor-pointer transition-all ${
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-2xl font-bold text-sm cursor-pointer transition-all ${
                     type === k
                       ? "border-slate-900 bg-slate-900/5 text-slate-900"
                       : "border-slate-200 bg-white hover:border-slate-400"
@@ -333,7 +337,7 @@ export default function CalcPage() {
                   key={k}
                   type="button"
                   onClick={() => setType(k)}
-                  className={`w-full text-center py-2.5 px-2 border-2 rounded-xl font-bold text-sm cursor-pointer transition-all ${
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-2xl font-bold text-sm cursor-pointer transition-all ${
                     type === k
                       ? "border-slate-900 bg-slate-900/5 text-slate-900"
                       : "border-slate-200 bg-white hover:border-slate-400"
@@ -349,7 +353,7 @@ export default function CalcPage() {
 
         <label className="block text-sm font-bold mb-2">수 범위</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
             <p className="block text-xs text-slate-500 font-bold mb-2">첫째 수 범위</p>
             <div className="flex gap-2 items-center">
               <input
@@ -377,7 +381,7 @@ export default function CalcPage() {
               />
             </div>
           </div>
-          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
             <p className="block text-xs text-slate-500 font-bold mb-2">둘째 수 범위</p>
             <div className="flex gap-2 items-center">
               <input
@@ -406,7 +410,7 @@ export default function CalcPage() {
         {isArithmeticResultRange ? (
           <div className="mb-5 transition-opacity opacity-100 space-y-4">
             {isMixedAddSub ? (
-              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                 <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기 결과값 범위</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
@@ -448,7 +452,7 @@ export default function CalcPage() {
                 </div>
               </div>
             ) : isMixedMulDiv ? (
-              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                 <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기 결과값 범위</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
@@ -482,7 +486,7 @@ export default function CalcPage() {
                 </div>
               </div>
             ) : type === "add" || type === "sub" ? (
-              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                 <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기 결과값 범위</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
@@ -524,7 +528,7 @@ export default function CalcPage() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                 <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기 결과값 범위</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
@@ -611,7 +615,7 @@ export default function CalcPage() {
           </div>
         </div>
 
-        <div className="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200/70">
+        <div className="mb-5 p-4 bg-slate-50 rounded-2xl border border-slate-200/70">
           <p className="text-xs text-slate-500 mb-3 font-medium">미리보기</p>
           <div className="flex gap-8 text-lg font-semibold" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
             {[0, 1, 2].map((i) => {
@@ -632,7 +636,7 @@ export default function CalcPage() {
 
         <button
           onClick={generate}
-          className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-base cursor-pointer transition-colors mt-2"
+          className="w-full py-3.8 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white font-black text-base cursor-pointer transition-all duration-200 mt-2"
         >
           문제 생성
         </button>

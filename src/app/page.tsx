@@ -1,105 +1,106 @@
-import { Link2, PenLine, Layers, Sparkles } from "lucide-react";
+import { ArrowRight, PencilLine, Layers, Link2, Sparkles, UsersRound } from "lucide-react";
 import TrackedLink from "@/components/TrackedLink";
 import { GA_EVENTS } from "@/lib/ga";
 
-const MENUS = [
+const MODES = [
   {
     href: "/match",
     title: "짝 맞추기",
-    icon: Link2,
-    desc: "윗줄 숫자와 아랫줄 결과를 선으로 연결해서 쓰기",
+    desc: "윗줄 숫자와 결과를 이어 쓰는 시퀀스 훈련",
     badge: "더하기 · 빼기",
-    tone: "orange",
-    emoji: "A",
+    icon: Link2,
+    accent: "from-fuchsia-500/15 to-rose-100/40",
   },
   {
     href: "/calc",
     title: "일반 연산",
-    icon: PenLine,
-    desc: "빈칸에 답을 쓰는 기본 연산 연습",
+    desc: "빈칸 채우기형 계산 연습으로 정확도와 속도 업",
     badge: "더하기 · 빼기 · 곱하기 · 나누기",
-    tone: "blue",
-    emoji: "B",
+    icon: PencilLine,
+    accent: "from-sky-500/15 to-sky-100/35",
   },
   {
     href: "/calc3",
-    title: "일반 연산 (3수)",
+    title: "3개 수 연산",
+    desc: "세 자리 사고를 키우는 단계별 수열형 문제",
+    badge: "a ○ b ○ c",
     icon: Layers,
-    desc: "세 수 연산으로 사고력을 한번에 끌어올리기",
-    badge: "a ○ b ○ c = ?",
-    tone: "green",
-    emoji: "C",
+    accent: "from-emerald-500/15 to-emerald-100/35",
   },
 ] as const;
 
-const TONE = {
-  orange: {
-    icon: "text-orange-500 group-hover:text-orange-600",
-    line: "from-orange-100 via-orange-50/60 to-white",
-    chip: "bg-orange-100 text-orange-700",
-    border: "group-hover:border-orange-300",
-  },
-  blue: {
-    icon: "text-blue-500 group-hover:text-blue-600",
-    line: "from-blue-100 via-blue-50/60 to-white",
-    chip: "bg-blue-100 text-blue-700",
-    border: "group-hover:border-blue-300",
-  },
-  green: {
-    icon: "text-emerald-500 group-hover:text-emerald-600",
-    line: "from-emerald-100 via-emerald-50/60 to-white",
-    chip: "bg-emerald-100 text-emerald-700",
-    border: "group-hover:border-emerald-300",
-  },
-} as const;
-
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white text-slate-900 py-8 sm:py-12 px-4">
-      <div className="mx-auto max-w-6xl">
-        <header className="rounded-[28px] border border-slate-200/80 bg-white/90 shadow-[0_20px_55px_rgba(15,23,42,0.08)] p-6 sm:p-8 mb-10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
-            <div>
-              <p className="text-xs tracking-[0.2em] text-slate-500 font-bold">MATHLAB</p>
-              <h1 className="mt-2 text-4xl sm:text-5xl font-black leading-tight">수학 문제 생성기</h1>
-              <p className="mt-3 text-slate-600 text-base sm:text-lg max-w-2xl">
-                초등 학습지를 더 빠르게, 더 똑똑하게. 페이지 이동 없이 바로 생성하고 바로 인쇄하세요.
-              </p>
+    <div className="min-h-screen bg-slate-100/70 py-6 sm:py-8 px-4">
+      <div className="mx-auto max-w-6xl relative">
+        <div className="pointer-events-none absolute -top-14 right-2 sm:right-20 h-40 w-40 rounded-full blur-3xl bg-fuchsia-200/50" />
+        <div className="pointer-events-none absolute bottom-10 left-2 sm:left-32 h-32 w-32 rounded-full blur-3xl bg-sky-200/40" />
+
+        <header className="relative z-10 rounded-[26px] border border-slate-200 bg-white/90 backdrop-blur p-6 sm:p-8">
+          <p className="text-xs tracking-[0.22em] text-slate-500 font-bold">MATHLAB EXPERIENCE</p>
+          <h1 className="mt-2 text-4xl sm:text-5xl font-black tracking-tight text-slate-900">
+            수학 문제 생성기
+          </h1>
+          <p className="mt-3 max-w-2xl text-slate-600 text-sm sm:text-base leading-relaxed">
+            설정은 한 번에 끝내고, 즉시 미리보기와 인쇄/공유로 이어지는 학습지 제작 플로우로 바꿔보세요.
+          </p>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/85 px-4 py-2 text-xs font-bold text-slate-700">
+              <Sparkles className="w-4 h-4" />
+              v1.1 인터페이스 리디자인
             </div>
-            <div className="text-sm text-slate-500 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-slate-700" strokeWidth={2} />
-              <span>V1-1 Preview</span>
-            </div>
+            <button className="inline-flex items-center gap-2 rounded-full border border-slate-900 bg-slate-900 text-white px-4 py-2 text-xs font-bold hover:bg-slate-800">
+              생성 후 바로 인쇄
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </header>
 
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
-          {MENUS.map((m) => {
+        <section className="relative z-10 mt-7 grid gap-5 md:grid-cols-3">
+          {MODES.map((m) => {
             const Icon = m.icon;
-            const tone = TONE[m.tone];
             return (
               <TrackedLink
                 key={m.href}
                 href={m.href}
                 gaEvent={GA_EVENTS.SELECT_MENU}
                 gaParams={{ menu: m.href.slice(1) }}
-                className={`group relative overflow-hidden rounded-[28px] border-2 border-slate-200 bg-gradient-to-b ${tone.line} p-6 h-full transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_18px_48px_rgba(15,23,42,0.12)] ${tone.border}`}
+                className="group relative overflow-hidden rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-[0_14px_38px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_16px_44px_rgba(15,23,42,0.10)]"
               >
-                <div className="absolute right-4 top-4 text-xs font-bold text-slate-500 bg-white/80 rounded-full px-2 py-1 border border-white/90">{m.emoji}</div>
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/90 shadow-sm mb-4">
-                  <Icon className={`w-6 h-6 ${tone.icon}`} strokeWidth={2} />
-                </div>
-                <h2 className="text-xl sm:text-2xl font-black mb-2">{m.title}</h2>
-                <p className="text-sm text-slate-600 leading-relaxed">{m.desc}</p>
-                <div className="mt-6 inline-flex items-center rounded-full px-4 py-1.5 text-xs font-bold bg-white/80 border border-white/90">
-                  {m.badge}
+                <div className={`absolute inset-0 bg-gradient-to-br ${m.accent} opacity-80`} />
+                <div className="relative">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white px-3 py-1 text-[11px] font-black text-slate-600">
+                    {m.badge}
+                  </div>
+                  <div className="mt-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/90 shadow-sm">
+                    <Icon className="w-6 h-6 text-slate-800" strokeWidth={2.2} />
+                  </div>
+                  <h2 className="mt-4 text-2xl font-black text-slate-900">{m.title}</h2>
+                  <p className="mt-2 text-sm text-slate-600 leading-relaxed">{m.desc}</p>
+                  <p className="mt-5 inline-flex items-center text-sm font-bold text-slate-800 group-hover:gap-2 transition-all duration-200">
+                    시작하기 <ArrowRight className="w-4 h-4 ml-1" />
+                  </p>
                 </div>
               </TrackedLink>
             );
           })}
         </section>
 
-        <p className="mt-8 text-sm text-slate-400 text-center">로그인 없이 바로 사용 · 공유 링크 지원 · 인쇄 최적화</p>
+        <div className="relative z-10 mt-7 rounded-[22px] border border-dashed border-slate-300 bg-white/70 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <p className="text-sm text-slate-600">
+            <span className="font-black text-slate-800">J용 학습지</span>를 빠르게 만들고 공유 링크로 수업 전에 바로 배포하세요.
+          </p>
+          <TrackedLink
+            href="/match"
+            gaEvent={GA_EVENTS.SELECT_MENU}
+            gaParams={{ menu: "quick"
+            }}
+            className="inline-flex items-center gap-2 text-sm font-black text-slate-800"
+          >
+            빠른 시작 <UsersRound className="w-4 h-4" />
+          </TrackedLink>
+        </div>
       </div>
     </div>
   );

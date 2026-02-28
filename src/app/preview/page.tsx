@@ -299,7 +299,7 @@ function PreviewContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100/80 via-white to-slate-50">
+    <div className="min-h-screen bg-slate-100/60">
       {toast && (
         <div className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
           {toast}
@@ -307,7 +307,15 @@ function PreviewContent() {
       )}
       {/* 상단 버튼 (인쇄 시 숨김) */}
       <NavBack href="/match" label="돌아가기" gaEvent={GA_EVENTS.NAV_BACK} gaFrom="match" />
-      <div className="print:hidden max-w-[820px] mx-auto px-6 flex flex-wrap justify-center items-center gap-3 py-4">
+      <div className="max-w-[860px] mx-auto px-6">
+        <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 mt-5 mb-4 flex flex-wrap items-center gap-2">
+          <p className="text-xs font-bold tracking-[0.15em] text-slate-500">ACTION BAR</p>
+          <span className="ml-auto h-1 w-1.5 bg-slate-300 rounded-full" />
+          <span className="text-sm text-slate-700">문항 생성 후 바로 미리보기 인쇄·공유가 가능해요.</span>
+        </div>
+      </div>
+
+      <div className="print:hidden max-w-[860px] mx-auto px-6 flex flex-wrap justify-center items-center gap-3 pb-4">
         <button
           onClick={() => { trackEvent(GA_EVENTS.PRINT, { page: 'match' }); window.print(); }}
           className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200"
@@ -325,7 +333,7 @@ function PreviewContent() {
         ) : (
           <button
             onClick={handleCopy}
-            className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200"
+            className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-md transition-all duration-200"
           >
             {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
           </button>
