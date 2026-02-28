@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Dropdown from "@/components/Dropdown";
+import NavBack from "@/components/NavBack";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
 
 type OpType3 = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
@@ -80,12 +80,7 @@ export default function Calc3Page() {
           {toast}
         </div>
       )}
-      <div className="max-w-[600px] mx-auto mb-4">
-        <Link href="/" onClick={() => trackEvent(GA_EVENTS.NAV_HOME, { from: 'calc3' })} className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
-          <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
-          <span className="ml-1 transition-all duration-150 group-hover:font-bold">메인으로</span>
-        </Link>
-      </div>
+      <NavBack href="/" label="메인으로" gaEvent={GA_EVENTS.NAV_HOME} gaFrom="calc3" />
       <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">일반 연산 (3개의 수)</h1>
 
       <div className="max-w-[600px] mx-auto bg-white rounded-3xl border border-slate-200/80 shadow-[0_8px_40px_rgba(15,23,42,0.06)] p-6 md:p-7">
