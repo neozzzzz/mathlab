@@ -11,7 +11,7 @@ const MODES = [
     icon: Link2,
     accent: "from-slate-100/80 to-white",
     hover: "hover:border-slate-400",
-    badgeStyle: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200",
+    badgeClass: "bg-fuchsia-50 text-fuchsia-700",
   },
   {
     href: "/calc",
@@ -21,7 +21,7 @@ const MODES = [
     icon: PencilLine,
     accent: "from-zinc-100/80 to-slate-50",
     hover: "hover:border-slate-400",
-    badgeStyle: "bg-sky-50 text-sky-700 border-sky-200",
+    badgeClass: "bg-sky-50 text-sky-700",
   },
   {
     href: "/calc3",
@@ -31,7 +31,7 @@ const MODES = [
     icon: Layers,
     accent: "from-stone-100/80 to-zinc-100",
     hover: "hover:border-slate-400",
-    badgeStyle: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    badgeClass: "bg-emerald-50 text-emerald-700",
   },
 ] as const;
 
@@ -81,7 +81,7 @@ export default function LandingPage() {
                   />
                   <h2 className="text-xl font-black text-slate-900">{m.title}</h2>
                   <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{m.desc}</p>
-                  <div className={`mt-1 inline-block px-4 py-1.5 rounded-full text-xs font-bold border ${m.badgeStyle}`}>
+                  <div className={`mt-1 inline-block px-4 py-1.5 rounded-full text-xs font-bold ${m.badgeClass}`}>
                     {m.badge}
                   </div>
                   <div className="mt-1 inline-flex items-center text-sm font-black text-slate-800 bg-transparent hover:bg-transparent transition-all duration-200 group-hover:translate-x-1">
