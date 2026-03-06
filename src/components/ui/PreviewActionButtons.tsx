@@ -22,7 +22,7 @@ export default function PreviewActionButtons({
       <button
         type="button"
         onClick={onPrint}
-        className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200"
+        className="px-5 py-3 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200"
       >
         <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
       </button>
@@ -31,7 +31,7 @@ export default function PreviewActionButtons({
           type="button"
           onClick={onShare}
           disabled={saving}
-          className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200 disabled:opacity-50"
+          className="px-5 py-3 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200 disabled:opacity-50"
         >
           {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
         </button>
@@ -39,7 +39,7 @@ export default function PreviewActionButtons({
         <button
           type="button"
           onClick={onCopy}
-          className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-md transition-all duration-200"
+          className="px-5 py-3 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-md transition-all duration-200"
         >
           {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
         </button>

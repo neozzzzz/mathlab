@@ -7,7 +7,7 @@ import NavBack from "@/components/NavBack";
 import Toast from "@/components/ui/Toast";
 import PreviewActionButtons from "@/components/ui/PreviewActionButtons";
 import { saveWorksheet } from "@/lib/supabase";
-import { GA_EVENTS } from "@/lib/ga";
+import { trackEvent, GA_EVENTS } from "@/lib/ga";
 import {
   generateCalc3AllSheets,
   parseCalc3Params,
@@ -155,8 +155,14 @@ function Calc3PreviewContent() {
     mul_div: "곱하기·나누기 혼합",
   };
   const title = `${typeLabelMap[resolvedParams.type] || "연산"} 연습 (3수)`;
+  const isReady =
+    allSheets.length === resolvedParams.sheets && allSheets.every((sheet) => sheet.length === resolvedParams.count);
 
   async function handleShare() {
+    if (!isReady) {
+      showToast("문항을 생성 중입니다. 잠시 후 공유해 주세요.");
+      return;
+    }
     if (shareUrl || saving) return;
     try {
       setSaving(true);
@@ -205,11 +211,20 @@ function Calc3PreviewContent() {
         </div>
       </div>
 
+      {!isReady ? (
+        <div className="max-w-[860px] mx-auto px-6 mb-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 px-4 py-3 text-sm">
+          요청한 문항 수를 모두 만들지 못했습니다. 범위를 완화하거나 수/연산 범위를 줄여 다시 생성해 주세요.
+        </div>
+      ) : null}
+
       <PreviewActionButtons
         shareUrl={shareUrl}
         saving={saving}
         copied={copied}
-        onPrint={() => window.print()}
+        onPrint={() => {
+          trackEvent(GA_EVENTS.PRINT, { page: "calc3" });
+          window.print();
+        }}
         onShare={handleShare}
         onCopy={handleCopy}
       />

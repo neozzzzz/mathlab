@@ -264,8 +264,14 @@ function PreviewContent() {
   const resolvedParams = params;
   const typeLabel = resolvedParams.type === "sub" ? "빼기" : "더하기";
   const title = `${typeLabel} ${resolvedParams.operands.join(", ")}`;
+  const isReady =
+    allSheets.length === resolvedParams.sheets && allSheets.every((sheet) => sheet.length === resolvedParams.count);
 
   async function handleShare() {
+    if (!isReady) {
+      showToast("문항을 생성 중입니다. 잠시 후 공유해 주세요.");
+      return;
+    }
     if (shareUrl || saving) return;
     trackEvent(GA_EVENTS.SHARE_CREATE, { page: 'match' });
     try {
@@ -317,6 +323,12 @@ function PreviewContent() {
           <span className="text-sm text-slate-700">문항 생성 후 바로 미리보기 인쇄·공유가 가능해요.</span>
         </div>
       </div>
+
+      {!isReady ? (
+        <div className="max-w-[860px] mx-auto px-6 mb-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 px-4 py-3 text-sm">
+          요청한 문항 수를 모두 만들지 못했습니다. 범위를 완화하거나 수/연산 범위를 줄여 다시 생성해 주세요.
+        </div>
+      ) : null}
 
       <PreviewActionButtons
         shareUrl={shareUrl}

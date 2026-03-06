@@ -182,8 +182,14 @@ function CalcPreviewContent() {
   };
   const typeLabel = typeLabelMap[resolvedParams.type] || "연산";
   const title = `${typeLabel} 연습`;
+  const isReady =
+    allSheets.length === resolvedParams.sheets && allSheets.every((sheet) => sheet.length === resolvedParams.count);
 
   async function handleShare() {
+    if (!isReady) {
+      showToast("문항을 생성 중입니다. 잠시 후 공유해 주세요.");
+      return;
+    }
     if (shareUrl || saving) return;
     trackEvent(GA_EVENTS.SHARE_CREATE, { page: "calc" });
     try {
@@ -234,11 +240,20 @@ function CalcPreviewContent() {
         </div>
       </div>
 
+      {!isReady ? (
+        <div className="max-w-[860px] mx-auto px-6 mb-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 px-4 py-3 text-sm">
+          요청한 문항 수를 모두 만들지 못했습니다. 범위를 완화하거나 수/연산 범위를 줄여 다시 생성해 주세요.
+        </div>
+      ) : null}
+
       <PreviewActionButtons
         shareUrl={shareUrl}
         saving={saving}
         copied={copied}
-        onPrint={() => window.print()}
+        onPrint={() => {
+          trackEvent(GA_EVENTS.PRINT, { page: "calc" });
+          window.print();
+        }}
         onShare={handleShare}
         onCopy={handleCopy}
       />
