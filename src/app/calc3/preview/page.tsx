@@ -271,6 +271,11 @@ function Calc3PreviewContent() {
   const generatedCount = allSheets.reduce((acc, problems) => acc + problems.length, 0);
 
   async function handleShare() {
+    if (allSheets.length === 0) {
+      showToast("문제가 생성되지 않았습니다. 다시 생성 후 시도해 주세요.");
+      return;
+    }
+
     if (shareUrl || saving) return;
     try {
       setSaving(true);
@@ -288,8 +293,9 @@ function Calc3PreviewContent() {
       } else {
         showToast("저장 실패: " + result.error);
       }
-    } catch {
-      showToast("공유 링크 생성 중 오류가 발생했습니다");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "알 수 없는 오류";
+      showToast(`공유 링크 생성 중 오류가 발생했습니다: ${message}`);
     } finally {
       setSaving(false);
     }

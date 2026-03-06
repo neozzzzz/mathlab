@@ -45,26 +45,18 @@ export default function Dropdown({ id, value, options, onChange }: DropdownProps
     optionRefs.current[activeIndex]?.focus();
   }, [open, activeIndex]);
 
-  function openMenu() {
-    setOpen(true);
-  }
-
-  function closeMenu() {
-    setOpen(false);
-  }
-
   function selectIndex(index: number) {
     const next = options[index];
     if (!next) return;
     onChange(next.value);
-    closeMenu();
+    setOpen(false);
   }
 
   function onTriggerKeyDown(e: KeyboardEvent<HTMLButtonElement>) {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       const selectedIndex = options.findIndex((o) => o.value === value);
-      openMenu();
+      setOpen(true);
       setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
     }
   }
@@ -72,7 +64,7 @@ export default function Dropdown({ id, value, options, onChange }: DropdownProps
   function onOptionKeyDown(e: KeyboardEvent<HTMLButtonElement>, index: number) {
     if (e.key === "Escape") {
       e.preventDefault();
-      closeMenu();
+      setOpen(false);
       return;
     }
 
@@ -128,23 +120,26 @@ export default function Dropdown({ id, value, options, onChange }: DropdownProps
           aria-labelledby={buttonId}
           className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border-2 border-slate-200 rounded-lg shadow-lg overflow-hidden"
         >
-          {options.map((o, index) => (
-            <li key={o.value} role="option" aria-selected={value === o.value}>
-              <button
-                type="button"
-                ref={(el) => {
-                  optionRefs.current[index] = el;
-                }}
-                onClick={() => selectIndex(index)}
-                onKeyDown={(e) => onOptionKeyDown(e, index)}
-                className={`w-full text-left py-2.5 px-4 text-sm font-bold cursor-pointer transition-colors focus:outline-none focus:bg-slate-100 ${
-                  value === o.value ? "bg-slate-900 text-white" : "hover:bg-slate-100 text-slate-700"
-                }`}
-              >
-                {o.label}
-              </button>
-            </li>
-          ))}
+          {options.map((o, index) => {
+            const isActive = value === o.value || index === activeIndex;
+            return (
+              <li key={o.value} role="option" aria-selected={value === o.value}>
+                <button
+                  type="button"
+                  ref={(el) => {
+                    optionRefs.current[index] = el;
+                  }}
+                  onClick={() => selectIndex(index)}
+                  onKeyDown={(e) => onOptionKeyDown(e, index)}
+                  className={`w-full text-left py-2.5 px-4 text-sm font-bold cursor-pointer transition-colors focus:outline-none ${
+                    isActive ? "bg-slate-900 text-white" : "bg-white text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

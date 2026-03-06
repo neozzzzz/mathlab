@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Dropdown from "@/components/Dropdown";
@@ -18,19 +18,6 @@ export default function Home() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
-  }
-
-  useEffect(
-    () => () => {
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    },
-    []
-  );
-
   const [operands, setOperands] = useState("8,9");
   const [count, setCount] = useState(8);
   const [sheets, setSheets] = useState(1);
@@ -45,14 +32,35 @@ export default function Home() {
   const rangeReady = rangeMin > 0 && rangeMax > 0 && rangeMin <= rangeMax;
   const hasOperands = operandList.length > 0;
   const isReady = rangeReady && hasOperands && count > 0 && sheets > 0;
+  const statusText = isReady ? "현재 설정으로 즉시 생성 가능합니다" : "현재 설정을 확인해 주세요";
 
-  const statusText = isReady
-    ? "현재 설정으로 즉시 생성 가능합니다"
-    : "현재 설정을 확인해 주세요";
+  const sampleTop = useMemo(() => {
+    if (!rangeReady) return [11, 13, 18];
+    return [rangeMin, Math.min(rangeMin + 2, rangeMax), rangeMax];
+  }, [rangeMin, rangeMax, rangeReady]);
 
-  const generate = () => {
+  const sampleOperand = operandList[0] ?? 1;
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
+  }
+
+  function generate() {
     if (operandList.length === 0) {
       showToast("연산자(정답 값)를 입력해주세요");
+      return;
+    }
+
+    if (!rangeReady) {
+      showToast("숫자 범위를 확인해 주세요");
       return;
     }
 
@@ -73,7 +81,7 @@ export default function Home() {
       range_max: rangeMax,
     });
     router.push(`/preview?${encodeParams(params)}`);
-  };
+  }
 
   return (
     <div className="min-h-[100dvh] bg-slate-100/80 px-4 py-8">
@@ -84,11 +92,7 @@ export default function Home() {
       )}
 
       <div className="max-w-[600px] mx-auto mb-4">
-        <Link
-          href="/"
-          onClick={() => trackEvent(GA_EVENTS.NAV_HOME, { from: "match" })}
-          className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold"
-        >
+        <Link href="/" onClick={() => trackEvent(GA_EVENTS.NAV_HOME, { from: "match" })} className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
           <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
           <span className="ml-1 transition-all duration-150 group-hover:font-bold">메인으로</span>
         </Link>
@@ -170,6 +174,84 @@ export default function Home() {
               className="w-full p-2.5 border-2 border-slate-200 rounded-lg text-sm focus:outline-none focus:border-slate-400 bg-white"
             />
             <p className="mt-2 text-[11px] text-slate-500">예: 6,7,9 (쉼표로 여러 개 입력)</p>
+          </div>
+        </div>
+
+        <div className="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200/70">
+          <p className="text-xs text-slate-500 mb-3 font-medium">미리보기</p>
+          <div className="relative flex items-center gap-[6px] px-2" style={{ transform: "scale(0.9)", transformOrigin: "left top" }}>
+            <div
+              style={{
+                width: 57,
+                height: 57,
+                minWidth: 57,
+                borderRadius: "50%",
+                border: "3px solid #e91e63",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.4rem",
+                fontWeight: 900,
+                color: "#c2185b",
+                marginLeft: 8,
+              }}
+            >
+              {sampleOperand}
+            </div>
+            <div className="flex-1 flex flex-col">
+              <div className="flex justify-center" style={{ gap: 20 }}>
+                {sampleTop.map((n, j) => {
+                  const colors = ["#90caf9", "#a5d6a7", "#ffcc80"];
+                  return (
+                    <div key={j} className="flex flex-col items-center">
+                      <div
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 8,
+                          border: `2px solid ${colors[j]}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.1rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {n}
+                      </div>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#555", margin: "4px 0" }} />
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ padding: "10px 0" }} />
+              <div className="flex justify-center" style={{ gap: 20 }}>
+                {sampleTop.map((n, j) => {
+                  const colors = ["#ef9a9a", "#ce93d8", "#80cbc4"];
+                  const answer = type === "sub" ? n - sampleOperand : n + sampleOperand;
+                  return (
+                    <div key={j} className="flex flex-col items-center">
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#555", margin: "4px 0" }} />
+                      <div
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 8,
+                          border: `2px solid ${colors[j]}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.1rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {answer}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 
