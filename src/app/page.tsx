@@ -6,26 +6,26 @@ const MODES = [
   {
     href: "/match",
     title: "짝 맞추기",
-    desc: "윗줄 숫자와 결과를 이어 쓰는 시퀀스 훈련",
+    desc: "윗줄 숫자와 아랫줄 결과를\n선으로 이어 보세요",
     badge: "더하기 · 빼기",
     icon: Link2,
-    accent: "from-fuchsia-500/15 to-rose-100/40",
+    accent: "border-slate-200 hover:border-orange-400 hover:shadow-lg hover:text-orange-600",
   },
   {
     href: "/calc",
     title: "일반 연산",
-    desc: "빈칸 채우기형 계산 연습으로 정확도와 속도 업",
+    desc: "빈칸에 답을 직접\n써 넣는 연습 문제",
     badge: "더하기 · 빼기 · 곱하기 · 나누기",
     icon: PencilLine,
-    accent: "from-sky-500/15 to-sky-100/35",
+    accent: "border-slate-200 hover:border-blue-400 hover:shadow-lg hover:text-blue-600",
   },
   {
     href: "/calc3",
-    title: "3개 수 연산",
-    desc: "세 자리 사고를 키우는 단계별 수열형 문제",
-    badge: "a ○ b ○ c",
+    title: "일반 연산 (3수)",
+    desc: "세 개의 수로 구성된\n연산 연습 문제",
+    badge: "a ○ b ○ c = ?",
     icon: Layers,
-    accent: "from-emerald-500/15 to-emerald-100/35",
+    accent: "border-slate-200 hover:border-emerald-400 hover:shadow-lg hover:text-emerald-600",
   },
 ] as const;
 
@@ -33,9 +33,6 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-100/70 py-6 sm:py-8 px-4">
       <div className="mx-auto max-w-6xl relative">
-        <div className="pointer-events-none absolute -top-14 right-2 sm:right-20 h-40 w-40 rounded-full blur-3xl bg-fuchsia-200/50" />
-        <div className="pointer-events-none absolute bottom-10 left-2 sm:left-32 h-32 w-32 rounded-full blur-3xl bg-sky-200/40" />
-
         <header className="relative z-10 rounded-[26px] border border-slate-200 bg-white/90 backdrop-blur p-6 sm:p-8">
           <p className="text-xs tracking-[0.22em] text-slate-500 font-bold">MATHLAB EXPERIENCE</p>
           <h1 className="mt-2 text-4xl sm:text-5xl font-black tracking-tight text-slate-900">
@@ -67,25 +64,19 @@ export default function LandingPage() {
                 href={m.href}
                 gaEvent={GA_EVENTS.SELECT_MENU}
                 gaParams={{ menu: m.href.slice(1) }}
-                className="group relative overflow-hidden rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-[0_14px_38px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_16px_44px_rgba(15,23,42,0.10)]"
+                className={`group relative overflow-hidden rounded-[20px] border-2 bg-white p-8 text-center transition-all duration-200 ${m.accent}`}
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${m.accent} opacity-80`} />
-                <div className="relative">
-                  <div className="grid grid-cols-[44px_1fr] gap-3 items-start">
-                    <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 shadow-sm">
-                      <Icon className="w-6 h-6 text-slate-800" strokeWidth={2.2} />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-black text-slate-900">{m.title}</h2>
-                      <div className="inline-flex items-center mt-1.5 gap-2 rounded-full border border-white/60 bg-white px-3 py-1 text-[11px] font-black text-slate-600">
-                        {m.badge}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="mt-4 text-sm text-slate-600 leading-relaxed">{m.desc}</p>
-                  <p className="mt-5 inline-flex items-center text-sm font-bold text-slate-800 group-hover:gap-2 transition-all duration-200">
-                    시작하기 <ArrowRight className="w-4 h-4 ml-1" />
-                  </p>
+                <Icon
+                  className="w-10 h-10 mx-auto mb-4 text-slate-400 transition-colors group-hover:text-current"
+                  strokeWidth={1.5}
+                />
+                <h2 className="text-xl font-black mb-2 transition-colors">{m.title}</h2>
+                <p className="text-sm text-slate-500 leading-relaxed whitespace-pre-line">{m.desc}</p>
+                <div className="mt-4 inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+                  {m.badge}
+                </div>
+                <div className="mt-5 inline-flex items-center text-sm font-black text-slate-800 group-hover:text-current transition-colors">
+                  시작하기 <ArrowRight className="w-4 h-4 ml-1" />
                 </div>
               </TrackedLink>
             );
@@ -99,8 +90,7 @@ export default function LandingPage() {
           <TrackedLink
             href="/match"
             gaEvent={GA_EVENTS.SELECT_MENU}
-            gaParams={{ menu: "quick"
-            }}
+            gaParams={{ menu: "quick" }}
             className="inline-flex items-center gap-2 text-sm font-black text-slate-800"
           >
             빠른 시작 <UsersRound className="w-4 h-4" />
