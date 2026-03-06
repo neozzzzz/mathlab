@@ -58,7 +58,7 @@ export default function LandingPage() {
               gaParams={{ menu: "create_and_print" }}
               className="inline-flex items-center gap-2 rounded-full border border-slate-900 bg-slate-900 text-white px-4 py-2 text-xs font-bold hover:bg-slate-800"
             >
-              생성 후 바로 인쇄
+              출력용 문제지 생성
               <ArrowRight className="w-4 h-4" />
             </TrackedLink>
           </div>
