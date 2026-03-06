@@ -68,7 +68,7 @@ export default function LandingPage() {
                 href={m.href}
                 gaEvent={GA_EVENTS.SELECT_MENU}
                 gaParams={{ menu: m.href.slice(1) }}
-                className={`group relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-8 text-center transition-all duration-200 ${m.hover} hover:shadow-lg`}
+                className={`group relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-8 text-center transition-all duration-200 ${m.hover} hover:-translate-y-1 hover:shadow-lg`}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${m.accent} opacity-70`} />
                 <div className="relative flex flex-col items-center gap-3">
@@ -81,7 +81,7 @@ export default function LandingPage() {
                   <div className="mt-1 inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300">
                     {m.badge}
                   </div>
-                  <div className="mt-1 inline-flex items-center text-sm font-black text-slate-800 bg-transparent hover:bg-transparent transition-transform duration-200">
+                  <div className="mt-1 inline-flex items-center text-sm font-black text-slate-800 bg-transparent hover:bg-transparent transition-all duration-200 group-hover:translate-x-1">
                     시작하기 <ArrowRight className="w-4 h-4 ml-1 transition-transform duration-200" />
                   </div>
                 </div>
