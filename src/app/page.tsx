@@ -80,8 +80,8 @@ export default function LandingPage() {
                   <div className="mt-1 inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-white/80 text-slate-700 border border-white/80">
                     {m.badge}
                   </div>
-                  <div className="mt-1 inline-flex items-center text-sm font-black text-slate-800">
-                    시작하기 <ArrowRight className="w-4 h-4 ml-1" />
+                  <div className="mt-1 inline-flex items-center text-sm font-black text-slate-800 group-hover:translate-x-0.5 transition-transform duration-200">
+                    시작하기 <ArrowRight className="w-4 h-4 ml-1 transition-transform duration-200 group-hover:translate-x-1" />
                   </div>
                 </div>
               </TrackedLink>
