@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { MatchProblem, CalcProblem, Calc3Problem } from "@/lib/math-generator";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -13,30 +14,7 @@ export type WorksheetType =
   | "div"
   | "mul_div";
 
-interface MatchProblem {
-  top: number[];
-  op: number;
-  bottom: number[];
-  type: "add" | "sub";
-}
-
-interface CalcProblem {
-  a: number;
-  b: number;
-  type: WorksheetType;
-  answer: number;
-}
-
-export type WorksheetProblems = MatchProblem[][] | CalcProblem[][];
-
-function generateShortCode(len = 8): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < len; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
-}
+export type WorksheetProblems = MatchProblem[][] | CalcProblem[][] | Calc3Problem[][];
 
 export interface WorksheetRow {
   id: string;
@@ -51,7 +29,16 @@ export interface WorksheetRow {
   created_at: string;
 }
 
-export async function saveWorksheet(data: {
+function generateShortCode(len = 8): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < len; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+}
+
+export interface SaveWorksheetResult {
   title: string;
   type: WorksheetType;
   operands: number[];
@@ -59,7 +46,9 @@ export async function saveWorksheet(data: {
   rangeMax: number;
   problemCount: number;
   problems: WorksheetProblems;
-}): Promise<{ shortCode: string } | { error: string }> {
+}
+
+export async function saveWorksheet(data: SaveWorksheetResult): Promise<{ shortCode: string } | { error: string }> {
   const shortCode = generateShortCode();
 
   const { error } = await supabase.from("mathlab_worksheets").insert({

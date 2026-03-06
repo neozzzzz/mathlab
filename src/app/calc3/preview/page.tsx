@@ -21,31 +21,45 @@ function pickOp(type: OpType3): [string, string] {
   const addSub = () => (Math.random() < 0.5 ? "+" : "−");
   const mulDiv = () => (Math.random() < 0.5 ? "×" : "÷");
   switch (type) {
-    case "add": return ["+", "+"];
-    case "sub": return ["−", "−"];
-    case "add_sub": return [addSub(), addSub()];
-    case "mul": return ["×", "×"];
-    case "div": return ["÷", "÷"];
-    case "mul_div": return [mulDiv(), mulDiv()];
+    case "add":
+      return ["+", "+"];
+    case "sub":
+      return ["−", "−"];
+    case "add_sub":
+      return [addSub(), addSub()];
+    case "mul":
+      return ["×", "×"];
+    case "div":
+      return ["÷", "÷"];
+    case "mul_div":
+      return [mulDiv(), mulDiv()];
   }
 }
 
 function calcResult(a: number, b: number, op: string): number | null {
   switch (op) {
-    case "+": return a + b;
-    case "−": return a - b;
-    case "×": return a * b;
-    case "÷": return b !== 0 && a % b === 0 ? a / b : null;
-    default: return null;
+    case "+":
+      return a + b;
+    case "−":
+      return a - b;
+    case "×":
+      return a * b;
+    case "÷":
+      return b !== 0 && a % b === 0 ? a / b : null;
+    default:
+      return null;
   }
 }
 
 function generateCalc3Sheet(params: {
   type: OpType3;
   count: number;
-  rangeMin: number; rangeMax: number;
-  opMin: number; opMax: number;
-  op2Min: number; op2Max: number;
+  rangeMin: number;
+  rangeMax: number;
+  opMin: number;
+  opMax: number;
+  op2Min: number;
+  op2Max: number;
 }): Calc3Problem[] {
   const problems: Calc3Problem[] = [];
   const used = new Set<string>();
@@ -59,7 +73,6 @@ function generateCalc3Sheet(params: {
 
     let a: number, b: number, c: number;
 
-    // 나누기가 포함된 경우 나누어 떨어지도록 생성
     if (op1 === "÷") {
       b = randRange(params.opMin, params.opMax);
       if (b === 0) continue;
@@ -89,7 +102,6 @@ function generateCalc3Sheet(params: {
     const key = `${a}${op1}${b}${op2}${c}`;
     if (used.has(key)) continue;
     used.add(key);
-
     problems.push({ a, b, c, op1, op2, answer });
   }
 
@@ -97,7 +109,10 @@ function generateCalc3Sheet(params: {
 }
 
 function Calc3Sheet({
-  problems, title, sheetNum, totalSheets,
+  problems,
+  title,
+  sheetNum,
+  totalSheets,
 }: {
   problems: Calc3Problem[];
   title: string;
@@ -123,11 +138,16 @@ function Calc3Sheet({
   }
 
   return (
-    <div className="bg-white mx-auto" style={{
-      width: "210mm", minHeight: "297mm", boxSizing: "border-box",
-      padding: "10mm 12mm", fontFamily: "'Noto Sans KR', sans-serif",
-    }}>
-      {/* 1행: 날짜 · 이름 · 점수 */}
+    <div
+      className="bg-white mx-auto"
+      style={{
+        width: "210mm",
+        minHeight: "297mm",
+        boxSizing: "border-box",
+        padding: "10mm 12mm",
+        fontFamily: "'Noto Sans KR', sans-serif",
+      }}
+    >
       <div className="flex justify-between items-center text-sm mb-4 text-gray-400">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
@@ -136,27 +156,38 @@ function Calc3Sheet({
         <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {problems.length}</span>
       </div>
 
-      {/* 2행: 제목 */}
       <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
         {title}
-        {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
+        {totalSheets > 1 && (
+          <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>
+        )}
       </div>
 
-      {/* 3행: 설명 */}
       <div className="pb-3 mb-4 border-b border-gray-300" style={{ fontSize: ".9rem", fontWeight: 700, color: "#555" }}>
         계산해 보세요.
       </div>
-      <div className="grid grid-cols-3 gap-x-12" style={{
-        gap: "0 48px", height: `${gridHeightMm}mm`,
-        gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-      }}>
+
+      <div
+        className="grid grid-cols-3 gap-x-12"
+        style={{
+          gap: "0 48px",
+          height: `${gridHeightMm}mm`,
+          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+        }}
+      >
         {grid.map((row, r) =>
           row.map((p, c) => {
             if (!p) return <div key={`${r}-${c}`} />;
             const num = c * rows + r + 1;
             return (
-              <div key={`${r}-${c}`} className="flex items-center h-full" style={{ borderBottom: "1px solid #f0f0f0" }}>
-                <span className="shrink-0 mr-4 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">{num}</span>
+              <div
+                key={`${r}-${c}`}
+                className="flex items-center h-full"
+                style={{ borderBottom: "1px solid #f0f0f0" }}
+              >
+                <span className="shrink-0 mr-4 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">
+                  {num}
+                </span>
                 <span className="text-lg font-semibold tracking-wide">
                   {p.a} {p.op1} {p.b} {p.op2} {p.c} =
                 </span>
@@ -195,21 +226,23 @@ function Calc3PreviewContent() {
     const o2mn = Number(searchParams.get("o2mn"));
     const o2mx = Number(searchParams.get("o2mx"));
     const validTypes = new Set(["add", "sub", "add_sub", "mul", "div", "mul_div"]);
+
     if (!validTypes.has(t)) return null;
     if (!Number.isInteger(c) || c < 1 || c > 100) return null;
     if (!Number.isInteger(s) || s < 1 || s > 10) return null;
     if (mn < 1 || mx > 9999 || mn > mx) return null;
     if (omn < 1 || omx > 9999 || omn > omx) return null;
     if (o2mn < 1 || o2mx > 9999 || o2mn > o2mx) return null;
+
     return { type: t, count: c, sheets: s, rangeMin: mn, rangeMax: mx, opMin: omn, opMax: omx, op2Min: o2mn, op2Max: o2mx };
   }, [searchParams]);
 
   const [allSheets, setAllSheets] = useState<Calc3Problem[][]>([]);
 
   useEffect(() => {
-    if (!params || allSheets.length > 0) return;
+    if (!params) return;
     setAllSheets(Array.from({ length: params.sheets }, () => generateCalc3Sheet(params)));
-  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [params]);
 
   useEffect(() => () => {
     if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
@@ -226,10 +259,16 @@ function Calc3PreviewContent() {
   }
 
   const typeLabelMap: Record<string, string> = {
-    add: "더하기", sub: "빼기", add_sub: "더하기·빼기 혼합",
-    mul: "곱하기", div: "나누기", mul_div: "곱하기·나누기 혼합",
+    add: "더하기",
+    sub: "빼기",
+    add_sub: "더하기·빼기 혼합",
+    mul: "곱하기",
+    div: "나누기",
+    mul_div: "곱하기·나누기 혼합",
   };
   const title = `${typeLabelMap[params.type] || "연산"} 연습 (3수)`;
+  const expectedCount = params.count * params.sheets;
+  const generatedCount = allSheets.reduce((acc, problems) => acc + problems.length, 0);
 
   async function handleShare() {
     if (shareUrl || saving) return;
@@ -242,7 +281,7 @@ function Calc3PreviewContent() {
         rangeMin: params!.rangeMin,
         rangeMax: params!.rangeMax,
         problemCount: params!.count,
-        problems: allSheets as never,
+        problems: allSheets,
       });
       if ("shortCode" in result) {
         setShareUrl(`${window.location.origin}/s/${result.shortCode}`);
@@ -275,18 +314,25 @@ function Calc3PreviewContent() {
           {toast}
         </div>
       )}
+
       <div className="print:hidden max-w-[800px] mx-auto px-8 pt-6">
         <Link href="/calc3" className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
           <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
           <span className="ml-1 transition-all duration-150 group-hover:font-bold">돌아가기</span>
         </Link>
       </div>
+
       <div className="print:hidden flex justify-center items-center gap-3 py-4 bg-white border-b flex-wrap">
         <button onClick={() => window.print()} className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer">
-          <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
+          <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />
+          인쇄
         </button>
         {!shareUrl ? (
-          <button onClick={handleShare} disabled={saving} className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer disabled:opacity-50">
+          <button
+            onClick={handleShare}
+            disabled={saving}
+            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer disabled:opacity-50"
+          >
             {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
           </button>
         ) : (
@@ -295,15 +341,38 @@ function Calc3PreviewContent() {
           </button>
         )}
       </div>
+
       {shareUrl && (
         <div className="print:hidden text-center py-2 bg-green-50 border-b border-green-200">
           <span className="text-sm text-green-800">공유 링크: </span>
-          <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">{shareUrl}</a>
+          <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">
+            {shareUrl}
+          </a>
         </div>
       )}
+
+      {(allSheets.length > 0 && generatedCount !== expectedCount) ? (
+        <div className="max-w-[800px] mx-auto px-4 py-3 bg-amber-50 border border-amber-300 rounded-lg mb-3 text-amber-900 text-sm">
+          <p className="font-bold mb-2">요청 문항을 모두 만들지 못했습니다.</p>
+          <p>
+            목표: <span className="font-bold">{expectedCount}문제</span> · 생성됨: <span className="font-bold">{generatedCount}문제</span>
+          </p>
+          <div className="mt-2 flex gap-2 justify-center flex-wrap">
+            <a href="/calc3" className="inline-flex items-center rounded-full bg-amber-700 text-white px-3 py-1 text-xs font-bold hover:bg-amber-800">설정으로 돌아가기</a>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center rounded-full border border-amber-700 text-amber-800 px-3 py-1 text-xs font-bold hover:bg-amber-100"
+            >
+              다시 생성
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {allSheets.map((problems, i) => (
         <div key={i} className={i < allSheets.length - 1 ? "break-after-page" : ""}>
-          <Calc3Sheet problems={problems} title={title} sheetNum={i + 1} totalSheets={params.sheets} />
+          <Calc3Sheet problems={problems} title={title} sheetNum={i + 1} totalSheets={params!.sheets} />
         </div>
       ))}
     </div>

@@ -257,6 +257,9 @@ function PreviewContent() {
   const typeLabel = resolvedParams.type === "sub" ? "빼기" : "더하기";
   const title = `${typeLabel} ${resolvedParams.operands.join(", ")}`;
 
+  const expectedCount = resolvedParams.count * resolvedParams.sheets;
+  const generatedCount = allSheets.reduce((acc, problems) => acc + problems.length, 0);
+
   async function handleShare() {
     if (shareUrl || saving) return;
     trackEvent(GA_EVENTS.SHARE_CREATE, { page: 'match' });
@@ -341,6 +344,24 @@ function PreviewContent() {
           <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">{shareUrl}</a>
         </div>
       )}
+      {(allSheets.length > 0 && generatedCount !== expectedCount) ? (
+        <div className="max-w-[800px] mx-auto px-4 py-3 bg-amber-50 border border-amber-300 rounded-lg mb-3 text-amber-900 text-sm">
+          <p className="font-bold mb-2">요청 문항을 모두 만들지 못했습니다.</p>
+          <p>
+            목표: <span className="font-bold">{expectedCount}문제</span> · 생성됨: <span className="font-bold">{generatedCount}문제</span>
+          </p>
+          <div className="mt-2 flex gap-2 justify-center flex-wrap">
+            <a href="/match" className="inline-flex items-center rounded-full bg-amber-700 text-white px-3 py-1 text-xs font-bold hover:bg-amber-800">설정으로 돌아가기</a>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center rounded-full border border-amber-700 text-amber-800 px-3 py-1 text-xs font-bold hover:bg-amber-100"
+            >
+              다시 생성
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {/* 시트들 */}
       {allSheets.map((problems, i) => (
