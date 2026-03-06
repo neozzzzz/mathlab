@@ -1,39 +1,154 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, memo, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import NavBack from "@/components/NavBack";
-import Toast from "@/components/ui/Toast";
-import PreviewActionButtons from "@/components/ui/PreviewActionButtons";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { saveWorksheet } from "@/lib/supabase";
+import { Printer, Share2, Copy, Check } from "lucide-react";
+import Link from "next/link";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
-import {
-  generateCalcAllSheets,
-  parseCalcParams,
-  type CalcProblem,
-} from "@/lib/math-generator";
 
-const CalcSheet = memo(function CalcSheet({
+interface CalcProblem {
+  a: number;
+  b: number;
+  type: "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
+  answer: number;
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateCalcSheet(params: {
+  type: "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
+  count: number;
+  rangeMin: number;
+  rangeMax: number;
+  opMin: number;
+  opMax: number;
+  answerMin?: number;
+  answerMax?: number;
+  answerAddMin?: number;
+  answerAddMax?: number;
+  answerSubMin?: number;
+  answerSubMax?: number;
+  answerMulMin?: number;
+  answerMulMax?: number;
+  answerDivMin?: number;
+  answerDivMax?: number;
+}): CalcProblem[] {
+  const problems: CalcProblem[] = [];
+  const used = new Set<string>();
+  let attempts = 0;
+
+  while (problems.length < params.count && attempts < 1000) {
+    attempts++;
+    // 혼합 타입이면 랜덤으로 선택
+    let op = params.type as string;
+    if (op === "add_sub") op = Math.random() < 0.5 ? "add" : "sub";
+    if (op === "mul_div") op = Math.random() < 0.5 ? "mul" : "div";
+
+    let a: number, b: number, answer: number;
+    if (op === "div") {
+      // 나누기: b * q = a (나누어 떨어지도록)
+      b = params.opMin + Math.floor(Math.random() * (params.opMax - params.opMin + 1));
+      if (b === 0) continue;
+      const qMin = Math.ceil(params.rangeMin / b);
+      const qMax = Math.floor(params.rangeMax / b);
+      if (qMin > qMax) continue;
+      const q = qMin + Math.floor(Math.random() * (qMax - qMin + 1));
+      a = b * q;
+      answer = q;
+    } else {
+      a = params.rangeMin + Math.floor(Math.random() * (params.rangeMax - params.rangeMin + 1));
+      b = params.opMin + Math.floor(Math.random() * (params.opMax - params.opMin + 1));
+      if (op === "sub") answer = a - b;
+      else if (op === "mul") answer = a * b;
+      else answer = a + b;
+    }
+    if (answer < 0) continue;
+    if (params.type === "add_sub") {
+      if (
+        op === "add" &&
+        params.answerAddMin !== undefined &&
+        params.answerAddMax !== undefined &&
+        (answer < params.answerAddMin || answer > params.answerAddMax)
+      ) {
+        continue;
+      }
+      if (
+        op === "sub" &&
+        params.answerSubMin !== undefined &&
+        params.answerSubMax !== undefined &&
+        (answer < params.answerSubMin || answer > params.answerSubMax)
+      ) {
+        continue;
+      }
+    } else if (params.type === "mul_div") {
+      if (
+        params.answerMulMin !== undefined &&
+        params.answerMulMax !== undefined &&
+        params.answerDivMin !== undefined &&
+        params.answerDivMax !== undefined
+      ) {
+        if (
+          op === "mul" &&
+          (answer < params.answerMulMin || answer > params.answerMulMax)
+        ) {
+          continue;
+        }
+        if (
+          op === "div" &&
+          (answer < params.answerDivMin || answer > params.answerDivMax)
+        ) {
+          continue;
+        }
+      } else if (params.answerMin !== undefined && params.answerMax !== undefined) {
+        if (answer < params.answerMin || answer > params.answerMax) continue;
+      }
+    } else if (params.answerMin !== undefined && params.answerMax !== undefined) {
+      if (answer < params.answerMin || answer > params.answerMax) continue;
+    }
+    const key = `${op}-${a}-${b}`;
+    if (used.has(key)) continue;
+    used.add(key);
+    problems.push({ a, b, type: op as CalcProblem["type"], answer });
+  }
+
+  return problems;
+}
+
+function CalcSheet({
   problems,
   title,
   sheetNum,
   totalSheets,
+  type,
   layout,
 }: {
   problems: CalcProblem[];
   title: string;
   sheetNum: number;
   totalSheets: number;
+  type: "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
   layout: "a" | "b";
 }) {
+  const signMap = { add: "+", sub: "−", mul: "×", div: "÷", add_sub: "+", mul_div: "×" } as const;
   const cols = layout === "a" ? 3 : 2;
   const rows = Math.ceil(problems.length / cols);
+  // A4(210x297mm) 한 장 기준으로 그리드 영역을 고정하고, 행 수에 따라 균등 분배한다.
   const PAGE_HEIGHT_MM = 297;
-  const PAGE_PADDING_Y_MM = 20;
+  const PAGE_PADDING_Y_MM = 20; // 상하 패딩 10mm + 10mm
   const HEADER_BLOCK_MM = 16;
   const INSTRUCTION_BLOCK_MM = 18;
-  const gridHeightMm = Math.max(120, PAGE_HEIGHT_MM - PAGE_PADDING_Y_MM - HEADER_BLOCK_MM - INSTRUCTION_BLOCK_MM);
+  const gridHeightMm = Math.max(
+    120,
+    PAGE_HEIGHT_MM - PAGE_PADDING_Y_MM - HEADER_BLOCK_MM - INSTRUCTION_BLOCK_MM
+  );
 
   const grid: (CalcProblem | null)[][] = [];
   for (let r = 0; r < rows; r++) {
@@ -45,7 +160,10 @@ const CalcSheet = memo(function CalcSheet({
     grid.push(row);
   }
 
-  const maxOperandDigits = problems.reduce((acc, p) => Math.max(acc, String(p.a).length, String(p.b).length), 2);
+  const maxOperandDigits = problems.reduce(
+    (acc, p) => Math.max(acc, String(p.a).length, String(p.b).length),
+    2
+  );
   const operandColWidth = `${Math.min(4, Math.max(2, maxOperandDigits))}ch`;
 
   return (
@@ -59,6 +177,7 @@ const CalcSheet = memo(function CalcSheet({
         fontFamily: "'Noto Sans KR', sans-serif",
       }}
     >
+      {/* 1행: 날짜 · 이름 · 점수 */}
       <div className="flex justify-between items-center text-sm mb-4 text-gray-400">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
@@ -67,15 +186,20 @@ const CalcSheet = memo(function CalcSheet({
         <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {problems.length}</span>
       </div>
 
+      {/* 2행: 제목 */}
       <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
         {title}
-        {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
+        {totalSheets > 1 && (
+          <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>
+        )}
       </div>
 
+      {/* 3행: 설명 */}
       <div className="pb-3 mb-4 border-b border-gray-300" style={{ fontSize: ".9rem", fontWeight: 700, color: "#555" }}>
         계산해 보세요.
       </div>
 
+      {/* 문제 그리드 */}
       <div
         className="grid"
         style={{
@@ -86,12 +210,18 @@ const CalcSheet = memo(function CalcSheet({
           gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
         }}
       >
-        {grid.map((row, r) =>
+        {grid.map((row, r) => (
           row.map((p, c) => {
             if (!p) return <div key={`${r}-${c}`} />;
             const num = c * rows + r + 1;
+            const firstNum = String(p.a);
+            const secondNum = String(p.b);
             return (
-              <div key={`${r}-${c}`} className="flex items-center h-full gap-0" style={{ borderBottom: "1px solid #f0f0f0" }}>
+              <div
+                key={`${r}-${c}`}
+                className="flex items-center h-full gap-0"
+                style={{ borderBottom: "1px solid #f0f0f0" }}
+              >
                 <span className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">
                   {num}
                 </span>
@@ -108,35 +238,38 @@ const CalcSheet = memo(function CalcSheet({
                       letterSpacing: "0",
                     }}
                   >
-                    <span className="justify-self-end">{p.a}</span>
+                    <span className="justify-self-end">{firstNum}</span>
                     <span className="justify-self-center">{p.type === "sub" ? "−" : p.type === "mul" ? "×" : p.type === "div" ? "÷" : "+"}</span>
-                    <span className="justify-self-end">{p.b}</span>
+                    <span className="justify-self-end">{secondNum}</span>
                     <span className="justify-self-center">=</span>
-                    {layout === "b" ? <span className="inline-flex h-9 w-11 border-2 border-gray-700 rounded" /> : null}
+                    {layout === "b" ? (
+                      <span className="inline-flex h-9 w-11 border-2 border-gray-700 rounded" />
+                    ) : null}
                   </span>
                 </span>
               </div>
             );
-          }),
-        )}
+          })
+        ))}
       </div>
     </div>
   );
-});
-CalcSheet.displayName = "CalcSheet";
+}
 
 function CalcPreviewContent() {
+  type LayoutMode = "a" | "b";
+  const MAX_COUNT = 100;
+  const MAX_SHEETS = 10;
+  const MIN_RANGE = 1;
+  const MAX_RANGE = 9999;
   const searchParams = useSearchParams();
   const queryString = useMemo(() => searchParams.toString(), [searchParams]);
-  const params = useMemo(() => parseCalcParams(queryString), [queryString]);
-
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [allSheets, setAllSheets] = useState<CalcProblem[][]>([]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -144,54 +277,172 @@ function CalcPreviewContent() {
     toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
   }
 
-  useEffect(() => {
-    if (!params) {
-      setAllSheets([]);
-      return;
-    }
-    setAllSheets(generateCalcAllSheets(params, queryString));
-  }, [params, queryString]);
+  const params = useMemo(() => {
+    const t = searchParams.get("t") as "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
+    const c = Number(searchParams.get("c"));
+    const s = Number(searchParams.get("s"));
+    const mn = Number(searchParams.get("mn"));
+    const mx = Number(searchParams.get("mx"));
+    const omn = Number(searchParams.get("omn"));
+    const omx = Number(searchParams.get("omx"));
+    const amn = searchParams.get("amn");
+    const amx = searchParams.get("amx");
+    const amnA = searchParams.get("amnA");
+    const amxA = searchParams.get("amxA");
+    const amnS = searchParams.get("amnS");
+    const amxS = searchParams.get("amxS");
+    const amnM = searchParams.get("amnM");
+    const amxM = searchParams.get("amxM");
+    const amnD = searchParams.get("amnD");
+    const amxD = searchParams.get("amxD");
+    const layout = searchParams.get("layout") || "a";
+    const validTypes = new Set(["add", "sub", "add_sub", "mul", "div", "mul_div"]);
+    const parsedAnswerMin = amn !== null ? Number(amn) : undefined;
+    const parsedAnswerMax = amx !== null ? Number(amx) : undefined;
+    const parsedAnswerAddMin = amnA !== null ? Number(amnA) : undefined;
+    const parsedAnswerAddMax = amxA !== null ? Number(amxA) : undefined;
+    const parsedAnswerSubMin = amnS !== null ? Number(amnS) : undefined;
+    const parsedAnswerSubMax = amxS !== null ? Number(amxS) : undefined;
+    const parsedAnswerMulMin = amnM !== null ? Number(amnM) : undefined;
+    const parsedAnswerMulMax = amxM !== null ? Number(amxM) : undefined;
+    const parsedAnswerDivMin = amnD !== null ? Number(amnD) : undefined;
+    const parsedAnswerDivMax = amxD !== null ? Number(amxD) : undefined;
+    const hasAnswerRange = parsedAnswerMin !== undefined && parsedAnswerMax !== undefined;
+    const hasAddAnswerRange = parsedAnswerAddMin !== undefined && parsedAnswerAddMax !== undefined;
+    const hasSubAnswerRange = parsedAnswerSubMin !== undefined && parsedAnswerSubMax !== undefined;
+    const hasMulAnswerRange = parsedAnswerMulMin !== undefined && parsedAnswerMulMax !== undefined;
+    const hasDivAnswerRange = parsedAnswerDivMin !== undefined && parsedAnswerDivMax !== undefined;
+    if (!validTypes.has(t)) return null;
+    if (layout !== "a" && layout !== "b") return null;
+    const normalizedCount = c;
+    if (!Number.isInteger(normalizedCount) || normalizedCount < 1 || normalizedCount > MAX_COUNT) return null;
+    if (!Number.isInteger(s) || s < 1 || s > MAX_SHEETS) return null;
+    if (!Number.isInteger(mn) || !Number.isInteger(mx) || mn < MIN_RANGE || mx > MAX_RANGE || mn > mx) return null;
+    if (!Number.isInteger(omn) || !Number.isInteger(omx) || omn < MIN_RANGE || omx > MAX_RANGE || omn > omx) return null;
+    const finalAnswerMin = hasAnswerRange ? parsedAnswerMin : undefined;
+    const finalAnswerMax = hasAnswerRange ? parsedAnswerMax : undefined;
+    const finalAnswerAddMin = hasAddAnswerRange ? parsedAnswerAddMin : hasAnswerRange ? parsedAnswerMin : undefined;
+    const finalAnswerAddMax = hasAddAnswerRange ? parsedAnswerAddMax : hasAnswerRange ? parsedAnswerMax : undefined;
+    const finalAnswerSubMin = hasSubAnswerRange ? parsedAnswerSubMin : hasAnswerRange ? parsedAnswerMin : undefined;
+    const finalAnswerSubMax = hasSubAnswerRange ? parsedAnswerSubMax : hasAnswerRange ? parsedAnswerMax : undefined;
+    const finalAnswerMulMin = hasMulAnswerRange ? parsedAnswerMulMin : hasAnswerRange ? parsedAnswerMin : undefined;
+    const finalAnswerMulMax = hasMulAnswerRange ? parsedAnswerMulMax : hasAnswerRange ? parsedAnswerMax : undefined;
+    const finalAnswerDivMin = hasDivAnswerRange ? parsedAnswerDivMin : hasAnswerRange ? parsedAnswerMin : undefined;
+    const finalAnswerDivMax = hasDivAnswerRange ? parsedAnswerDivMax : hasAnswerRange ? parsedAnswerMax : undefined;
+    const hasMixedAnswerRange =
+      t === "add_sub" && (hasAddAnswerRange || hasSubAnswerRange || hasAnswerRange);
+    const hasMixedMulDivAnswerRange =
+      t === "mul_div" && (hasMulAnswerRange || hasDivAnswerRange || hasAnswerRange);
 
-  useEffect(
-    () => () => {
-      if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    },
-    [],
-  );
+    if (hasMixedAnswerRange) {
+      if (
+        typeof finalAnswerAddMin !== "number" ||
+        typeof finalAnswerAddMax !== "number" ||
+        typeof finalAnswerSubMin !== "number" ||
+        typeof finalAnswerSubMax !== "number" ||
+        !Number.isInteger(finalAnswerAddMin) ||
+        !Number.isInteger(finalAnswerAddMax) ||
+        !Number.isInteger(finalAnswerSubMin) ||
+        !Number.isInteger(finalAnswerSubMax)
+      ) {
+        return null;
+      }
+      if (
+        finalAnswerAddMin < MIN_RANGE ||
+        finalAnswerAddMax > MAX_RANGE ||
+        finalAnswerSubMin < MIN_RANGE ||
+        finalAnswerSubMax > MAX_RANGE ||
+        finalAnswerAddMin > finalAnswerAddMax ||
+        finalAnswerSubMin > finalAnswerSubMax
+      ) {
+        return null;
+      }
+    } else if (hasMixedMulDivAnswerRange) {
+      if (
+        typeof finalAnswerMulMin !== "number" ||
+        typeof finalAnswerMulMax !== "number" ||
+        typeof finalAnswerDivMin !== "number" ||
+        typeof finalAnswerDivMax !== "number" ||
+        !Number.isInteger(finalAnswerMulMin) ||
+        !Number.isInteger(finalAnswerMulMax) ||
+        !Number.isInteger(finalAnswerDivMin) ||
+        !Number.isInteger(finalAnswerDivMax)
+      ) {
+        return null;
+      }
+      if (
+        finalAnswerMulMin < MIN_RANGE ||
+        finalAnswerMulMax > MAX_RANGE ||
+        finalAnswerDivMin < MIN_RANGE ||
+        finalAnswerDivMax > MAX_RANGE ||
+        finalAnswerMulMin > finalAnswerMulMax ||
+        finalAnswerDivMin > finalAnswerDivMax
+      ) {
+        return null;
+      }
+    } else if (hasAnswerRange) {
+      if (
+        !Number.isInteger(parsedAnswerMin) ||
+        !Number.isInteger(parsedAnswerMax) ||
+        parsedAnswerMin < MIN_RANGE ||
+        parsedAnswerMax > MAX_RANGE ||
+        parsedAnswerMin > parsedAnswerMax
+      ) {
+        return null;
+      }
+    }
+
+    return {
+      type: t,
+      count: normalizedCount,
+      sheets: s,
+      rangeMin: mn,
+      rangeMax: mx,
+      opMin: omn,
+      opMax: omx,
+      answerMin: hasAnswerRange ? parsedAnswerMin : undefined,
+      answerMax: hasAnswerRange ? parsedAnswerMax : undefined,
+      answerAddMin: finalAnswerAddMin,
+      answerAddMax: finalAnswerAddMax,
+      answerSubMin: finalAnswerSubMin,
+      answerSubMax: finalAnswerSubMax,
+      answerMulMin: finalAnswerMulMin,
+      answerMulMax: finalAnswerMulMax,
+      answerDivMin: finalAnswerDivMin,
+      answerDivMax: finalAnswerDivMax,
+      layout: layout as LayoutMode,
+    };
+  }, [queryString, MAX_COUNT, MAX_SHEETS, MIN_RANGE, MAX_RANGE]);
+
+  const [allSheets, setAllSheets] = useState<CalcProblem[][]>([]);
+  
+  useEffect(() => {
+    if (!params) return;
+    setAllSheets(Array.from({ length: params.sheets }, () => generateCalcSheet(params)));
+  }, [params]);
+
+  useEffect(() => () => {
+    if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+  }, []);
 
   if (!params) {
     return (
       <div className="text-center py-20">
         <p className="text-lg font-bold mb-4">잘못된 접근입니다</p>
-        <Link href="/calc" className="text-blue-600 underline">
-          돌아가기
-        </Link>
+        <Link href="/calc" className="text-blue-600 underline">돌아가기</Link>
       </div>
     );
   }
 
   const resolvedParams = params;
-  const typeLabelMap: Record<string, string> = {
-    add: "더하기",
-    sub: "빼기",
-    add_sub: "더하기·빼기 혼합",
-    mul: "곱하기",
-    div: "나누기",
-    mul_div: "곱하기·나누기 혼합",
-  };
+  const typeLabelMap: Record<string, string> = { add: "더하기", sub: "빼기", add_sub: "더하기·빼기 혼합", mul: "곱하기", div: "나누기", mul_div: "곱하기·나누기 혼합" };
   const typeLabel = typeLabelMap[resolvedParams.type] || "연산";
   const title = `${typeLabel} 연습`;
-  const isReady =
-    allSheets.length === resolvedParams.sheets && allSheets.every((sheet) => sheet.length === resolvedParams.count);
 
   async function handleShare() {
-    if (!isReady) {
-      showToast("문항을 생성 중입니다. 잠시 후 공유해 주세요.");
-      return;
-    }
     if (shareUrl || saving) return;
-    trackEvent(GA_EVENTS.SHARE_CREATE, { page: "calc" });
+    trackEvent(GA_EVENTS.SHARE_CREATE, { page: 'calc' });
     try {
       setSaving(true);
       const result = await saveWorksheet({
@@ -229,54 +480,57 @@ function CalcPreviewContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/60">
-      <Toast message={toast} className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in" />
-      <NavBack href="/calc" label="돌아가기" gaEvent={GA_EVENTS.NAV_BACK} gaFrom="calc" />
-      <div className="max-w-[860px] mx-auto px-6">
-        <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 mt-5 mb-4 flex flex-wrap items-center gap-2">
-          <p className="text-xs font-bold tracking-[0.15em] text-slate-500">ACTION BAR</p>
-          <span className="ml-auto h-1 w-1.5 bg-slate-300 rounded-full" />
-          <span className="text-sm text-slate-700">문항 생성 후 바로 미리보기 인쇄·공유가 가능해요.</span>
+    <div>
+      {toast && (
+        <div className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
+          {toast}
         </div>
+      )}
+      <div className="print:hidden max-w-[800px] mx-auto px-8 pt-6">
+        <Link href="/calc" className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
+          <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
+          <span className="ml-1 transition-all duration-150 group-hover:font-bold">돌아가기</span>
+        </Link>
       </div>
-
-      {!isReady ? (
-        <div className="max-w-[860px] mx-auto px-6 mb-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 px-4 py-3 text-sm">
-          요청한 문항 수를 모두 만들지 못했습니다. 범위를 완화하거나 수/연산 범위를 줄여 다시 생성해 주세요.
-        </div>
-      ) : null}
-
-      <PreviewActionButtons
-        shareUrl={shareUrl}
-        saving={saving}
-        copied={copied}
-        onPrint={() => {
-          trackEvent(GA_EVENTS.PRINT, { page: "calc" });
-          window.print();
-        }}
-        onShare={handleShare}
-        onCopy={handleCopy}
-      />
-
+      <div className="print:hidden flex justify-center items-center gap-3 py-4 bg-white border-b flex-wrap">
+        <button
+          onClick={() => window.print()}
+          className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
+        >
+          <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
+        </button>
+        {!shareUrl ? (
+          <button
+            onClick={handleShare}
+            disabled={saving}
+            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer disabled:opacity-50"
+          >
+            {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
+          </button>
+        ) : (
+          <button
+            onClick={handleCopy}
+            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
+          >
+            {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
+          </button>
+        )}
+      </div>
       {shareUrl && (
         <div className="print:hidden text-center py-2 bg-green-50 border-b border-green-200">
           <span className="text-sm text-green-800">공유 링크: </span>
-          <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">
-            {shareUrl}
-          </a>
+          <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">{shareUrl}</a>
         </div>
       )}
 
       {allSheets.map((problems, i) => (
-        <div
-          key={`sheet-${i + 1}-${problems.map((p) => `${p.type}-${p.a}-${p.b}`).join("|")}`}
-          className={i < allSheets.length - 1 ? "break-after-page" : ""}
-        >
+        <div key={i} className={i < allSheets.length - 1 ? "break-after-page" : ""}>
           <CalcSheet
             problems={problems}
             title={title}
             sheetNum={i + 1}
             totalSheets={resolvedParams.sheets}
+            type={resolvedParams.type}
             layout={resolvedParams.layout}
           />
         </div>

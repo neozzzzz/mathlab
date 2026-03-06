@@ -2,17 +2,55 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Dropdown from "@/components/Dropdown";
-import NavBack from "@/components/NavBack";
-import Toast from "@/components/ui/Toast";
-import RangeNumericInput from "@/components/ui/RangeNumericInput";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
-import { encodeCalcParams } from "@/lib/math-generator";
 
 type CalcType = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
 
+type AnswerRangeType = {
+  min: number;
+  max: number;
+};
+
+function parseNumericInput(v: string) {
+  const raw = v.replace(/\D/g, "");
+  return raw === "" ? 0 : parseInt(raw, 10);
+}
+
+function NumberInput({
+  value,
+  onChange,
+  onBlur,
+  disabled,
+  onFocus,
+  className,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  onBlur?: () => void;
+  disabled?: boolean;
+  onFocus?: (el: HTMLInputElement) => void;
+  className?: string;
+}) {
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={value}
+      onChange={(e) => onChange(parseNumericInput(e.target.value))}
+      onBlur={onBlur}
+      onFocus={(e) => onFocus?.(e.target)}
+      disabled={disabled}
+      className={
+        className ??
+        "w-full flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed"
+      }
+    />
+  );
+}
+
 function RangePair({
-  idPrefix,
   title,
   left,
   right,
@@ -23,8 +61,8 @@ function RangePair({
   onLeftChange,
   onRightChange,
   onValidate,
+  onFocus,
 }: {
-  idPrefix: string;
   title: string;
   left: number;
   right: number;
@@ -35,23 +73,28 @@ function RangePair({
   onLeftChange: (value: number) => void;
   onRightChange: (value: number) => void;
   onValidate: (left: number, right: number, label: string) => void;
+  onFocus?: (el: HTMLInputElement) => void;
 }) {
   return (
     <div>
-      <RangeNumericInput
-        idPrefix={idPrefix}
-        label={title}
-        minValue={left}
-        maxValue={right}
-        onMinChange={onLeftChange}
-        onMaxChange={onRightChange}
-        onMinBlur={() => onValidate(left, right, "min")}
-        onMaxBlur={() => onValidate(left, right, "max")}
-        onFocusSelect
-        disabledMin={disabledLeft}
-        disabledMax={disabledRight}
-        labelClassName={`font-bold text-sm mb-2 ${leftTitleClassName ?? ""} ${rightTitleClassName ?? ""}`}
-      />
+      <p className={`font-bold text-sm mb-2 ${leftTitleClassName ?? ""}`}>{title}</p>
+      <div className="flex gap-2">
+        <NumberInput
+          value={left}
+          onChange={onLeftChange}
+          onBlur={() => onValidate(left, right, "min")}
+          onFocus={onFocus}
+          disabled={disabledLeft}
+        />
+        <span className="font-bold text-gray-400">~</span>
+        <NumberInput
+          value={right}
+          onChange={onRightChange}
+          onBlur={() => onValidate(left, right, "max")}
+          onFocus={onFocus}
+          disabled={disabledRight}
+        />
+      </div>
     </div>
   );
 }
@@ -95,10 +138,6 @@ export default function CalcPage() {
   const countOptions = [12, 18, 24, 36];
   const isArithmeticResultRange =
     type === "add" || type === "sub" || type === "add_sub" || type === "mul" || type === "div" || type === "mul_div";
-  const quickRangeError =
-    rangeMin <= 0 || rangeMax <= 0 || opMin <= 0 || opMax <= 0 || rangeMin > rangeMax || opMin > opMax
-      ? "수 범위와 둘째 수 범위를 확인해 주세요"
-      : "";
   const isMixedAddSub = type === "add_sub";
   const isMixedMulDiv = type === "mul_div";
   const isAdd = type === "add";
@@ -106,42 +145,17 @@ export default function CalcPage() {
   const isMul = type === "mul";
   const isDiv = type === "div";
 
-  const [showAdvanced, setShowAdvanced] = useState(false);
-
-  const hasRangeMinError = rangeMin <= 0 || rangeMin > rangeMax || rangeMax <= 0;
-  const hasOpMinError = opMin <= 0 || opMin > opMax || opMax <= 0;
-  const hasAddAnswerError = isAdd || isMixedAddSub ? answerAddMin <= 0 || answerAddMax <= 0 || answerAddMax < answerAddMin : false;
-  const hasSubAnswerError = isSub || isMixedAddSub ? answerSubMin <= 0 || answerSubMax <= 0 || answerSubMax < answerSubMin : false;
-  const hasMulAnswerError = isMul || isMixedMulDiv ? answerMulMin <= 0 || answerMulMax <= 0 || answerMulMax < answerMulMin : false;
-  const hasDivAnswerError = isDiv || isMixedMulDiv ? answerDivMin <= 0 || answerDivMax <= 0 || answerDivMax < answerDivMin : false;
-  const generationReadiness =
-    hasRangeMinError || hasOpMinError
-      ? "수/둘째 수 범위를 먼저 확인해 주세요"
-      : isMixedAddSub
-        ? hasAddAnswerError || hasSubAnswerError
-          ? "결과값 범위를 확인해 주세요"
-          : "현재 설정으로 생성 가능합니다"
-        : isMixedMulDiv
-          ? hasMulAnswerError || hasDivAnswerError
-            ? "결과값 범위를 확인해 주세요"
-            : "현재 설정으로 생성 가능합니다"
-          : isAdd
-            ? hasAddAnswerError
-              ? "결과값 범위를 확인해 주세요"
-              : "현재 설정으로 생성 가능합니다"
-            : isSub
-              ? hasSubAnswerError
-                ? "결과값 범위를 확인해 주세요"
-                : "현재 설정으로 생성 가능합니다"
-              : isMul
-                ? hasMulAnswerError
-                  ? "결과값 범위를 확인해 주세요"
-                  : "현재 설정으로 생성 가능합니다"
-                : isDiv
-                  ? hasDivAnswerError
-                    ? "결과값 범위를 확인해 주세요"
-                    : "현재 설정으로 생성 가능합니다"
-                  : "현재 설정으로 생성 가능합니다";
+  function validatePairRange(
+    label: string,
+    range: AnswerRangeType,
+    counterpart?: AnswerRangeType
+  ) {
+    if (range.max > 0 && range.max < range.min) {
+      showToast(`${label} 최대가 최소보다 작을 수 없습니다`);
+      return { ...counterpart, max: range.min };
+    }
+    return range;
+  }
 
   function normalizeRangeOnBlur(minName: "range" | "op") {
     if (minName === "range") {
@@ -158,48 +172,6 @@ export default function CalcPage() {
         setOpMax(opMin);
       }
     }
-  }
-
-  const teacherPresets = [
-    {
-      label: "엄마 추천: 한자리 기본",
-      desc: "첫째/둘째 수를 한 자릿수로, 결과도 작게",
-      data: { rangeMin: 1, rangeMax: 10, opMin: 1, opMax: 9, answerMin: 1, answerMax: 18, count: 12, sheets: 1 },
-    },
-    {
-      label: "학교 숙제(소량)",
-      desc: "반복연습용, 혼합형에도 적합",
-      data: { rangeMin: 10, rangeMax: 30, opMin: 1, opMax: 12, answerMin: 1, answerMax: 50, count: 24, sheets: 1 },
-    },
-    {
-      label: "반 친구 활동(중간)",
-      desc: "복습용으로 여러 장 인쇄",
-      data: { rangeMin: 1, rangeMax: 20, opMin: 2, opMax: 15, answerMin: 1, answerMax: 99, count: 36, sheets: 2 },
-    },
-    {
-      label: "심화: 곱/나눗셈 집중",
-      desc: "곱/나눗셈 학습단계",
-      data: { rangeMin: 10, rangeMax: 80, opMin: 1, opMax: 12, answerMin: 1, answerMax: 200, count: 24, sheets: 1 },
-    },
-  ] as const;
-
-  function applyPreset(preset: (typeof teacherPresets)[number]["data"]) {
-    setRangeMin(preset.rangeMin);
-    setRangeMax(preset.rangeMax);
-    setOpMin(preset.opMin);
-    setOpMax(preset.opMax);
-    setCount(preset.count);
-    setSheets(preset.sheets);
-    setAnswerMin(preset.answerMin);
-    setAnswerMax(preset.answerMax);
-    setAnswerAddMin(preset.answerMin);
-    setAnswerAddMax(preset.answerMax);
-    setAnswerSubMin(preset.answerMin);
-    setAnswerSubMax(preset.answerMax);
-    setAnswerMulMin(preset.answerMin);
-    setAnswerMulMax(preset.answerMax);
-    setAnswerDivMin(preset.answerMin);
-    setAnswerDivMax(preset.answerMax);
   }
 
   function generate() {
@@ -280,111 +252,76 @@ export default function CalcPage() {
       return;
     }
 
-    const encodedParams = encodeCalcParams({
-      type,
-      count,
-      sheets,
-      rangeMin,
-      rangeMax,
-      opMin,
-      opMax,
-      answerMin: isAdd
-        ? answerAddMin
-        : isSub
-          ? answerSubMin
-          : isMul
-            ? answerMulMin
-            : isDiv
-              ? answerDivMin
-              : isArithmeticResultRange
-                ? answerMin
-                : undefined,
-      answerMax: isAdd
-        ? answerAddMax
-        : isSub
-          ? answerSubMax
-          : isMul
-            ? answerMulMax
-            : isDiv
-              ? answerDivMax
-              : isArithmeticResultRange
-                ? answerMax
-                : undefined,
-      answerAddMin: isMixedAddSub ? answerAddMin : undefined,
-      answerAddMax: isMixedAddSub ? answerAddMax : undefined,
-      answerSubMin: isMixedAddSub ? answerSubMin : undefined,
-      answerSubMax: isMixedAddSub ? answerSubMax : undefined,
-      answerMulMin: isMixedMulDiv ? answerMulMin : undefined,
-      answerMulMax: isMixedMulDiv ? answerMulMax : undefined,
-      answerDivMin: isMixedMulDiv ? answerDivMin : undefined,
-      answerDivMax: isMixedMulDiv ? answerDivMax : undefined,
+    const params = new URLSearchParams({
+      mode: "calc",
+      t: type,
+      c: String(count),
+      s: String(sheets),
+      mn: String(rangeMin),
+      mx: String(rangeMax),
+      omn: String(opMin),
+      omx: String(opMax),
       layout,
     });
 
+    if (isMixedAddSub) {
+      params.set("amnA", String(answerAddMin));
+      params.set("amxA", String(answerAddMax));
+      params.set("amnS", String(answerSubMin));
+      params.set("amxS", String(answerSubMax));
+    } else if (isMixedMulDiv) {
+      params.set("amnM", String(answerMulMin));
+      params.set("amxM", String(answerMulMax));
+      params.set("amnD", String(answerDivMin));
+      params.set("amxD", String(answerDivMax));
+    } else if (isAdd) {
+      params.set("amn", String(answerAddMin));
+      params.set("amx", String(answerAddMax));
+    } else if (isSub) {
+      params.set("amn", String(answerSubMin));
+      params.set("amx", String(answerSubMax));
+    } else if (isMul) {
+      params.set("amn", String(answerMulMin));
+      params.set("amx", String(answerMulMax));
+    } else if (isDiv) {
+      params.set("amn", String(answerDivMin));
+      params.set("amx", String(answerDivMax));
+    } else if (isArithmeticResultRange) {
+      params.set("amn", String(answerMin));
+      params.set("amx", String(answerMax));
+    }
+
     trackEvent(GA_EVENTS.GENERATE, { page: 'calc', type, count, sheets, range_min: rangeMin, range_max: rangeMax, layout });
-    router.push(`/calc/preview?${encodedParams}`);
+    router.push(`/calc/preview?${params.toString()}`);
   }
 
   return (
-    <div className="min-h-[100dvh] bg-slate-100/70 px-4 pb-8">
-      <Toast message={toast} />
-      <NavBack href="/" label="메인으로" gaEvent={GA_EVENTS.NAV_HOME} gaFrom="calc" />
-      <div className="max-w-[860px] mx-auto mb-6">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold">Mathlab • Calculator</p>
-        <h1 className="mt-2 text-4xl font-black text-slate-900">일반 연산</h1>
-        <p className="mt-2 text-sm text-slate-600">교재처럼 숫자범위를 잡고, 수업/숙제에 맞는 문제수를 바로 생성하세요.</p>
+    <div className="min-h-[100dvh] bg-slate-100/80 px-4 py-8">
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-semibold animate-fade-in">
+          {toast}
+        </div>
+      )}
+      <div className="max-w-[600px] mx-auto mb-4">
+        <Link href="/" onClick={() => trackEvent(GA_EVENTS.NAV_HOME, { from: 'calc' })} className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
+          <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
+          <span className="ml-1 transition-all duration-150 group-hover:font-bold">메인으로</span>
+        </Link>
       </div>
+      <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">일반 연산</h1>
 
-      <section className="max-w-[860px] mx-auto mb-6 bg-white/95 rounded-[22px] border border-slate-200 p-5">
-        <p className="text-xs font-bold text-slate-500">변경됨: 일반 연산 실험 모드</p>
-        <h2 className="mt-2 text-lg font-black text-slate-900">간편 모드</h2>
-        <p className="mt-1 text-sm text-slate-600">기본값만 먼저 맞춰 빠르게 생성하고, 필요하면 수동 설정으로 이동하세요.</p>
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {teacherPresets.map((preset) => (
-            <button
-              key={preset.label}
-              type="button"
-              onClick={() => applyPreset(preset.data)}
-              className="text-left rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 hover:border-slate-900 transition-all"
-            >
-              <p className="text-sm font-bold text-slate-900">{preset.label}</p>
-              <p className="text-xs text-slate-500 mt-1">{preset.desc}</p>
-            </button>
-          ))}
-        </div>
-        {quickRangeError ? (
-          <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-300 rounded-xl px-3 py-2">{quickRangeError}</p>
-        ) : null}
-        <div className="mt-3 flex items-center gap-2 flex-wrap">
-          <a href="#calc-manual-mode" className="inline-flex text-sm font-bold text-slate-700 underline">현재의 수동 설정으로 이동</a>
-          <span className={`inline-flex text-xs items-center rounded-full px-3 py-1 border ${
-            generationReadiness === "현재 설정으로 생성 가능합니다" ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-amber-300 bg-amber-50 text-amber-700"
-          }`}>
-            {generationReadiness}
-          </span>
-        </div>
-      </section>
-
-      <section id="calc-manual-mode" className="max-w-[860px] mx-auto bg-white/95 rounded-[28px] border border-slate-200 shadow-[0_20px_54px_rgba(15,23,42,0.08)] p-6 md:p-8">
-        <button
-          type="button"
-          onClick={() => setShowAdvanced((v) => !v)}
-          className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-slate-700 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50"
-        >
-          {showAdvanced ? "상세 설정 닫기" : "상세 설정 열기"}
-        </button>
+      <div className="max-w-[600px] mx-auto bg-white rounded-3xl border border-slate-200/80 shadow-[0_8px_40px_rgba(15,23,42,0.06)] p-6 md:p-7">
         <div className="mb-5">
           <label className="block font-bold text-sm mb-2">연산 유형</label>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
             <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기</p>
             <div className="grid grid-cols-3 gap-2 mb-3">
               {([["add", "+더하기"], ["sub", "−빼기"], ["add_sub", "혼합"]] as [CalcType, string][]).map(([k, label]) => (
                 <button
                   key={k}
                   type="button"
-                  aria-pressed={type === k}
                   onClick={() => setType(k)}
-                  className={`w-full text-center py-2.5 px-2 border-2 rounded-2xl font-bold text-sm cursor-pointer transition-all ${
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
                     type === k
                       ? "border-slate-900 bg-slate-900/5 text-slate-900"
                       : "border-slate-200 bg-white hover:border-slate-400"
@@ -400,9 +337,8 @@ export default function CalcPage() {
                 <button
                   key={k}
                   type="button"
-                  aria-pressed={type === k}
                   onClick={() => setType(k)}
-                  className={`w-full text-center py-2.5 px-2 border-2 rounded-2xl font-bold text-sm cursor-pointer transition-all ${
+                  className={`w-full text-center py-2.5 px-2 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
                     type === k
                       ? "border-slate-900 bg-slate-900/5 text-slate-900"
                       : "border-slate-200 bg-white hover:border-slate-400"
@@ -418,51 +354,67 @@ export default function CalcPage() {
 
         <label className="block text-sm font-bold mb-2">수 범위</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <RangeNumericInput
-              idPrefix="calc-range"
-              label="첫째 수 범위"
-              minValue={rangeMin}
-              maxValue={rangeMax}
-              onMinChange={setRangeMin}
-              onMaxChange={setRangeMax}
-              onMinBlur={() => normalizeRangeOnBlur("range")}
-              onMaxBlur={() => normalizeRangeOnBlur("range")}
-              onFocusSelect
-              inputClassName={`flex-1 min-w-0 p-2.5 border-2 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed ${
-                hasRangeMinError ? "border-rose-400 bg-rose-50" : "border-slate-200"
-              }`}
-            />
-            {hasRangeMinError ? <p className="mt-2 text-xs text-rose-600">첫째 수 범위를 확인해 주세요.</p> : null}
+          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+            <p className="block text-xs text-slate-500 font-bold mb-2">첫째 수 범위</p>
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={rangeMin}
+                onChange={(e) => {
+                  setRangeMin(parseNumericInput(e.target.value));
+                }}
+                onBlur={() => normalizeRangeOnBlur("range")}
+                onFocus={(e) => e.target.select()}
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
+              />
+              <span className="font-bold text-gray-400">~</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={rangeMax}
+                onChange={(e) => {
+                  setRangeMax(parseNumericInput(e.target.value));
+                }}
+                onBlur={() => normalizeRangeOnBlur("range")}
+                onFocus={(e) => e.target.select()}
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
+              />
+            </div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <RangeNumericInput
-              idPrefix="calc-op"
-              label="둘째 수 범위"
-              minValue={opMin}
-              maxValue={opMax}
-              onMinChange={setOpMin}
-              onMaxChange={setOpMax}
-              onMinBlur={() => normalizeRangeOnBlur("op")}
-              onMaxBlur={() => normalizeRangeOnBlur("op")}
-              onFocusSelect
-              inputClassName={`flex-1 min-w-0 p-2.5 border-2 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed ${
-                hasOpMinError ? "border-rose-400 bg-rose-50" : "border-slate-200"
-              }`}
-            />
-            {hasOpMinError ? <p className="mt-2 text-xs text-rose-600">둘째 수 범위를 확인해 주세요.</p> : null}
+          <div className="rounded-xl border border-slate-200/80 bg-white p-3">
+            <p className="block text-xs text-slate-500 font-bold mb-2">둘째 수 범위</p>
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={opMin}
+                onChange={(e) => setOpMin(parseNumericInput(e.target.value))}
+                onBlur={() => normalizeRangeOnBlur("op")}
+                onFocus={(e) => e.target.select()}
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
+              />
+              <span className="font-bold text-gray-400">~</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={opMax}
+                onChange={(e) => setOpMax(parseNumericInput(e.target.value))}
+                onBlur={() => normalizeRangeOnBlur("op")}
+                onFocus={(e) => e.target.select()}
+                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
+              />
+            </div>
           </div>
         </div>
 
-        <div className={showAdvanced ? "block" : "hidden"}>
         {isArithmeticResultRange ? (
           <div className="mb-5 transition-opacity opacity-100 space-y-4">
             {isMixedAddSub ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
                 <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기 결과값 범위</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
-                    idPrefix="calc-answer-add-mix"
                     title="더하기 결과값 범위"
                     left={answerAddMin}
                     right={answerAddMax}
@@ -478,9 +430,9 @@ export default function CalcPage() {
                         setAnswerAddMax(l);
                       }
                     }}
+                    onFocus={(el) => el.select()}
                   />
                   <RangePair
-                    idPrefix="calc-answer-sub-mix"
                     title="빼기 결과값 범위"
                     left={answerSubMin}
                     right={answerSubMax}
@@ -496,15 +448,15 @@ export default function CalcPage() {
                         setAnswerSubMax(l);
                       }
                     }}
+                    onFocus={(el) => el.select()}
                   />
                 </div>
               </div>
             ) : isMixedMulDiv ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
                 <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기 결과값 범위</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
-                    idPrefix="calc-answer-mul-mix"
                     title="곱하기 결과값 범위"
                     left={answerMulMin}
                     right={answerMulMax}
@@ -516,9 +468,9 @@ export default function CalcPage() {
                         setAnswerMulMax(l);
                       }
                     }}
+                    onFocus={(el) => el.select()}
                   />
                   <RangePair
-                    idPrefix="calc-answer-div-mix"
                     title="나누기 결과값 범위"
                     left={answerDivMin}
                     right={answerDivMax}
@@ -530,15 +482,15 @@ export default function CalcPage() {
                         setAnswerDivMax(l);
                       }
                     }}
+                    onFocus={(el) => el.select()}
                   />
                 </div>
               </div>
             ) : type === "add" || type === "sub" ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
                 <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기 결과값 범위</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
-                    idPrefix="calc-answer-add-single"
                     title="더하기 결과값 범위"
                     left={answerAddMin}
                     right={answerAddMax}
@@ -554,9 +506,9 @@ export default function CalcPage() {
                         setAnswerAddMax(l);
                       }
                     }}
+                    onFocus={(el) => el.select()}
                   />
                   <RangePair
-                    idPrefix="calc-answer-sub-single"
                     title="빼기 결과값 범위"
                     left={answerSubMin}
                     right={answerSubMax}
@@ -572,15 +524,15 @@ export default function CalcPage() {
                         setAnswerSubMax(l);
                       }
                     }}
+                    onFocus={(el) => el.select()}
                   />
                 </div>
               </div>
             ) : (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="rounded-xl border border-slate-200/80 bg-white p-3">
                 <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기 결과값 범위</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <RangePair
-                    idPrefix="calc-answer-mul-single"
                     title="곱하기 결과값 범위"
                     left={type === "mul" ? answerMulMin : answerDivMin}
                     right={type === "mul" ? answerMulMax : answerDivMax}
@@ -603,9 +555,9 @@ export default function CalcPage() {
                         else setAnswerMulMax(l);
                       }
                     }}
+                    onFocus={(el) => el.select()}
                   />
                   <RangePair
-                    idPrefix="calc-answer-div-single"
                     title="나누기 결과값 범위"
                     left={type === "mul" ? answerDivMin : answerDivMin}
                     right={type === "mul" ? answerDivMax : answerDivMax}
@@ -621,6 +573,7 @@ export default function CalcPage() {
                         setAnswerDivMax(l);
                       }
                     }}
+                    onFocus={(el) => el.select()}
                   />
                 </div>
               </div>
@@ -634,9 +587,8 @@ export default function CalcPage() {
         <div className="rounded-xl border border-slate-200/80 bg-white p-3 mb-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label htmlFor="calc-layout" className="block text-xs text-slate-500 font-bold mb-2">레이아웃</label>
+              <p className="block text-xs text-slate-500 font-bold mb-2">레이아웃</p>
               <Dropdown
-                id="calc-layout"
                 value={layout === "a" ? 1 : 2}
                 options={[
                   { value: 1, label: "3열" },
@@ -646,18 +598,16 @@ export default function CalcPage() {
               />
             </div>
             <div>
-              <label htmlFor="calc-count" className="block text-xs text-slate-500 font-bold mb-2">문제수</label>
+              <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
               <Dropdown
-                id="calc-count"
                 value={count}
                 options={countOptions.map((n) => ({ value: n, label: `${n}문제` }))}
                 onChange={setCount}
               />
             </div>
             <div>
-              <label htmlFor="calc-sheets" className="block text-xs text-slate-500 font-bold mb-2">장수</label>
+              <p className="block text-xs text-slate-500 font-bold mb-2">장수</p>
               <Dropdown
-                id="calc-sheets"
                 value={sheets}
                 options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}장` }))}
                 onChange={setSheets}
@@ -666,7 +616,7 @@ export default function CalcPage() {
           </div>
         </div>
 
-        <div className="mb-5 p-4 bg-slate-50 rounded-2xl border border-slate-200/70">
+        <div className="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200/70">
           <p className="text-xs text-slate-500 mb-3 font-medium">미리보기</p>
           <div className="flex gap-8 text-lg font-semibold" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
             {[0, 1, 2].map((i) => {
@@ -685,16 +635,13 @@ export default function CalcPage() {
           </div>
         </div>
 
-        </div>
-
         <button
-          type="button"
           onClick={generate}
-          className="w-full py-3.8 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white font-black text-base cursor-pointer transition-all duration-200 mt-2"
+          className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-base cursor-pointer transition-colors mt-2"
         >
           문제 생성
         </button>
-      </section>
+      </div>
     </div>
   );
 }
