@@ -145,6 +145,50 @@ export function encodeMatchParams(params: MatchParams): string {
   }).toString();
 }
 
+export function encodeCalcParams(params: CalcParams): string {
+  const encoded = new URLSearchParams({
+    t: params.type,
+    c: String(params.count),
+    s: String(params.sheets),
+    mn: String(params.rangeMin),
+    mx: String(params.rangeMax),
+    omn: String(params.opMin),
+    omx: String(params.opMax),
+    layout: params.layout,
+  });
+
+  if (params.type === "add_sub") {
+    if (params.answerAddMin !== undefined && params.answerAddMax !== undefined) {
+      encoded.set("amnA", String(params.answerAddMin));
+      encoded.set("amxA", String(params.answerAddMax));
+    }
+    if (params.answerSubMin !== undefined && params.answerSubMax !== undefined) {
+      encoded.set("amnS", String(params.answerSubMin));
+      encoded.set("amxS", String(params.answerSubMax));
+    }
+  } else if (params.type === "mul_div") {
+    if (
+      params.answerMulMin !== undefined &&
+      params.answerMulMax !== undefined &&
+      params.answerDivMin !== undefined &&
+      params.answerDivMax !== undefined
+    ) {
+      encoded.set("amnM", String(params.answerMulMin));
+      encoded.set("amxM", String(params.answerMulMax));
+      encoded.set("amnD", String(params.answerDivMin));
+      encoded.set("amxD", String(params.answerDivMax));
+    } else if (params.answerMin !== undefined && params.answerMax !== undefined) {
+      encoded.set("amn", String(params.answerMin));
+      encoded.set("amx", String(params.answerMax));
+    }
+  } else if (params.answerMin !== undefined && params.answerMax !== undefined) {
+    encoded.set("amn", String(params.answerMin));
+    encoded.set("amx", String(params.answerMax));
+  }
+
+  return encoded.toString();
+}
+
 export function parseMatchParams(search: string | URLSearchParams): MatchParams | null {
   const p = parseSource(search);
   const t = p.get("t");
@@ -467,6 +511,20 @@ export function parseCalc3Params(search: string | URLSearchParams): Calc3Params 
     op2Min,
     op2Max,
   };
+}
+
+export function encodeCalc3Params(params: Calc3Params): string {
+  return new URLSearchParams({
+    t: params.type,
+    c: String(params.count),
+    s: String(params.sheets),
+    mn: String(params.rangeMin),
+    mx: String(params.rangeMax),
+    omn: String(params.opMin),
+    omx: String(params.opMax),
+    o2mn: String(params.op2Min),
+    o2mx: String(params.op2Max),
+  }).toString();
 }
 
 export function generateCalc3Sheet(params: Calc3Params, queryString: string, sheetIndex = 0): Calc3Problem[] {

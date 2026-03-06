@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Noto_Sans_KR } from "next/font/google";
 import GAProvider from "@/lib/ga/GAProvider";
 import { GA_ID } from "@/lib/ga";
 import "./globals.css";
+
+const notoSansKr = Noto_Sans_KR({
+  subsets: ["latin"],
+  weight: ["400", "700", "900"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "수학 문제 생성기",
@@ -31,7 +38,7 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className="bg-gray-50 text-gray-900">
+      <body className={`${notoSansKr.className} bg-gray-50 text-gray-900`}>
         <GAProvider />
         {children}
         <Script

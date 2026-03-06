@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, memo, useEffect, useMemo, useRef, useState } from "react";
 import { parseMatchParams, generateMatchAllSheets, type MatchProblem } from "@/lib/math-generator";
 import { saveWorksheet } from "@/lib/supabase";
 import Link from "next/link";
@@ -21,7 +21,7 @@ const BOT_COLORS = [
   { border: "#80cbc4", label: "teal" },
 ];
 
-function ProblemCard({ problem, index }: { problem: MatchProblem; index: number }) {
+const ProblemCard = memo(function ProblemCard({ problem, index }: { problem: MatchProblem; index: number }) {
   const circleLabel = String(problem.op);
   return (
     <div
@@ -74,7 +74,7 @@ function ProblemCard({ problem, index }: { problem: MatchProblem; index: number 
         {/* 윗줄 */}
         <div className="flex justify-center" style={{ gap: 20 }}>
           {problem.top.map((n, j) => (
-            <div key={j} className="flex flex-col items-center">
+            <div key={`${n}-${j}`} className="flex flex-col items-center">
               <div
                 style={{
                   width: 48,
@@ -113,7 +113,7 @@ function ProblemCard({ problem, index }: { problem: MatchProblem; index: number 
         {/* 아랫줄 */}
         <div className="flex justify-center" style={{ gap: 20 }}>
           {problem.bottom.map((n, j) => (
-            <div key={j} className="flex flex-col items-center">
+            <div key={`${n}-${j}`} className="flex flex-col items-center">
               <div
                 style={{
                   width: 6,
@@ -148,9 +148,10 @@ function ProblemCard({ problem, index }: { problem: MatchProblem; index: number 
       </div>
     </div>
   );
-}
+});
+ProblemCard.displayName = "ProblemCard";
 
-function Sheet({
+const Sheet = memo(function Sheet({
   problems,
   title,
   count,
@@ -205,7 +206,7 @@ function Sheet({
         }}
       >
         {problems.map((p, i) => (
-          <div key={i} className="h-full flex items-center">
+          <div key={`${p.type}-${p.op}-${p.top.join("-")}-${p.bottom.join("-")}`} className="h-full flex items-center">
             <div className="w-full">
               <ProblemCard problem={p} index={i} />
             </div>
@@ -214,7 +215,8 @@ function Sheet({
       </div>
     </div>
   );
-}
+});
+Sheet.displayName = "Sheet";
 
 function PreviewContent() {
   const searchParams = useSearchParams();
@@ -336,7 +338,10 @@ function PreviewContent() {
 
       {/* 시트들 */}
       {allSheets.map((problems, i) => (
-        <div key={i} className={i < allSheets.length - 1 ? "break-after-page" : ""}>
+        <div
+          key={`sheet-${i + 1}-${problems.map((p) => `${p.type}-${p.op}-${p.top.join("-")}-${p.bottom.join("-")}`).join("|")}`}
+          className={i < allSheets.length - 1 ? "break-after-page" : ""}
+        >
           <Sheet
             problems={problems}
             title={title}

@@ -7,6 +7,7 @@ import NavBack from "@/components/NavBack";
 import Toast from "@/components/ui/Toast";
 import RangeNumericInput from "@/components/ui/RangeNumericInput";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
+import { encodeCalcParams } from "@/lib/math-generator";
 
 type CalcType = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
 
@@ -238,47 +239,49 @@ export default function CalcPage() {
       return;
     }
 
-    const params = new URLSearchParams({
-      mode: "calc",
-      t: type,
-      c: String(count),
-      s: String(sheets),
-      mn: String(rangeMin),
-      mx: String(rangeMax),
-      omn: String(opMin),
-      omx: String(opMax),
+    const encodedParams = encodeCalcParams({
+      type,
+      count,
+      sheets,
+      rangeMin,
+      rangeMax,
+      opMin,
+      opMax,
+      answerMin: isAdd
+        ? answerAddMin
+        : isSub
+          ? answerSubMin
+          : isMul
+            ? answerMulMin
+            : isDiv
+              ? answerDivMin
+              : isArithmeticResultRange
+                ? answerMin
+                : undefined,
+      answerMax: isAdd
+        ? answerAddMax
+        : isSub
+          ? answerSubMax
+          : isMul
+            ? answerMulMax
+            : isDiv
+              ? answerDivMax
+              : isArithmeticResultRange
+                ? answerMax
+                : undefined,
+      answerAddMin: isMixedAddSub ? answerAddMin : undefined,
+      answerAddMax: isMixedAddSub ? answerAddMax : undefined,
+      answerSubMin: isMixedAddSub ? answerSubMin : undefined,
+      answerSubMax: isMixedAddSub ? answerSubMax : undefined,
+      answerMulMin: isMixedMulDiv ? answerMulMin : undefined,
+      answerMulMax: isMixedMulDiv ? answerMulMax : undefined,
+      answerDivMin: isMixedMulDiv ? answerDivMin : undefined,
+      answerDivMax: isMixedMulDiv ? answerDivMax : undefined,
       layout,
     });
 
-    if (isMixedAddSub) {
-      params.set("amnA", String(answerAddMin));
-      params.set("amxA", String(answerAddMax));
-      params.set("amnS", String(answerSubMin));
-      params.set("amxS", String(answerSubMax));
-    } else if (isMixedMulDiv) {
-      params.set("amnM", String(answerMulMin));
-      params.set("amxM", String(answerMulMax));
-      params.set("amnD", String(answerDivMin));
-      params.set("amxD", String(answerDivMax));
-    } else if (isAdd) {
-      params.set("amn", String(answerAddMin));
-      params.set("amx", String(answerAddMax));
-    } else if (isSub) {
-      params.set("amn", String(answerSubMin));
-      params.set("amx", String(answerSubMax));
-    } else if (isMul) {
-      params.set("amn", String(answerMulMin));
-      params.set("amx", String(answerMulMax));
-    } else if (isDiv) {
-      params.set("amn", String(answerDivMin));
-      params.set("amx", String(answerDivMax));
-    } else if (isArithmeticResultRange) {
-      params.set("amn", String(answerMin));
-      params.set("amx", String(answerMax));
-    }
-
     trackEvent(GA_EVENTS.GENERATE, { page: 'calc', type, count, sheets, range_min: rangeMin, range_max: rangeMax, layout });
-    router.push(`/calc/preview?${params.toString()}`);
+    router.push(`/calc/preview?${encodedParams}`);
   }
 
   return (

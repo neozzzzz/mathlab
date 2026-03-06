@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, memo, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import NavBack from "@/components/NavBack";
 import Toast from "@/components/ui/Toast";
@@ -14,7 +14,7 @@ import {
   type Calc3Problem,
 } from "@/lib/math-generator";
 
-function Calc3Sheet({
+const Calc3Sheet = memo(function Calc3Sheet({
   problems,
   title,
   sheetNum,
@@ -96,7 +96,8 @@ function Calc3Sheet({
       </div>
     </div>
   );
-}
+});
+Calc3Sheet.displayName = "Calc3Sheet";
 
 function Calc3PreviewContent() {
   const searchParams = useSearchParams();
@@ -223,7 +224,10 @@ function Calc3PreviewContent() {
       )}
 
       {allSheets.map((problems, i) => (
-        <div key={i} className={i < allSheets.length - 1 ? "break-after-page" : ""}>
+        <div
+          key={`sheet-${i + 1}-${problems.map((p) => `${p.a}-${p.op1}-${p.b}-${p.op2}-${p.c}`).join("|")}`}
+          className={i < allSheets.length - 1 ? "break-after-page" : ""}
+        >
           <Calc3Sheet problems={problems} title={title} sheetNum={i + 1} totalSheets={resolvedParams.sheets} />
         </div>
       ))}

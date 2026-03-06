@@ -7,6 +7,7 @@ import NavBack from "@/components/NavBack";
 import Toast from "@/components/ui/Toast";
 import RangeNumericInput from "@/components/ui/RangeNumericInput";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
+import { encodeCalc3Params } from "@/lib/math-generator";
 
 type OpType3 = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
 
@@ -83,20 +84,19 @@ export default function Calc3Page() {
       showToast("숫자 범위를 입력해주세요");
       return;
     }
-    const params = new URLSearchParams({
-      mode: "calc3",
-      t: type,
-      c: String(count),
-      s: String(sheets),
-      mn: String(rangeMin),
-      mx: String(rangeMax),
-      omn: String(opMin),
-      omx: String(opMax),
-      o2mn: String(op2Min),
-      o2mx: String(op2Max),
+    const params = encodeCalc3Params({
+      type,
+      count,
+      sheets,
+      rangeMin,
+      rangeMax,
+      opMin,
+      opMax,
+      op2Min,
+      op2Max,
     });
     trackEvent(GA_EVENTS.GENERATE, { page: "calc3", type, count, sheets, range_min: rangeMin, range_max: rangeMax });
-    router.push(`/calc3/preview?${params.toString()}`);
+    router.push(`/calc3/preview?${params}`);
   }
 
   const previewProblems = [0, 1, 2].map((i) => {
