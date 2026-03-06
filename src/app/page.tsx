@@ -86,8 +86,9 @@ export default function LandingPage() {
                   <div className={`mt-1 inline-block px-4 py-1.5 rounded-full text-xs font-bold ${m.badgeClass}`}>
                     {m.badge}
                   </div>
-                  <div className="mt-1 inline-flex items-center text-sm font-black text-slate-800 bg-transparent hover:bg-transparent transition-all duration-200 group-hover:translate-x-1">
-                    시작하기 <ArrowRight className="w-4 h-4 ml-1 transition-transform duration-200" />
+                  <div className="mt-1 inline-flex items-center gap-2 rounded-full border border-slate-900 bg-slate-900 text-white px-3 py-1.5 text-xs font-bold hover:bg-slate-800 transition-colors duration-200">
+                    시작하기
+                    <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
               </TrackedLink>
