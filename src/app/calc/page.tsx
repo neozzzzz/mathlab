@@ -299,7 +299,7 @@ export default function CalcPage() {
       </div>
 
       <section className="max-w-[860px] mx-auto mb-6 bg-white/95 rounded-[22px] border border-slate-200 p-5">
-        <p className="text-xs font-bold text-slate-500">실험: 빠른 시작</p>
+        <p className="text-xs font-bold text-slate-500">변경됨: 일반 연산 실험 모드</p>
         <h2 className="mt-2 text-lg font-black text-slate-900">간편 모드</h2>
         <p className="mt-1 text-sm text-slate-600">기본값만 먼저 맞춰 빠르게 생성하고, 필요하면 수동 설정으로 이동하세요.</p>
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
