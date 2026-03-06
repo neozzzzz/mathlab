@@ -86,7 +86,7 @@ export default function Calc3Page() {
           <span className="ml-1 transition-all duration-150 group-hover:font-bold">메인으로</span>
         </Link>
       </div>
-      <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">일반 연산 (3개의 수)</h1>
+      <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">사칙 연산 (3개의 수)</h1>
 
       <div className="max-w-[600px] mx-auto bg-white rounded-3xl border border-slate-200/80 shadow-[0_8px_40px_rgba(15,23,42,0.06)] p-6 md:p-7">
         {/* 연산 유형 */}

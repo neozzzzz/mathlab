@@ -51,7 +51,7 @@ export default function UxLabPage() {
       <div className="mx-auto max-w-3xl space-y-4">
         <div className="rounded-2xl bg-white border border-slate-200 p-5 sm:p-6">
           <p className="text-xs tracking-[0.24em] text-slate-500 font-bold">UX TEMP LAB</p>
-          <h1 className="mt-2 text-3xl sm:text-4xl font-black text-slate-900">일반 연산 임시 실험 화면</h1>
+          <h1 className="mt-2 text-3xl sm:text-4xl font-black text-slate-900">사칙 연산 임시 실험 화면</h1>
           <p className="mt-2 text-sm text-slate-600">
             상세 화면 UX 개선안(임시). 기본 흐름은 유지하고, 설정 밀도를 줄여 <strong>처음 진입자 이탈</strong>을 줄이는 실험 화면입니다.
           </p>

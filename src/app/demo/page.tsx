@@ -6,7 +6,7 @@ import { GA_EVENTS } from "@/lib/ga";
 const DEMO_STEPS = [
   {
     title: "1) 유형 선택",
-    desc: "짝맞추기, 일반연산, 3개수 연산 중 원하는 템플릿을 바로 확인하세요.",
+    desc: "짝맞추기, 사칙 연산, 3개수 연산 중 원하는 템플릿을 바로 확인하세요.",
     action: "바로 가기",
     href: "/match",
     icon: Link2,

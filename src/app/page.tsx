@@ -15,7 +15,7 @@ const MODES = [
   },
   {
     href: "/calc",
-    title: "일반 연산",
+    title: "사칙 연산",
     desc: "빈칸에 답을 직접\n써 넣는 연습 문제",
     badge: "더하기 · 빼기 · 곱하기 · 나누기",
     icon: PencilLine,
@@ -25,7 +25,7 @@ const MODES = [
   },
   {
     href: "/calc3",
-    title: "일반 연산 (3수)",
+    title: "사칙 연산 (3수)",
     desc: "세 개의 수로 구성된\n연산 연습 문제",
     badge: "a ○ b ○ c = ?",
     icon: Layers,
