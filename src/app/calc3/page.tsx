@@ -4,14 +4,11 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Dropdown from "@/components/Dropdown";
 import NavBack from "@/components/NavBack";
+import Toast from "@/components/ui/Toast";
+import RangeNumericInput from "@/components/ui/RangeNumericInput";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
 
 type OpType3 = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
-
-function parseNumericInput(v: string) {
-  const raw = v.replace(/\D/g, "");
-  return raw === "" ? 0 : parseInt(raw, 10);
-}
 
 export default function Calc3Page() {
   const router = useRouter();
@@ -32,9 +29,13 @@ export default function Calc3Page() {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
   }
-  useEffect(() => () => {
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-  }, []);
+
+  useEffect(
+    () => () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    },
+    [],
+  );
 
   function normalizeRange(min: number, max: number, setMax: (v: number) => void) {
     if (max > 0 && max < min) {
@@ -94,7 +95,7 @@ export default function Calc3Page() {
       o2mn: String(op2Min),
       o2mx: String(op2Max),
     });
-    trackEvent(GA_EVENTS.GENERATE, { page: 'calc3', type, count, sheets, range_min: rangeMin, range_max: rangeMax });
+    trackEvent(GA_EVENTS.GENERATE, { page: "calc3", type, count, sheets, range_min: rangeMin, range_max: rangeMax });
     router.push(`/calc3/preview?${params.toString()}`);
   }
 
@@ -109,11 +110,7 @@ export default function Calc3Page() {
 
   return (
     <div className="min-h-[100dvh] bg-slate-100/70 px-4 pb-8">
-      {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-semibold animate-fade-in">
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} />
       <NavBack href="/" label="메인으로" gaEvent={GA_EVENTS.NAV_HOME} gaFrom="calc3" />
       <div className="max-w-[860px] mx-auto mb-6">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold">Mathlab • Triple Flow</p>
@@ -129,6 +126,7 @@ export default function Calc3Page() {
           {teacherPresets.map((preset) => (
             <button
               key={preset.label}
+              type="button"
               onClick={() => applyPreset(preset.data)}
               className="text-left rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 hover:border-slate-900 transition-all"
             >
@@ -140,16 +138,16 @@ export default function Calc3Page() {
       </section>
 
       <div className="max-w-[860px] mx-auto bg-white/95 rounded-[28px] border border-slate-200 shadow-[0_20px_54px_rgba(15,23,42,0.08)] p-6 md:p-8">
-        {/* 연산 유형 */}
         <div className="mb-5">
-          <label className="block font-bold text-sm mb-2">연산 유형</label>
+          <p className="block font-bold text-sm mb-2">연산 유형</p>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
             <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기</p>
             <div className="grid grid-cols-3 gap-2 mb-3">
-              {([["add", "+더하기"], ["sub", "−빼기"], ["add_sub", "혼합"]] as [OpType3, string][]).map(([k, label]) => (
+              {([ ["add", "+더하기"], ["sub", "−빼기"], ["add_sub", "혼합"] ] as [OpType3, string][]).map(([k, label]) => (
                 <button
                   key={k}
                   type="button"
+                  aria-pressed={type === k}
                   onClick={() => setType(k)}
                   className={`w-full text-center py-2.5 px-2 border-2 rounded-xl font-bold text-sm cursor-pointer transition-all ${
                     type === k
@@ -163,10 +161,11 @@ export default function Calc3Page() {
             </div>
             <p className="text-xs text-slate-500 font-bold mb-2">곱하기/나누기</p>
             <div className="grid grid-cols-3 gap-2">
-              {([["mul", "×곱하기"], ["div", "÷나누기"], ["mul_div", "혼합"]] as [OpType3, string][]).map(([k, label]) => (
+              {([ ["mul", "×곱하기"], ["div", "÷나누기"], ["mul_div", "혼합"] ] as [OpType3, string][]).map(([k, label]) => (
                 <button
                   key={k}
                   type="button"
+                  aria-pressed={type === k}
                   onClick={() => setType(k)}
                   className={`w-full text-center py-2.5 px-2 border-2 rounded-xl font-bold text-sm cursor-pointer transition-all ${
                     type === k
@@ -181,98 +180,65 @@ export default function Calc3Page() {
           </div>
         </div>
 
-        {/* 수 범위 */}
-        <label className="block text-sm font-bold mb-2">수 범위</label>
+        <p className="block text-sm font-bold mb-2">수 범위</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <p className="block text-xs text-slate-500 font-bold mb-2">첫째 수 범위</p>
-            <div className="flex gap-2 items-center">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={rangeMin}
-                onChange={(e) => setRangeMin(parseNumericInput(e.target.value))}
-                onBlur={() => normalizeRange(rangeMin, rangeMax, setRangeMax)}
-                onFocus={(e) => e.target.select()}
-                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
-              />
-              <span className="font-bold text-gray-400">~</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={rangeMax}
-                onChange={(e) => setRangeMax(parseNumericInput(e.target.value))}
-                onBlur={() => normalizeRange(rangeMin, rangeMax, setRangeMax)}
-                onFocus={(e) => e.target.select()}
-                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
-              />
-            </div>
+            <RangeNumericInput
+              idPrefix="calc3-range"
+              label="첫째 수 범위"
+              minValue={rangeMin}
+              maxValue={rangeMax}
+              onMinChange={setRangeMin}
+              onMaxChange={setRangeMax}
+              onMinBlur={() => normalizeRange(rangeMin, rangeMax, setRangeMax)}
+              onMaxBlur={() => normalizeRange(rangeMin, rangeMax, setRangeMax)}
+              onFocusSelect
+            />
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <p className="block text-xs text-slate-500 font-bold mb-2">둘째 수 범위</p>
-            <div className="flex gap-2 items-center">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={opMin}
-                onChange={(e) => setOpMin(parseNumericInput(e.target.value))}
-                onBlur={() => normalizeRange(opMin, opMax, setOpMax)}
-                onFocus={(e) => e.target.select()}
-                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
-              />
-              <span className="font-bold text-gray-400">~</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={opMax}
-                onChange={(e) => setOpMax(parseNumericInput(e.target.value))}
-                onBlur={() => normalizeRange(opMin, opMax, setOpMax)}
-                onFocus={(e) => e.target.select()}
-                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
-              />
-            </div>
+            <RangeNumericInput
+              idPrefix="calc3-op"
+              label="둘째 수 범위"
+              minValue={opMin}
+              maxValue={opMax}
+              onMinChange={setOpMin}
+              onMaxChange={setOpMax}
+              onMinBlur={() => normalizeRange(opMin, opMax, setOpMax)}
+              onMaxBlur={() => normalizeRange(opMin, opMax, setOpMax)}
+              onFocusSelect
+            />
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <p className="block text-xs text-slate-500 font-bold mb-2">셋째 수 범위</p>
-            <div className="flex gap-2 items-center">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={op2Min}
-                onChange={(e) => setOp2Min(parseNumericInput(e.target.value))}
-                onBlur={() => normalizeRange(op2Min, op2Max, setOp2Max)}
-                onFocus={(e) => e.target.select()}
-                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
-              />
-              <span className="font-bold text-gray-400">~</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={op2Max}
-                onChange={(e) => setOp2Max(parseNumericInput(e.target.value))}
-                onBlur={() => normalizeRange(op2Min, op2Max, setOp2Max)}
-                onFocus={(e) => e.target.select()}
-                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
-              />
-            </div>
+            <RangeNumericInput
+              idPrefix="calc3-op2"
+              label="셋째 수 범위"
+              minValue={op2Min}
+              maxValue={op2Max}
+              onMinChange={setOp2Min}
+              onMaxChange={setOp2Max}
+              onMinBlur={() => normalizeRange(op2Min, op2Max, setOp2Max)}
+              onMaxBlur={() => normalizeRange(op2Min, op2Max, setOp2Max)}
+              onFocusSelect
+            />
           </div>
         </div>
 
-        {/* 기본 설정 */}
-        <label className="block font-bold text-sm mb-2">기본 설정</label>
+        <p className="block font-bold text-sm mb-2">기본 설정</p>
         <div className="rounded-xl border border-slate-200/80 bg-white p-3 mb-5">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
+              <label htmlFor="calc3-count" className="block text-xs text-slate-500 font-bold mb-2">문제수</label>
               <Dropdown
+                id="calc3-count"
                 value={count}
                 options={[12, 18, 24, 36].map((n) => ({ value: n, label: `${n}문제` }))}
                 onChange={setCount}
               />
             </div>
             <div>
-              <p className="block text-xs text-slate-500 font-bold mb-2">장수</p>
+              <label htmlFor="calc3-sheets" className="block text-xs text-slate-500 font-bold mb-2">장수</label>
               <Dropdown
+                id="calc3-sheets"
                 value={sheets}
                 options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}장` }))}
                 onChange={setSheets}
@@ -281,7 +247,6 @@ export default function Calc3Page() {
           </div>
         </div>
 
-        {/* 미리보기 */}
         <div className="mb-5 p-4 bg-slate-50 rounded-2xl border border-slate-200/70">
           <p className="text-xs text-slate-500 mb-3 font-medium">미리보기</p>
           <div className="flex flex-col gap-2 text-lg font-semibold" style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
@@ -294,8 +259,8 @@ export default function Calc3Page() {
           </div>
         </div>
 
-        {/* 생성 버튼 */}
         <button
+          type="button"
           onClick={generate}
           className="w-full py-3.8 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white font-black text-base cursor-pointer transition-all duration-200 mt-2"
         >

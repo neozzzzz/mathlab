@@ -4,8 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Dropdown from "@/components/Dropdown";
 import NavBack from "@/components/NavBack";
+import Toast from "@/components/ui/Toast";
+import RangeNumericInput from "@/components/ui/RangeNumericInput";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
-import { encodeParams, type GeneratorParams } from "@/lib/generator";
+import { encodeMatchParams, type MatchParams } from "@/lib/math-generator";
 
 export default function Home() {
   const router = useRouter();
@@ -18,9 +20,13 @@ export default function Home() {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
   }
-  useEffect(() => () => {
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-  }, []);
+
+  useEffect(
+    () => () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    },
+    [],
+  );
 
   const [operands, setOperands] = useState("8,9");
   const [count, setCount] = useState(8);
@@ -65,15 +71,18 @@ export default function Home() {
       showToast("연산 유형을 선택해주세요");
       return;
     }
+
     const ops = operands
       .split(",")
-      .map((n) => parseInt(n.trim()))
-      .filter((n) => !isNaN(n));
+      .map((n) => parseInt(n.trim(), 10))
+      .filter((n) => !Number.isNaN(n));
+
     if (ops.length === 0) {
       showToast("계산 결과 값을 입력해주세요");
       return;
     }
-    const params: GeneratorParams = {
+
+    const params: MatchParams = {
       type,
       operands: ops,
       count,
@@ -81,17 +90,22 @@ export default function Home() {
       rangeMin,
       rangeMax,
     };
-    trackEvent(GA_EVENTS.GENERATE, { page: 'match', type, count, sheets, range_min: rangeMin, range_max: rangeMax });
-    router.push(`/preview?${encodeParams(params)}`);
+
+    trackEvent(GA_EVENTS.GENERATE, {
+      page: "match",
+      type,
+      count,
+      sheets,
+      range_min: rangeMin,
+      range_max: rangeMax,
+    });
+
+    router.push(`/preview?${encodeMatchParams(params)}`);
   };
 
   return (
     <div className="min-h-[100dvh] bg-slate-100/70 px-4 pb-8">
-      {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-semibold animate-fade-in">
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} />
       <NavBack href="/" label="메인으로" gaEvent={GA_EVENTS.NAV_HOME} gaFrom="match" />
       <div className="max-w-[860px] mx-auto mb-6">
         <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-bold">Mathlab • Match</p>
@@ -107,6 +121,7 @@ export default function Home() {
           {teacherPresets.map((preset) => (
             <button
               key={preset.label}
+              type="button"
               onClick={() => applyPreset(preset.data)}
               className="text-left rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 hover:border-slate-900 transition-all"
             >
@@ -118,16 +133,16 @@ export default function Home() {
       </section>
 
       <div className="max-w-[860px] mx-auto bg-white/95 rounded-[28px] border border-slate-200 shadow-[0_20px_54px_rgba(15,23,42,0.08)] p-6 md:p-8">
-        {/* 연산 유형 */}
         <div className="mb-5">
-          <label className="block font-bold text-sm mb-2">연산 유형</label>
+          <p className="block font-bold text-sm mb-2">연산 유형</p>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
             <p className="text-xs text-slate-500 font-bold mb-2">더하기/빼기</p>
             <div className="grid grid-cols-2 gap-2">
-              {([["add", "+더하기"], ["sub", "−빼기"]] as ["add" | "sub", string][]).map(([k, label]) => (
+              {([ ["add", "+더하기"], ["sub", "−빼기"] ] as ["add" | "sub", string][]).map(([k, label]) => (
                 <button
                   key={k}
                   type="button"
+                  aria-pressed={type === k}
                   onClick={() => setType(k)}
                   className={`w-full text-center py-2.5 px-2 border-2 rounded-xl font-bold text-sm cursor-pointer transition-all ${
                     type === k
@@ -142,61 +157,63 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 수 범위 */}
-        <label className="block font-bold text-sm mb-2">수 범위</label>
+        <p className="block font-bold text-sm mb-2">수 범위</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <p className="block text-xs text-slate-500 font-bold mb-2">숫자 범위</p>
-            <div className="flex gap-2 items-center">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={rangeMin}
-                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMin(v === '' ? 0 : parseInt(v, 10)); }}
-                onBlur={() => { if (rangeMax > 0 && rangeMax < rangeMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setRangeMax(rangeMin); } }}
-                onFocus={(e) => e.target.select()}
-                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
-              />
-              <span className="font-bold text-gray-400">~</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={rangeMax}
-                onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setRangeMax(v === '' ? 0 : parseInt(v, 10)); }}
-                onBlur={() => { if (rangeMax > 0 && rangeMax < rangeMin) { showToast('뒷 수가 앞 수보다 작을 수 없습니다'); setRangeMax(rangeMin); } }}
-                onFocus={(e) => e.target.select()}
-                className="flex-1 min-w-0 p-2.5 border-2 border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white"
-              />
-            </div>
+            <RangeNumericInput
+              idPrefix="match-range"
+              label="숫자 범위"
+              minValue={rangeMin}
+              maxValue={rangeMax}
+              onMinChange={setRangeMin}
+              onMaxChange={setRangeMax}
+              onMinBlur={() => {
+                if (rangeMax > 0 && rangeMax < rangeMin) {
+                  showToast("뒷 수가 앞 수보다 작을 수 없습니다");
+                  setRangeMax(rangeMin);
+                }
+              }}
+              onMaxBlur={() => {
+                if (rangeMax > 0 && rangeMax < rangeMin) {
+                  showToast("뒷 수가 앞 수보다 작을 수 없습니다");
+                  setRangeMax(rangeMin);
+                }
+              }}
+              onFocusSelect
+            />
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <p className="block text-xs text-slate-500 font-bold mb-2">계산 결과 값</p>
+            <label htmlFor="match-operands" className="block text-xs text-slate-500 font-bold mb-2">
+              계산 결과 값
+            </label>
             <input
+              id="match-operands"
               type="text"
               value={operands}
               inputMode="numeric"
-              onChange={(e) => setOperands(e.target.value.replace(/[^\d,]/g, ''))}
+              onChange={(e) => setOperands(e.target.value.replace(/[^\d,]/g, ""))}
               placeholder="예: 6,7"
               className="w-full p-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-400 bg-white"
             />
           </div>
         </div>
 
-        {/* 기본 설정 */}
-        <label className="block font-bold text-sm mb-2">기본 설정</label>
+        <p className="block font-bold text-sm mb-2">기본 설정</p>
         <div className="rounded-xl border border-slate-200/80 bg-white p-3 mb-5">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
+              <label htmlFor="match-count" className="block text-xs text-slate-500 font-bold mb-2">문제수</label>
               <Dropdown
+                id="match-count"
                 value={count}
                 options={[6, 8].map((n) => ({ value: n, label: `${n}문제` }))}
                 onChange={setCount}
               />
             </div>
             <div>
-              <p className="block text-xs text-slate-500 font-bold mb-2">장수</p>
+              <label htmlFor="match-sheets" className="block text-xs text-slate-500 font-bold mb-2">장수</label>
               <Dropdown
+                id="match-sheets"
                 value={sheets}
                 options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}장` }))}
                 onChange={setSheets}
@@ -205,12 +222,11 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 미리보기 */}
         <div className="mb-5 p-4 bg-slate-50 rounded-2xl border border-slate-200/70">
           <p className="text-xs text-slate-500 mb-3 font-medium">미리보기</p>
           <div className="flex items-center gap-[6px]" style={{ transform: "scale(0.85)", transformOrigin: "left center" }}>
             <div style={{ width: 57, height: 57, minWidth: 57, marginLeft: 80, borderRadius: "50%", border: "3px solid #e91e63", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem", fontWeight: 900, color: "#c2185b" }}>
-              {(operands.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n))[0]) || "?"}
+              {operands.split(",").map((n) => parseInt(n.trim(), 10)).filter((n) => !Number.isNaN(n))[0] || "?"}
             </div>
             <div className="flex-1 flex flex-col">
               <div className="flex justify-center" style={{ gap: 20 }}>
@@ -228,10 +244,10 @@ export default function Home() {
               <div style={{ padding: "10px 0" }} />
               <div className="flex justify-center" style={{ gap: 20 }}>
                 {(() => {
-                  const op = operands.split(",").map(n => parseInt(n.trim())).filter(n => !isNaN(n))[0];
+                  const op = operands.split(",").map((n) => parseInt(n.trim(), 10)).filter((n) => !Number.isNaN(n))[0];
                   const tops = rangeMin > 0 && rangeMax > 0 ? [rangeMin, rangeMin + 2, rangeMax] : [11, 13, 18];
                   const hasAll = type && op !== undefined;
-                  const results = hasAll ? tops.map(n => type === "sub" ? n - op : n + op) : null;
+                  const results = hasAll ? tops.map((n) => (type === "sub" ? n - op : n + op)) : null;
                   const borders = ["#ef9a9a", "#ce93d8", "#80cbc4"];
                   return [0, 1, 2].map((j) => (
                     <div key={j} className="flex flex-col items-center">
@@ -245,8 +261,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 생성 버튼 */}
         <button
+          type="button"
           onClick={generate}
           className="w-full py-3.8 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white font-black text-base cursor-pointer transition-all duration-200 mt-2"
         >

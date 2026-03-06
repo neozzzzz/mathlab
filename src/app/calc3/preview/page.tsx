@@ -2,104 +2,23 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { saveWorksheet } from "@/lib/supabase";
-import { Printer, Share2, Copy, Check } from "lucide-react";
 import Link from "next/link";
 import NavBack from "@/components/NavBack";
+import Toast from "@/components/ui/Toast";
+import PreviewActionButtons from "@/components/ui/PreviewActionButtons";
+import { saveWorksheet } from "@/lib/supabase";
 import { GA_EVENTS } from "@/lib/ga";
-
-type OpType3 = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
-
-interface Calc3Problem {
-  a: number;
-  b: number;
-  c: number;
-  op1: string; // "+", "−", "×", "÷"
-  op2: string;
-  answer: number;
-}
-
-function pickOp(type: OpType3): [string, string] {
-  const addSub = () => (Math.random() < 0.5 ? "+" : "−");
-  const mulDiv = () => (Math.random() < 0.5 ? "×" : "÷");
-  switch (type) {
-    case "add": return ["+", "+"];
-    case "sub": return ["−", "−"];
-    case "add_sub": return [addSub(), addSub()];
-    case "mul": return ["×", "×"];
-    case "div": return ["÷", "÷"];
-    case "mul_div": return [mulDiv(), mulDiv()];
-  }
-}
-
-function calcResult(a: number, b: number, op: string): number | null {
-  switch (op) {
-    case "+": return a + b;
-    case "−": return a - b;
-    case "×": return a * b;
-    case "÷": return b !== 0 && a % b === 0 ? a / b : null;
-    default: return null;
-  }
-}
-
-function generateCalc3Sheet(params: {
-  type: OpType3;
-  count: number;
-  rangeMin: number; rangeMax: number;
-  opMin: number; opMax: number;
-  op2Min: number; op2Max: number;
-}): Calc3Problem[] {
-  const problems: Calc3Problem[] = [];
-  const used = new Set<string>();
-  let attempts = 0;
-
-  const randRange = (min: number, max: number) => min + Math.floor(Math.random() * (max - min + 1));
-
-  while (problems.length < params.count && attempts < 2000) {
-    attempts++;
-    const [op1, op2] = pickOp(params.type);
-
-    let a: number, b: number, c: number;
-
-    // 나누기가 포함된 경우 나누어 떨어지도록 생성
-    if (op1 === "÷") {
-      b = randRange(params.opMin, params.opMax);
-      if (b === 0) continue;
-      const qMin = Math.ceil(params.rangeMin / b);
-      const qMax = Math.floor(params.rangeMax / b);
-      if (qMin > qMax || qMin < 1) continue;
-      const q = randRange(qMin, qMax);
-      a = b * q;
-    } else {
-      a = randRange(params.rangeMin, params.rangeMax);
-      b = randRange(params.opMin, params.opMax);
-    }
-
-    const mid = calcResult(a, b, op1);
-    if (mid === null || mid < 0) continue;
-
-    if (op2 === "÷") {
-      c = randRange(params.op2Min, params.op2Max);
-      if (c === 0 || mid % c !== 0) continue;
-    } else {
-      c = randRange(params.op2Min, params.op2Max);
-    }
-
-    const answer = calcResult(mid, c, op2);
-    if (answer === null || answer < 0) continue;
-
-    const key = `${a}${op1}${b}${op2}${c}`;
-    if (used.has(key)) continue;
-    used.add(key);
-
-    problems.push({ a, b, c, op1, op2, answer });
-  }
-
-  return problems;
-}
+import {
+  generateCalc3AllSheets,
+  parseCalc3Params,
+  type Calc3Problem,
+} from "@/lib/math-generator";
 
 function Calc3Sheet({
-  problems, title, sheetNum, totalSheets,
+  problems,
+  title,
+  sheetNum,
+  totalSheets,
 }: {
   problems: Calc3Problem[];
   title: string;
@@ -125,11 +44,16 @@ function Calc3Sheet({
   }
 
   return (
-    <div className="bg-white mx-auto" style={{
-      width: "210mm", minHeight: "297mm", boxSizing: "border-box",
-      padding: "10mm 12mm", fontFamily: "'Noto Sans KR', sans-serif",
-    }}>
-      {/* 1행: 날짜 · 이름 · 점수 */}
+    <div
+      className="bg-white mx-auto"
+      style={{
+        width: "210mm",
+        minHeight: "297mm",
+        boxSizing: "border-box",
+        padding: "10mm 12mm",
+        fontFamily: "'Noto Sans KR', sans-serif",
+      }}
+    >
       <div className="flex justify-between items-center text-sm mb-4 text-gray-400">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
@@ -138,20 +62,23 @@ function Calc3Sheet({
         <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {problems.length}</span>
       </div>
 
-      {/* 2행: 제목 */}
       <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
         {title}
         {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
       </div>
 
-      {/* 3행: 설명 */}
       <div className="pb-3 mb-4 border-b border-gray-300" style={{ fontSize: ".9rem", fontWeight: 700, color: "#555" }}>
         계산해 보세요.
       </div>
-      <div className="grid grid-cols-3 gap-x-12" style={{
-        gap: "0 48px", height: `${gridHeightMm}mm`,
-        gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-      }}>
+
+      <div
+        className="grid grid-cols-3 gap-x-12"
+        style={{
+          gap: "0 48px",
+          height: `${gridHeightMm}mm`,
+          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+        }}
+      >
         {grid.map((row, r) =>
           row.map((p, c) => {
             if (!p) return <div key={`${r}-${c}`} />;
@@ -164,7 +91,7 @@ function Calc3Sheet({
                 </span>
               </div>
             );
-          })
+          }),
         )}
       </div>
     </div>
@@ -173,12 +100,16 @@ function Calc3Sheet({
 
 function Calc3PreviewContent() {
   const searchParams = useSearchParams();
+  const queryString = useMemo(() => searchParams.toString(), [searchParams]);
+  const params = useMemo(() => parseCalc3Params(queryString), [queryString]);
+
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [allSheets, setAllSheets] = useState<Calc3Problem[][]>([]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -186,52 +117,43 @@ function Calc3PreviewContent() {
     toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
   }
 
-  const params = useMemo(() => {
-    const t = searchParams.get("t") as OpType3;
-    const c = Number(searchParams.get("c"));
-    const s = Number(searchParams.get("s"));
-    const mn = Number(searchParams.get("mn"));
-    const mx = Number(searchParams.get("mx"));
-    const omn = Number(searchParams.get("omn"));
-    const omx = Number(searchParams.get("omx"));
-    const o2mn = Number(searchParams.get("o2mn"));
-    const o2mx = Number(searchParams.get("o2mx"));
-    const validTypes = new Set(["add", "sub", "add_sub", "mul", "div", "mul_div"]);
-    if (!validTypes.has(t)) return null;
-    if (!Number.isInteger(c) || c < 1 || c > 100) return null;
-    if (!Number.isInteger(s) || s < 1 || s > 10) return null;
-    if (mn < 1 || mx > 9999 || mn > mx) return null;
-    if (omn < 1 || omx > 9999 || omn > omx) return null;
-    if (o2mn < 1 || o2mx > 9999 || o2mn > o2mx) return null;
-    return { type: t, count: c, sheets: s, rangeMin: mn, rangeMax: mx, opMin: omn, opMax: omx, op2Min: o2mn, op2Max: o2mx };
-  }, [searchParams]);
-
-  const [allSheets, setAllSheets] = useState<Calc3Problem[][]>([]);
-
   useEffect(() => {
-    if (!params || allSheets.length > 0) return;
-    setAllSheets(Array.from({ length: params.sheets }, () => generateCalc3Sheet(params)));
-  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!params) {
+      setAllSheets([]);
+      return;
+    }
+    setAllSheets(generateCalc3AllSheets(params, queryString));
+  }, [params, queryString]);
 
-  useEffect(() => () => {
-    if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    },
+    [],
+  );
 
   if (!params) {
     return (
       <div className="text-center py-20">
         <p className="text-lg font-bold mb-4">잘못된 접근입니다</p>
-        <Link href="/calc3" className="text-blue-600 underline">돌아가기</Link>
+        <Link href="/calc3" className="text-blue-600 underline">
+          돌아가기
+        </Link>
       </div>
     );
   }
 
+  const resolvedParams = params;
   const typeLabelMap: Record<string, string> = {
-    add: "더하기", sub: "빼기", add_sub: "더하기·빼기 혼합",
-    mul: "곱하기", div: "나누기", mul_div: "곱하기·나누기 혼합",
+    add: "더하기",
+    sub: "빼기",
+    add_sub: "더하기·빼기 혼합",
+    mul: "곱하기",
+    div: "나누기",
+    mul_div: "곱하기·나누기 혼합",
   };
-  const title = `${typeLabelMap[params.type] || "연산"} 연습 (3수)`;
+  const title = `${typeLabelMap[resolvedParams.type] || "연산"} 연습 (3수)`;
 
   async function handleShare() {
     if (shareUrl || saving) return;
@@ -239,11 +161,11 @@ function Calc3PreviewContent() {
       setSaving(true);
       const result = await saveWorksheet({
         title,
-        type: params!.type,
-        operands: [params!.opMin, params!.opMax, params!.op2Min, params!.op2Max],
-        rangeMin: params!.rangeMin,
-        rangeMax: params!.rangeMax,
-        problemCount: params!.count,
+        type: resolvedParams.type,
+        operands: [resolvedParams.opMin, resolvedParams.opMax, resolvedParams.op2Min, resolvedParams.op2Max],
+        rangeMin: resolvedParams.rangeMin,
+        rangeMax: resolvedParams.rangeMax,
+        problemCount: resolvedParams.count,
         problems: allSheets as never,
       });
       if ("shortCode" in result) {
@@ -272,11 +194,7 @@ function Calc3PreviewContent() {
 
   return (
     <div className="min-h-screen bg-slate-100/60">
-      {toast && (
-        <div className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in" />
       <NavBack href="/calc3" label="돌아가기" gaEvent={GA_EVENTS.NAV_BACK} gaFrom="calc3" />
       <div className="max-w-[860px] mx-auto px-6">
         <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 mt-5 mb-4 flex flex-wrap items-center gap-2">
@@ -285,29 +203,28 @@ function Calc3PreviewContent() {
           <span className="text-sm text-slate-700">문항 생성 후 바로 미리보기 인쇄·공유가 가능해요.</span>
         </div>
       </div>
-      <div className="print:hidden max-w-[860px] mx-auto px-6 flex flex-wrap justify-center items-center gap-3 pb-4">
-        <button onClick={() => window.print()} className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200">
-          <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
-        </button>
-        {!shareUrl ? (
-          <button onClick={handleShare} disabled={saving} className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200 disabled:opacity-50">
-            {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
-          </button>
-        ) : (
-          <button onClick={handleCopy} className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200">
-            {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
-          </button>
-        )}
-      </div>
+
+      <PreviewActionButtons
+        shareUrl={shareUrl}
+        saving={saving}
+        copied={copied}
+        onPrint={() => window.print()}
+        onShare={handleShare}
+        onCopy={handleCopy}
+      />
+
       {shareUrl && (
         <div className="print:hidden text-center py-2 bg-green-50 border-b border-green-200">
           <span className="text-sm text-green-800">공유 링크: </span>
-          <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">{shareUrl}</a>
+          <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">
+            {shareUrl}
+          </a>
         </div>
       )}
+
       {allSheets.map((problems, i) => (
         <div key={i} className={i < allSheets.length - 1 ? "break-after-page" : ""}>
-          <Calc3Sheet problems={problems} title={title} sheetNum={i + 1} totalSheets={params.sheets} />
+          <Calc3Sheet problems={problems} title={title} sheetNum={i + 1} totalSheets={resolvedParams.sheets} />
         </div>
       ))}
     </div>

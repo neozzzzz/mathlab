@@ -1,13 +1,14 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
-import { decodeParams, generateAllSheets, type Problem } from "@/lib/generator";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { parseMatchParams, generateMatchAllSheets, type MatchProblem } from "@/lib/math-generator";
 import { saveWorksheet } from "@/lib/supabase";
-import { Printer, Share2, Copy, Check } from "lucide-react";
 import Link from "next/link";
 import NavBack from "@/components/NavBack";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
+import Toast from "@/components/ui/Toast";
+import PreviewActionButtons from "@/components/ui/PreviewActionButtons";
 
 const TOP_COLORS = [
   { border: "#90caf9", label: "blue" },
@@ -20,7 +21,7 @@ const BOT_COLORS = [
   { border: "#80cbc4", label: "teal" },
 ];
 
-function ProblemCard({ problem, index }: { problem: Problem; index: number }) {
+function ProblemCard({ problem, index }: { problem: MatchProblem; index: number }) {
   const circleLabel = String(problem.op);
   return (
     <div
@@ -157,7 +158,7 @@ function Sheet({
   totalSheets,
   type,
 }: {
-  problems: Problem[];
+  problems: MatchProblem[];
   title: string;
   count: number;
   sheetNum: number;
@@ -217,7 +218,8 @@ function Sheet({
 
 function PreviewContent() {
   const searchParams = useSearchParams();
-  const params = decodeParams(searchParams.toString());
+  const queryString = searchParams.toString();
+  const params = useMemo(() => parseMatchParams(queryString), [queryString]);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -225,7 +227,7 @@ function PreviewContent() {
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [allSheets, setAllSheets] = useState<Problem[][]>([]);
+  const [allSheets, setAllSheets] = useState<MatchProblem[][]>([]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -234,9 +236,12 @@ function PreviewContent() {
   }
 
   useEffect(() => {
-    if (!params || allSheets.length > 0) return;
-    setAllSheets(generateAllSheets(params));
-  }, [params]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!params) {
+      setAllSheets([]);
+      return;
+    }
+    setAllSheets(generateMatchAllSheets(params, queryString));
+  }, [params, queryString]);
 
   useEffect(() => () => {
     if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
@@ -300,11 +305,7 @@ function PreviewContent() {
 
   return (
     <div className="min-h-screen bg-slate-100/60">
-      {toast && (
-        <div className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in" />
       {/* 상단 버튼 (인쇄 시 숨김) */}
       <NavBack href="/match" label="돌아가기" gaEvent={GA_EVENTS.NAV_BACK} gaFrom="match" />
       <div className="max-w-[860px] mx-auto px-6">
@@ -315,30 +316,17 @@ function PreviewContent() {
         </div>
       </div>
 
-      <div className="print:hidden max-w-[860px] mx-auto px-6 flex flex-wrap justify-center items-center gap-3 pb-4">
-        <button
-          onClick={() => { trackEvent(GA_EVENTS.PRINT, { page: 'match' }); window.print(); }}
-          className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200"
-        >
-          <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
-        </button>
-        {!shareUrl ? (
-          <button
-            onClick={handleShare}
-            disabled={saving}
-            className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-lg transition-all duration-200 disabled:opacity-50"
-          >
-            {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
-          </button>
-        ) : (
-          <button
-            onClick={handleCopy}
-            className="px-5 py-2 rounded-full bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 cursor-pointer shadow-sm hover:shadow-md transition-all duration-200"
-          >
-            {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
-          </button>
-        )}
-      </div>
+      <PreviewActionButtons
+        shareUrl={shareUrl}
+        saving={saving}
+        copied={copied}
+        onPrint={() => {
+          trackEvent(GA_EVENTS.PRINT, { page: "match" });
+          window.print();
+        }}
+        onShare={handleShare}
+        onCopy={handleCopy}
+      />
       {shareUrl && (
         <div className="print:hidden text-center py-2 bg-green-50 border-b border-green-200">
           <span className="text-sm text-green-800">공유 링크: </span>
