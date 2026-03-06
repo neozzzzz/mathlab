@@ -106,6 +106,43 @@ export default function CalcPage() {
   const isMul = type === "mul";
   const isDiv = type === "div";
 
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const hasRangeMinError = rangeMin <= 0 || rangeMin > rangeMax || rangeMax <= 0;
+  const hasOpMinError = opMin <= 0 || opMin > opMax || opMax <= 0;
+  const hasAddAnswerError = isAdd || isMixedAddSub ? answerAddMin <= 0 || answerAddMax <= 0 || answerAddMax < answerAddMin : false;
+  const hasSubAnswerError = isSub || isMixedAddSub ? answerSubMin <= 0 || answerSubMax <= 0 || answerSubMax < answerSubMin : false;
+  const hasMulAnswerError = isMul || isMixedMulDiv ? answerMulMin <= 0 || answerMulMax <= 0 || answerMulMax < answerMulMin : false;
+  const hasDivAnswerError = isDiv || isMixedMulDiv ? answerDivMin <= 0 || answerDivMax <= 0 || answerDivMax < answerDivMin : false;
+  const generationReadiness =
+    hasRangeMinError || hasOpMinError
+      ? "수/둘째 수 범위를 먼저 확인해 주세요"
+      : isMixedAddSub
+        ? hasAddAnswerError || hasSubAnswerError
+          ? "결과값 범위를 확인해 주세요"
+          : "현재 설정으로 생성 가능합니다"
+        : isMixedMulDiv
+          ? hasMulAnswerError || hasDivAnswerError
+            ? "결과값 범위를 확인해 주세요"
+            : "현재 설정으로 생성 가능합니다"
+          : isAdd
+            ? hasAddAnswerError
+              ? "결과값 범위를 확인해 주세요"
+              : "현재 설정으로 생성 가능합니다"
+            : isSub
+              ? hasSubAnswerError
+                ? "결과값 범위를 확인해 주세요"
+                : "현재 설정으로 생성 가능합니다"
+              : isMul
+                ? hasMulAnswerError
+                  ? "결과값 범위를 확인해 주세요"
+                  : "현재 설정으로 생성 가능합니다"
+                : isDiv
+                  ? hasDivAnswerError
+                    ? "결과값 범위를 확인해 주세요"
+                    : "현재 설정으로 생성 가능합니다"
+                  : "현재 설정으로 생성 가능합니다";
+
   function normalizeRangeOnBlur(minName: "range" | "op") {
     if (minName === "range") {
       if (rangeMax > 0 && rangeMax < rangeMin) {
@@ -318,12 +355,24 @@ export default function CalcPage() {
         {quickRangeError ? (
           <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-300 rounded-xl px-3 py-2">{quickRangeError}</p>
         ) : null}
-        <div className="mt-3">
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
           <a href="#calc-manual-mode" className="inline-flex text-sm font-bold text-slate-700 underline">현재의 수동 설정으로 이동</a>
+          <span className={`inline-flex text-xs items-center rounded-full px-3 py-1 border ${
+            generationReadiness === "현재 설정으로 생성 가능합니다" ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-amber-300 bg-amber-50 text-amber-700"
+          }`}>
+            {generationReadiness}
+          </span>
         </div>
       </section>
 
       <section id="calc-manual-mode" className="max-w-[860px] mx-auto bg-white/95 rounded-[28px] border border-slate-200 shadow-[0_20px_54px_rgba(15,23,42,0.08)] p-6 md:p-8">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced((v) => !v)}
+          className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-slate-700 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50"
+        >
+          {showAdvanced ? "상세 설정 닫기" : "상세 설정 열기"}
+        </button>
         <div className="mb-5">
           <label className="block font-bold text-sm mb-2">연산 유형</label>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
@@ -380,7 +429,11 @@ export default function CalcPage() {
               onMinBlur={() => normalizeRangeOnBlur("range")}
               onMaxBlur={() => normalizeRangeOnBlur("range")}
               onFocusSelect
+              inputClassName={`flex-1 min-w-0 p-2.5 border-2 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed ${
+                hasRangeMinError ? "border-rose-400 bg-rose-50" : "border-slate-200"
+              }`}
             />
+            {hasRangeMinError ? <p className="mt-2 text-xs text-rose-600">첫째 수 범위를 확인해 주세요.</p> : null}
           </div>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
             <RangeNumericInput
@@ -393,10 +446,15 @@ export default function CalcPage() {
               onMinBlur={() => normalizeRangeOnBlur("op")}
               onMaxBlur={() => normalizeRangeOnBlur("op")}
               onFocusSelect
+              inputClassName={`flex-1 min-w-0 p-2.5 border-2 rounded-xl text-sm text-center focus:outline-none focus:border-slate-400 bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed ${
+                hasOpMinError ? "border-rose-400 bg-rose-50" : "border-slate-200"
+              }`}
             />
+            {hasOpMinError ? <p className="mt-2 text-xs text-rose-600">둘째 수 범위를 확인해 주세요.</p> : null}
           </div>
         </div>
 
+        <div className={showAdvanced ? "block" : "hidden"}>
         {isArithmeticResultRange ? (
           <div className="mb-5 transition-opacity opacity-100 space-y-4">
             {isMixedAddSub ? (
@@ -625,6 +683,8 @@ export default function CalcPage() {
               );
             })}
           </div>
+        </div>
+
         </div>
 
         <button
