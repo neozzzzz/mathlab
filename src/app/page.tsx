@@ -98,7 +98,7 @@ export default function LandingPage() {
 
         <div className="relative z-10 mt-7 rounded-[22px] border border-dashed border-slate-300 bg-white/70 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <p className="text-sm text-slate-600">
-            <span className="font-black text-slate-800">J용 학습지</span>를 빠르게 만들고 공유 링크로 수업 전에 바로 배포하세요.
+            학습지를 빠르게 만들고 공유 링크로 수업 전에 바로 배포하세요.
           </p>
           <TrackedLink
             href="/match"
