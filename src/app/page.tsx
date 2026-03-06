@@ -9,7 +9,7 @@ const MODES = [
     desc: "윗줄 숫자와 아랫줄 결과를\n선으로 이어 보세요",
     badge: "더하기 · 빼기",
     icon: Link2,
-    accent: "from-slate-100/80 to-white",
+    accent: "from-white to-white",
     hover: "hover:border-slate-400",
     badgeClass: "bg-fuchsia-50 text-fuchsia-700",
   },
@@ -19,7 +19,7 @@ const MODES = [
     desc: "빈칸에 답을 직접\n써 넣는 연습 문제",
     badge: "더하기 · 빼기 · 곱하기 · 나누기",
     icon: PencilLine,
-    accent: "from-zinc-100/80 to-slate-50",
+    accent: "from-white to-white",
     hover: "hover:border-slate-400",
     badgeClass: "bg-sky-50 text-sky-700",
   },
@@ -29,7 +29,7 @@ const MODES = [
     desc: "세 개의 수로 구성된\n연산 연습 문제",
     badge: "a ○ b ○ c = ?",
     icon: Layers,
-    accent: "from-stone-100/80 to-zinc-100",
+    accent: "from-white to-white",
     hover: "hover:border-slate-400",
     badgeClass: "bg-emerald-50 text-emerald-700",
   },
@@ -73,7 +73,6 @@ export default function LandingPage() {
                 gaParams={{ menu: m.href.slice(1) }}
                 className={`group relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-8 text-center transition-all duration-200 ${m.hover} hover:-translate-y-1 hover:shadow-lg`}
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${m.accent} opacity-70`} />
                 <div className="relative flex flex-col items-center gap-3">
                   <Icon
                     className="w-10 h-10 text-slate-500 transition-colors group-hover:text-slate-900"
