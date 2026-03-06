@@ -31,6 +31,16 @@ const GRADIENTS = [
     className: "bg-gradient-to-r from-indigo-700 via-blue-500 to-fuchsia-700",
     label: "from-indigo-700 via-blue-500 to-fuchsia-700",
   },
+  {
+    name: "Smilegate 톤 1",
+    className: "bg-gradient-to-r from-cyan-300 via-sky-400 to-violet-300",
+    label: "from-cyan-300 via-sky-400 to-violet-300",
+  },
+  {
+    name: "Smilegate 톤 2",
+    className: "bg-gradient-to-r from-blue-300 via-indigo-300 to-fuchsia-300",
+    label: "from-blue-300 via-indigo-300 to-fuchsia-300",
+  },
 ];
 
 export default function GradientSamplesPage() {
@@ -43,7 +53,7 @@ export default function GradientSamplesPage() {
             타이틀 그라데이션 샘플
           </h1>
           <p className="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed">
-            아래 6개 샘플을 실제 화면에서 비교해봐. 맘에 드는 톤으로 바로 메인 타이틀에 적용 가능.
+            아래 8개 샘플을 실제 화면에서 비교해봐. 맘에 드는 톤으로 바로 메인 타이틀에 적용 가능.
           </p>
           <div className="mt-5">
             <Link
