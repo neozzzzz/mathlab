@@ -48,8 +48,8 @@ const GRADIENTS = [
   },
   {
     name: "Smilegate 톤 2",
-    className: "bg-gradient-to-r from-blue-300 via-indigo-300 to-fuchsia-300",
-    label: "from-blue-300 via-indigo-300 to-fuchsia-300",
+    className: "bg-gradient-to-r from-blue-500 via-indigo-600 to-fuchsia-500",
+    label: "from-blue-500 via-indigo-600 to-fuchsia-500",
   },
 ];
 
