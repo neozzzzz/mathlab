@@ -95,6 +95,10 @@ export default function CalcPage() {
   const countOptions = [12, 18, 24, 36];
   const isArithmeticResultRange =
     type === "add" || type === "sub" || type === "add_sub" || type === "mul" || type === "div" || type === "mul_div";
+  const quickRangeError =
+    rangeMin <= 0 || rangeMax <= 0 || opMin <= 0 || opMax <= 0 || rangeMin > rangeMax || opMin > opMax
+      ? "수 범위와 둘째 수 범위를 확인해 주세요"
+      : "";
   const isMixedAddSub = type === "add_sub";
   const isMixedMulDiv = type === "mul_div";
   const isAdd = type === "add";
@@ -295,9 +299,9 @@ export default function CalcPage() {
       </div>
 
       <section className="max-w-[860px] mx-auto mb-6 bg-white/95 rounded-[22px] border border-slate-200 p-5">
-        <p className="text-xs font-bold text-slate-500">초등교사/학부모 모드</p>
-        <h2 className="mt-2 text-lg font-black text-slate-900">빠른 시작 프리셋</h2>
-        <p className="mt-1 text-sm text-slate-600">상황에 맞는 연습지 설정을 버튼 한 번에 적용하세요.</p>
+        <p className="text-xs font-bold text-slate-500">실험: 빠른 시작</p>
+        <h2 className="mt-2 text-lg font-black text-slate-900">간편 모드</h2>
+        <p className="mt-1 text-sm text-slate-600">기본값만 먼저 맞춰 빠르게 생성하고, 필요하면 수동 설정으로 이동하세요.</p>
         <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
           {teacherPresets.map((preset) => (
             <button
@@ -311,9 +315,15 @@ export default function CalcPage() {
             </button>
           ))}
         </div>
+        {quickRangeError ? (
+          <p className="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-300 rounded-xl px-3 py-2">{quickRangeError}</p>
+        ) : null}
+        <div className="mt-3">
+          <a href="#calc-manual-mode" className="inline-flex text-sm font-bold text-slate-700 underline">현재의 수동 설정으로 이동</a>
+        </div>
       </section>
 
-      <div className="max-w-[860px] mx-auto bg-white/95 rounded-[28px] border border-slate-200 shadow-[0_20px_54px_rgba(15,23,42,0.08)] p-6 md:p-8">
+      <section id="calc-manual-mode" className="max-w-[860px] mx-auto bg-white/95 rounded-[28px] border border-slate-200 shadow-[0_20px_54px_rgba(15,23,42,0.08)] p-6 md:p-8">
         <div className="mb-5">
           <label className="block font-bold text-sm mb-2">연산 유형</label>
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
@@ -624,7 +634,7 @@ export default function CalcPage() {
         >
           문제 생성
         </button>
-      </div>
+      </section>
     </div>
   );
 }
