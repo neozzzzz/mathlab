@@ -38,7 +38,7 @@ export default function LandingPage() {
       <div className="mx-auto max-w-6xl relative">
         <header className="relative z-10 rounded-[26px] border border-slate-200 bg-white/90 backdrop-blur p-6 sm:p-8">
           <p className="text-xs tracking-[0.22em] text-slate-500 font-bold">MATHLAB EXPERIENCE</p>
-          <h1 className="mt-2 text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-slate-700 via-fuchsia-700 to-sky-700 bg-clip-text text-transparent">
+          <h1 className="mt-2 text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-cyan-200 via-sky-300 to-fuchsia-300 bg-clip-text text-transparent">
             매일 똑똑해지는 계산 연습,
             <br className="hidden sm:block" /> 매스레빗으로 시작
           </h1>
