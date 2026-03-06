@@ -1,4 +1,4 @@
-import { ArrowRight, PencilLine, Layers, Link2, Sparkles, UsersRound } from "lucide-react";
+import { ArrowRight, PencilLine, Layers, Link2, UsersRound } from "lucide-react";
 import TrackedLink from "@/components/TrackedLink";
 import { GA_EVENTS } from "@/lib/ga";
 
@@ -45,15 +45,16 @@ export default function LandingPage() {
             설정은 한 번에 끝내고, 즉시 미리보기와 인쇄/공유로 이어지는 학습지 제작 플로우로 바꿔보세요.
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/85 px-4 py-2 text-xs font-bold text-slate-700">
-              <Sparkles className="w-4 h-4" />
-              v1.1 인터페이스 리디자인
-            </div>
-            <button className="inline-flex items-center gap-2 rounded-full border border-slate-900 bg-slate-900 text-white px-4 py-2 text-xs font-bold hover:bg-slate-800">
+          <div className="mt-6">
+            <TrackedLink
+              href="/match"
+              gaEvent={GA_EVENTS.SELECT_MENU}
+              gaParams={{ menu: "create_and_print" }}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-900 bg-slate-900 text-white px-4 py-2 text-xs font-bold hover:bg-slate-800"
+            >
               생성 후 바로 인쇄
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </TrackedLink>
           </div>
         </header>
 
@@ -70,14 +71,18 @@ export default function LandingPage() {
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${m.accent} opacity-80`} />
                 <div className="relative">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white px-3 py-1 text-[11px] font-black text-slate-600">
-                    {m.badge}
+                  <div className="grid grid-cols-[44px_1fr] gap-3 items-start">
+                    <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/90 shadow-sm">
+                      <Icon className="w-6 h-6 text-slate-800" strokeWidth={2.2} />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900">{m.title}</h2>
+                      <div className="inline-flex items-center mt-1.5 gap-2 rounded-full border border-white/60 bg-white px-3 py-1 text-[11px] font-black text-slate-600">
+                        {m.badge}
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/90 shadow-sm">
-                    <Icon className="w-6 h-6 text-slate-800" strokeWidth={2.2} />
-                  </div>
-                  <h2 className="mt-4 text-2xl font-black text-slate-900">{m.title}</h2>
-                  <p className="mt-2 text-sm text-slate-600 leading-relaxed">{m.desc}</p>
+                  <p className="mt-4 text-sm text-slate-600 leading-relaxed">{m.desc}</p>
                   <p className="mt-5 inline-flex items-center text-sm font-bold text-slate-800 group-hover:gap-2 transition-all duration-200">
                     시작하기 <ArrowRight className="w-4 h-4 ml-1" />
                   </p>

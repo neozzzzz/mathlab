@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>MathLab Three-Step</title>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#6ee7b7"/>
+      <stop offset="100%" stop-color="#f0fdf4"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <g fill="#064e3b" stroke="#064e3b" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13 20h38M13 31h38M13 42h38" fill="none"/>
+    <circle cx="21" cy="20" r="3.5" fill="#10b981"/>
+    <circle cx="21" cy="31" r="3.5" fill="#10b981"/>
+    <circle cx="21" cy="42" r="3.5" fill="#10b981"/>
+    <path d="M28 20c3 3 5 3 8 0s5-3 8 0 5 3 8 0" fill="none"/>
+    <path d="M28 31c3 3 5 3 8 0s5-3 8 0 5 3 8 0" fill="none"/>
+    <path d="M28 42c3 3 5 3 8 0s5-3 8 0 5 3 8 0" fill="none"/>
+  </g>
+</svg>

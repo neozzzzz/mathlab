@@ -14,6 +14,11 @@ const notoSansKr = Noto_Sans_KR({
 export const metadata: Metadata = {
   title: "수학 문제 생성기",
   description: "원리셈 수학 문제 생성기",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
