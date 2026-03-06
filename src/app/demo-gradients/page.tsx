@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight, Link2, PencilLine, Layers, Check, UsersRound } from "lucide-react";
 
 const GRADIENTS = [
   {
@@ -53,6 +54,111 @@ const GRADIENTS = [
   },
 ];
 
+const CARD_SETS = [
+  {
+    name: "카드 UI 세트 1 · 기본형",
+    description: "라이트 톤 + 라운드 + 70% 높이(고정형)로 실사용에 가까운 구성",
+    cardClass:
+      "rounded-[20px] border border-slate-200 bg-white p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg",
+    iconClass: "text-slate-500",
+    titleClass: "text-xl font-black text-slate-900",
+    descClass: "text-sm text-slate-600 leading-relaxed",
+    badgeClass: "mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-black bg-fuchsia-50 text-fuchsia-700",
+    ctaClass: "mt-3 inline-flex items-center text-sm font-black text-slate-800",
+    items: [
+      {
+        icon: Link2,
+        title: "짝 맞추기",
+        desc: "윗줄 숫자와 아랫줄 결과를 선으로 이어 보는 기본형",
+        badge: "더하기 · 빼기",
+        iconColor: "from-fuchsia-100/80 via-white to-rose-100/30",
+      },
+      {
+        icon: PencilLine,
+        title: "일반 연산",
+        desc: "빈칸에 직접 답을 써 넣는 연습 문제",
+        badge: "더하기 · 빼기 · 곱하기 · 나누기",
+        iconColor: "from-sky-100/80 via-white to-sky-100/30",
+      },
+      {
+        icon: Layers,
+        title: "일반 연산 (3수)",
+        desc: "세 개 수를 조합한 단계형 연산 문제",
+        badge: "a ○ b ○ c = ?",
+        iconColor: "from-emerald-100/70 via-white to-emerald-100/25",
+      },
+    ],
+  },
+  {
+    name: "카드 UI 세트 2 · 보더 강조형",
+    description: "컨텐츠 여백을 넓혀 가독성을 올린 중립형",
+    cardClass:
+      "rounded-2xl border border-slate-300 bg-white/95 p-7 h-[70%] min-h-[260px] transition-all duration-200 hover:-translate-y-1 hover:shadow-md",
+    iconClass: "text-slate-600",
+    titleClass: "text-lg font-black text-slate-900",
+    descClass: "text-sm text-slate-600 leading-relaxed mt-2",
+    badgeClass: "mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-black bg-sky-50 text-sky-700",
+    ctaClass: "mt-4 inline-flex items-center text-sm font-black text-slate-800",
+    items: [
+      {
+        icon: UsersRound,
+        title: "짝 맞추기",
+        desc: "간단한 연산 짝 맞추기 트레이닝",
+        badge: "더하기 · 빼기",
+        iconColor: "from-blue-100/60 via-white to-indigo-100/25",
+      },
+      {
+        icon: PencilLine,
+        title: "일반 연산",
+        desc: "직접 입력 방식으로 풀이 속도 강화",
+        badge: "더하기 · 빼기 · 곱하기 · 나누기",
+        iconColor: "from-teal-100/70 via-white to-cyan-100/25",
+      },
+      {
+        icon: Layers,
+        title: "일반 연산 (3수)",
+        desc: "3수 연산으로 난이도와 집중도를 업",
+        badge: "a ○ b ○ c = ?",
+        iconColor: "from-violet-100/70 via-white to-fuchsia-100/25",
+      },
+    ],
+  },
+  {
+    name: "카드 UI 세트 3 · 미니멀형",
+    description: "카드 내부 요소 밀도를 줄여 70% 높이 느낌으로 정돈",
+    cardClass:
+      "rounded-[26px] border border-slate-200 bg-white p-6 shadow-sm h-[70%] min-h-[250px] transition-all duration-200 hover:-translate-y-1 hover:shadow-lg",
+    iconClass: "text-slate-700",
+    titleClass: "text-base font-black text-slate-900",
+    descClass: "text-sm text-slate-600 leading-relaxed",
+    badgeClass: "mt-2 inline-flex items-center rounded-md px-3 py-1 text-xs font-black bg-emerald-50 text-emerald-700",
+    ctaClass: "mt-3 inline-flex items-center text-sm font-black text-slate-800",
+    items: [
+      {
+        icon: Check,
+        title: "짝 맞추기",
+        desc: "선 연결 방식으로 핵심 연산 파악",
+        badge: "더하기 · 빼기",
+        iconColor: "from-fuchsia-50 via-white to-rose-50",
+      },
+      {
+        icon: Link2,
+        title: "일반 연산",
+        desc: "반복 입력으로 실력 정착",
+        badge: "더하기 · 빼기 · 곱하기 · 나누기",
+        iconColor: "from-sky-50 via-white to-blue-50",
+      },
+      {
+        icon: Layers,
+        title: "일반 연산 (3수)",        
+        desc: "3단계 계산 조합형 문제 구성",
+        badge: "a ○ b ○ c = ?",
+        iconColor: "from-emerald-50 via-white to-teal-50",
+      },
+    ],
+  },
+];
+
 export default function GradientSamplesPage() {
   return (
     <main className="min-h-screen bg-slate-100/70 py-8 px-4 sm:px-6 lg:px-8">
@@ -91,6 +197,44 @@ export default function GradientSamplesPage() {
                 코드: <span className="font-mono">{g.label}</span>
               </p>
             </article>
+          ))}
+        </section>
+
+        <section className="mt-12 space-y-7">
+          <h2 className="text-xl font-black text-slate-900">카드 UI 샘플 (세트 3종)</h2>
+          {CARD_SETS.map((set) => (
+            <div key={set.name} className="rounded-[24px] border border-slate-200 bg-white/95 p-5 sm:p-6">
+              <p className="text-xs tracking-[0.2em] text-slate-500 font-bold">CARD SET</p>
+              <h3 className="mt-1 text-lg sm:text-2xl font-black text-slate-900">{set.name}</h3>
+              <p className="mt-2 text-sm text-slate-600 leading-relaxed">{set.description}</p>
+              <div className="mt-5 grid gap-5 md:grid-cols-3">
+                {set.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <article
+                      key={`${set.name}-${item.title}`}
+                      className={`${set.cardClass} relative overflow-hidden`}
+                    >
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-br ${item.iconColor} opacity-70`}
+                      />
+                      <div className="relative flex h-full flex-col">
+                        <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 border border-slate-200">
+                          <Icon className={`h-4 w-4 ${set.iconClass}`} strokeWidth={2} />
+                        </div>
+                        <h4 className={`mt-3 ${set.titleClass}`}>{item.title}</h4>
+                        <p className={set.descClass}>{item.desc}</p>
+                        <p className={set.badgeClass}>{item.badge}</p>
+                        <p className={`mt-auto ${set.ctaClass}`}>
+                          시작하기
+                          <ArrowRight className="w-4 h-4 ml-1" />
+                        </p>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </section>
       </div>
