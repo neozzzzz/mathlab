@@ -42,9 +42,10 @@ export default function LandingPage() {
         <header className="relative z-10 rounded-[26px] border border-slate-200 bg-white/90 backdrop-blur p-6 sm:p-8">
           <p className="text-xs tracking-[0.22em] text-slate-500 font-bold">MATHLAB EXPERIENCE</p>
           <h1 className="mt-2 text-4xl sm:text-5xl font-black tracking-tight leading-tight bg-gradient-to-r from-blue-500 via-indigo-600 to-fuchsia-500 bg-clip-text text-transparent">
-            <span className="hidden sm:inline">매일 똑똑해지는 계산 연습, 매스레빗으로 시작</span>
-            <span className="inline sm:hidden">매일 똑똑해지는 계산 연습,
-              <br />매스레빗으로 시작</span>
+            매일 똑똑해지는 계산 연습,
+            <br className="sm:hidden" />
+            <span className="hidden sm:inline"><br /></span>
+            매스레빗으로 시작
           </h1>
           <p className="mt-3 max-w-2xl text-slate-600 text-sm leading-relaxed">
             아이 눈높이에 맞게 바로 문제지를 만들어 보세요.
