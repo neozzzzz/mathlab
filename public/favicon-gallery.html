@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mathlab Favicon Gallery</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, sans-serif; padding: 24px; background: #f8fafc; color: #0f172a; }
+    h2 { margin: 0 0 8px; }
+    .sub { color: #475569; margin-top: 0; margin-bottom: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; max-width: 1020px; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; box-shadow: 0 10px 30px rgba(15,23,42,.08); }
+    .tile { width: 84px; height: 84px; border-radius: 18px; border: 1px solid #cbd5e1; padding: 10px; display: grid; place-items: center; background: #fff; }
+    .tile img { width: 56px; height: 56px; image-rendering: auto; }
+    .title { font-weight: 700; margin: 10px 0 6px; font-size: 15px; }
+    .desc { color: #475569; font-size: 13px; min-height: 42px; }
+    code { display: block; white-space: pre-wrap; word-break: break-all; background:#f1f5f9; padding:10px; border-radius:8px; font-size:12px; max-height: 110px; overflow:auto; }
+    .btn { margin-top: 8px; padding: 8px 10px; border-radius: 8px; border:1px solid #64748b; background:#fff; cursor: pointer; }
+    .note { margin-top: 18px; padding: 12px; border-radius: 10px; background:#fff; border:1px dashed #cbd5e1; max-width: 1020px; }
+    .meta { margin-top: 12px; font-size: 12px; color:#64748b; }
+  </style>
+</head>
+<body>
+  <h2>파비콘 모음 (nano-banana-pro 신규 생성)</h2>
+  <p class="sub">요청 스타일: 사칙연산 드러내는 스타일 / 모던한 스타일 / 심플한 스타일</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="tile">
+        <img src="fav-new/favicon-arith-new.png" alt="사칙연산 스타일" />
+      </div>
+      <div class="title">안 1: 사칙연산 드러내는 스타일</div>
+      <div class="desc">+ − × ÷ 감각이 즉시 보이도록 새로 생성한 아이콘.</div>
+      <code>public/fav-new/favicon-arith-new.png</code>
+      <button class="btn" onclick="navigator.clipboard.writeText('/public/fav-new/favicon-arith-new.png')">경로 복사</button>
+      <div class="meta">이미지 생성 시간: 새로 생성(초기 생성)</div>
+    </div>
+
+    <div class="card">
+      <div class="tile">
+        <img src="fav-new/favicon-modern-new.png" alt="모던 스타일" />
+      </div>
+      <div class="title">안 2: 모던한 스타일</div>
+      <div class="desc">기하학적인 정돈감과 프리미엄 UI 톤의 아이콘.</div>
+      <code>public/fav-new/favicon-modern-new.png</code>
+      <button class="btn" onclick="navigator.clipboard.writeText('/public/fav-new/favicon-modern-new.png')">경로 복사</button>
+      <div class="meta">이미지 생성 시간: 새로 생성(초기 생성)</div>
+    </div>
+
+    <div class="card">
+      <div class="tile">
+        <img src="fav-new/favicon-simple-new.png" alt="심플 스타일" />
+      </div>
+      <div class="title">안 3: 심플한 스타일</div>
+      <div class="desc">미니멀 라인/점 형태로 작은 크기에서도 선명한 아이콘.</div>
+      <code>public/fav-new/favicon-simple-new.png</code>
+      <button class="btn" onclick="navigator.clipboard.writeText('/public/fav-new/favicon-simple-new.png')">경로 복사</button>
+      <div class="meta">이미지 생성 시간: 새로 생성(초기 생성)</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <p>현재 브라우저에서 확인: <code>http://localhost:3200/favicon-gallery.html</code></p>
+    <p>원하면 내가 지금 바로 하나 골라 <code>public/favicon.svg</code> 대신 기본 파비콘으로 교체할게.</p>
+  </div>
+</body>
+</html>

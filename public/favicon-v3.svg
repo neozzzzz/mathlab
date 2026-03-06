@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>MathLab Simple Icon</title>
+  <rect width="64" height="64" rx="14" fill="#ffffff"/>
+  <g fill="none" stroke="#111827" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+    <path d="M16 18h32"/>
+    <path d="M16 32h24"/>
+    <path d="M16 46h32"/>
+    <path d="M18 18a3 3 0 1 1-3-3 3 3 0 0 1 3 3zm0 0" stroke="none" fill="#111827"/>
+    <path d="M18 32a3 3 0 1 1-3-3 3 3 0 0 1 3 3zm0 0" stroke="none" fill="#111827"/>
+    <path d="M18 46a3 3 0 1 1-3-3 3 3 0 0 1 3 3zm0 0" stroke="none" fill="#111827"/>
+    <path d="M50 18a3 3 0 1 1-3-3 3 3 0 0 1 3 3zm0 0" stroke="none" fill="#111827"/>
+    <path d="M50 32a3 3 0 1 1-3-3 3 3 0 0 1 3 3zm0 0" stroke="none" fill="#111827"/>
+    <path d="M50 46a3 3 0 1 1-3-3 3 3 0 0 1 3 3zm0 0" stroke="none" fill="#111827"/>
+  </g>
+</svg>
