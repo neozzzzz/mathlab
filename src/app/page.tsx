@@ -9,8 +9,8 @@ const MODES = [
     desc: "윗줄 숫자와 아랫줄 결과를\n선으로 이어 보세요",
     badge: "더하기 · 빼기",
     icon: Link2,
-    accent: "from-fuchsia-500/15 to-rose-100/40",
-    hover: "hover:border-fuchsia-300",
+    accent: "from-slate-100/80 to-white",
+    hover: "hover:border-slate-400",
   },
   {
     href: "/calc",
@@ -18,8 +18,8 @@ const MODES = [
     desc: "빈칸에 답을 직접\n써 넣는 연습 문제",
     badge: "더하기 · 빼기 · 곱하기 · 나누기",
     icon: PencilLine,
-    accent: "from-sky-500/15 to-sky-100/35",
-    hover: "hover:border-sky-300",
+    accent: "from-zinc-100/80 to-slate-50",
+    hover: "hover:border-slate-400",
   },
   {
     href: "/calc3",
@@ -27,8 +27,8 @@ const MODES = [
     desc: "세 개의 수로 구성된\n연산 연습 문제",
     badge: "a ○ b ○ c = ?",
     icon: Layers,
-    accent: "from-emerald-500/15 to-emerald-100/35",
-    hover: "hover:border-emerald-300",
+    accent: "from-stone-100/80 to-zinc-100",
+    hover: "hover:border-slate-400",
   },
 ] as const;
 
