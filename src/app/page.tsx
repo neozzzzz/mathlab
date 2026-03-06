@@ -47,7 +47,7 @@ export default function LandingPage() {
 
           <div className="mt-6">
             <TrackedLink
-              href="/match"
+              href="/calc"
               gaEvent={GA_EVENTS.SELECT_MENU}
               gaParams={{ menu: "create_and_print" }}
               className="inline-flex items-center gap-2 rounded-full border border-slate-900 bg-slate-900 text-white px-4 py-2 text-xs font-bold hover:bg-slate-800"
