@@ -466,11 +466,20 @@ function CalcPreviewContent() {
         const url = `${window.location.origin}/s/${result.shortCode}`;
         setShareUrl(url);
       } else {
-        showToast("저장 실패: " + result.error);
+        const err = result.error;
+        if (err.toLowerCase().includes("failed to fetch") || err.toLowerCase().includes("fetch")) {
+          showToast("저장 실패: 네트워크 연결에 문제가 있어 공유 링크를 생성할 수 없어요.");
+        } else {
+          showToast("저장 실패: " + err);
+        }
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "알 수 없는 오류";
-      showToast(`공유 링크 생성 중 오류가 발생했습니다: ${message}`);
+      if (message.includes("Failed to fetch") || message.includes("fetch")) {
+        showToast("공유 링크 생성에 실패했어요: 네트워크 연결/DB 접속을 확인해 주세요.");
+      } else {
+        showToast(`공유 링크 생성 중 오류가 발생했습니다: ${message}`);
+      }
     } finally {
       setSaving(false);
     }

@@ -72,6 +72,7 @@ export default function Home() {
       rangeMin,
       rangeMax,
     };
+
     trackEvent(GA_EVENTS.GENERATE, {
       page: "match",
       type,
@@ -80,6 +81,7 @@ export default function Home() {
       range_min: rangeMin,
       range_max: rangeMax,
     });
+
     router.push(`/preview?${encodeParams(params)}`);
   }
 
@@ -177,6 +179,20 @@ export default function Home() {
           </div>
         </div>
 
+        <label className="block font-bold text-sm mb-2">기본 설정</label>
+        <div className="rounded-xl border border-slate-200/80 bg-white p-3 mb-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
+              <Dropdown value={count} options={[6, 8].map((n) => ({ value: n, label: `${n}문제` }))} onChange={setCount} />
+            </div>
+            <div>
+              <p className="block text-xs text-slate-500 font-bold mb-2">장수</p>
+              <Dropdown value={sheets} options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}장` }))} onChange={setSheets} />
+            </div>
+          </div>
+        </div>
+
         <div className="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200/70">
           <p className="text-xs text-slate-500 mb-3 font-medium">미리보기</p>
           <div className="relative flex items-center gap-[6px] px-2" style={{ transform: "scale(0.9)", transformOrigin: "left top" }}>
@@ -251,20 +267,6 @@ export default function Home() {
                   );
                 })}
               </div>
-            </div>
-          </div>
-        </div>
-
-        <label className="block font-bold text-sm mb-2">기본 설정</label>
-        <div className="rounded-xl border border-slate-200/80 bg-white p-3 mb-5">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
-              <Dropdown value={count} options={[6, 8].map((n) => ({ value: n, label: `${n}문제` }))} onChange={setCount} />
-            </div>
-            <div>
-              <p className="block text-xs text-slate-500 font-bold mb-2">장수</p>
-              <Dropdown value={sheets} options={[1, 2, 3, 4, 5].map((n) => ({ value: n, label: `${n}장` }))} onChange={setSheets} />
             </div>
           </div>
         </div>

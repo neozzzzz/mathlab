@@ -1,10 +1,23 @@
 import { createClient } from "@supabase/supabase-js";
 import type { MatchProblem, CalcProblem, Calc3Problem } from "@/lib/math-generator";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+function getMissingEnvMessage() {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return "Supabase 환경 변수가 설정되지 않았습니다 (.env.local).";
+  }
+  return null;
+}
+
+function getClient() {
+  const missing = getMissingEnvMessage();
+  if (missing) {
+    return null;
+  }
+  return createClient(supabaseUrl!, supabaseAnonKey!);
+}
 
 export type WorksheetType =
   | "add"
@@ -49,32 +62,52 @@ export interface SaveWorksheetResult {
 }
 
 export async function saveWorksheet(data: SaveWorksheetResult): Promise<{ shortCode: string } | { error: string }> {
-  const shortCode = generateShortCode();
+  const missing = getMissingEnvMessage();
+  if (missing) return { error: missing };
 
-  const { error } = await supabase.from("mathlab_worksheets").insert({
-    short_code: shortCode,
-    title: data.title,
-    type: data.type,
-    operands: data.operands,
-    range_min: data.rangeMin,
-    range_max: data.rangeMax,
-    problem_count: data.problemCount,
-    problems: data.problems,
-  });
+  const client = getClient();
+  if (!client) return { error: "Supabase 클라이언트를 초기화할 수 없습니다." };
 
-  if (error) return { error: error.message };
-  return { shortCode };
+  try {
+    const shortCode = generateShortCode();
+    const { error } = await client.from("mathlab_worksheets").insert({
+      short_code: shortCode,
+      title: data.title,
+      type: data.type,
+      operands: data.operands,
+      range_min: data.rangeMin,
+      range_max: data.rangeMax,
+      problem_count: data.problemCount,
+      problems: data.problems,
+    });
+
+    if (error) return { error: error.message };
+    return { shortCode };
+  } catch (err) {
+    if (err instanceof Error) {
+      return { error: err.message };
+    }
+    return { error: "알 수 없는 저장 오류" };
+  }
 }
 
-export async function getWorksheet(
-  shortCode: string
-): Promise<WorksheetRow | null> {
-  const { data, error } = await supabase
-    .from("mathlab_worksheets")
-    .select("*")
-    .eq("short_code", shortCode)
-    .single();
+export async function getWorksheet(shortCode: string): Promise<WorksheetRow | null> {
+  const missing = getMissingEnvMessage();
+  if (missing) return null;
 
-  if (error || !data) return null;
-  return data as WorksheetRow;
+  const client = getClient();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client
+      .from("mathlab_worksheets")
+      .select("*")
+      .eq("short_code", shortCode)
+      .single();
+
+    if (error || !data) return null;
+    return data as WorksheetRow;
+  } catch {
+    return null;
+  }
 }
