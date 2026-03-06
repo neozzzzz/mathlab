@@ -78,7 +78,7 @@ export default function LandingPage() {
                   />
                   <h2 className="text-xl font-black text-slate-900">{m.title}</h2>
                   <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{m.desc}</p>
-                  <div className="mt-1 inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-white/80 text-slate-700 border border-white/80">
+                  <div className="mt-1 inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300">
                     {m.badge}
                   </div>
                   <div className="mt-1 inline-flex items-center text-sm font-black text-slate-800 bg-transparent hover:bg-transparent transition-transform duration-200">

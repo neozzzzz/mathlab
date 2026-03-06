@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Printer, PencilLine, Layers, Link2, WandSparkles } from "lucide-react";
+import { ArrowRight, Printer, PencilLine, Layers, Link2, WandSparkles, Check } from "lucide-react";
 import TrackedLink from "@/components/TrackedLink";
 import { GA_EVENTS } from "@/lib/ga";
 
@@ -11,6 +11,8 @@ const DEMO_STEPS = [
     href: "/match",
     icon: Link2,
     event: "match",
+    badge: "더하기 · 빼기",
+    accent: "from-fuchsia-100/80 via-white to-rose-100/30",
   },
   {
     title: "2) 빠른 세팅",
@@ -19,6 +21,8 @@ const DEMO_STEPS = [
     href: "/calc",
     icon: PencilLine,
     event: "calc",
+    badge: "더하기 · 빼기 · 곱하기 · 나누기",
+    accent: "from-sky-100/80 via-white to-sky-100/30",
   },
   {
     title: "3) 연산형 확장",
@@ -27,6 +31,8 @@ const DEMO_STEPS = [
     href: "/calc3",
     icon: Layers,
     event: "calc3",
+    badge: "a ○ b ○ c = ?",
+    accent: "from-emerald-100/70 via-white to-emerald-100/25",
   },
 ];
 
@@ -53,7 +59,7 @@ export default function DemoPage() {
           <p className="text-xs tracking-[0.22em] text-slate-500 font-bold">MATHLUV DEMO</p>
           <h1 className="mt-2 text-3xl sm:text-5xl font-black tracking-tight text-slate-900">매스레빗 데모</h1>
           <p className="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed max-w-3xl">
-            매일 똑똑해지는 계산 연습, 매스레빗으로 시작. 
+            매일 똑똑해지는 계산 연습, 매스레빗으로 시작.
             지금 바로 핵심 흐름을 한 번에 체험해보세요.
           </p>
           <p className="mt-2 text-slate-600 text-sm sm:text-base leading-relaxed max-w-3xl">
@@ -89,15 +95,24 @@ export default function DemoPage() {
                 href={s.href}
                 gaEvent={GA_EVENTS.SELECT_MENU}
                 gaParams={{ menu: `demo_${s.event}` }}
-                className="group rounded-[20px] border border-slate-200 bg-white p-6 text-left transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                className="group relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-6 text-left transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
               >
-                <Icon className="w-6 h-6 text-slate-700" />
-                <h2 className="mt-3 text-lg font-black text-slate-900">{s.title}</h2>
-                <p className="mt-1 text-sm text-slate-600 leading-relaxed">{s.desc}</p>
-                <p className="mt-4 inline-flex items-center text-sm font-black text-slate-800">
-                  {s.action}
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </p>
+                <div className={`absolute inset-0 bg-gradient-to-br ${s.accent} opacity-70`} />
+                <div className="relative flex flex-col gap-3">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-sm border border-slate-200">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-lg font-black text-slate-900">{s.title}</h2>
+                  <p className="text-sm text-slate-600 leading-relaxed">{s.desc}</p>
+                  <div className="inline-flex items-center px-3 py-1 rounded-full border border-slate-300 bg-slate-100 text-slate-700 text-xs font-bold w-fit">
+                    <Check className="w-3.5 h-3.5 mr-1" />
+                    {s.badge}
+                  </div>
+                  <p className="mt-1 inline-flex items-center text-sm font-black text-slate-800 transition-transform duration-200 group-hover:translate-x-1">
+                    {s.action}
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </p>
+                </div>
               </TrackedLink>
             );
           })}
