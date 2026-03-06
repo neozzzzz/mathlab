@@ -71,7 +71,7 @@ export default function LandingPage() {
                 href={m.href}
                 gaEvent={GA_EVENTS.SELECT_MENU}
                 gaParams={{ menu: m.href.slice(1) }}
-                className={`group relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-8 text-center transition-all duration-200 ${m.hover} hover:-translate-y-1 hover:shadow-lg`}
+                className={`group relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-6 text-center min-h-[240px] transition-all duration-200 ${m.hover} hover:-translate-y-1 hover:shadow-lg`}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${m.accent} opacity-70`} />
                 <div className="relative flex flex-col items-center gap-3">
