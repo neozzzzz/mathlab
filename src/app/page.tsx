@@ -39,10 +39,11 @@ export default function LandingPage() {
         <header className="relative z-10 rounded-[26px] border border-slate-200 bg-white/90 backdrop-blur p-6 sm:p-8">
           <p className="text-xs tracking-[0.22em] text-slate-500 font-bold">MATHLAB EXPERIENCE</p>
           <h1 className="mt-2 text-4xl sm:text-5xl font-black tracking-tight text-slate-900">
-            수학 문제 생성기
+            매일 똑똑해지는 계산 연습,
+            <br className="hidden sm:block" /> 매스레빗으로 시작
           </h1>
           <p className="mt-3 max-w-2xl text-slate-600 text-sm sm:text-base leading-relaxed">
-            설정은 한 번에 끝내고, 즉시 미리보기와 인쇄/공유로 이어지는 학습지 제작 플로우로 바꿔보세요.
+            아이 눈높이에 맞게 바로 문제지를 만들어 보세요.
           </p>
 
           <div className="mt-6">
