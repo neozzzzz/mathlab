@@ -70,19 +70,17 @@ export default function LandingPage() {
                 className={`group relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-8 text-center transition-all duration-200 ${m.hover} hover:shadow-lg`}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${m.accent} opacity-70`} />
-                <div className="relative">
+                <div className="relative flex flex-col items-center gap-3">
                   <Icon
-                    className="w-10 h-10 mx-auto mb-4 text-slate-500 transition-colors group-hover:text-slate-900"
+                    className="w-10 h-10 text-slate-500 transition-colors group-hover:text-slate-900"
                     strokeWidth={1.5}
                   />
-                  <h2 className="text-xl font-black mb-2 text-slate-900">{m.title}</h2>
+                  <h2 className="text-xl font-black text-slate-900">{m.title}</h2>
                   <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{m.desc}</p>
-
-                  <div className="mt-4 inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-white/80 text-slate-700 border border-white/80">
+                  <div className="mt-1 inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-white/80 text-slate-700 border border-white/80">
                     {m.badge}
                   </div>
-
-                  <div className="mt-3 inline-flex items-center text-sm font-black text-slate-800">
+                  <div className="mt-1 inline-flex items-center text-sm font-black text-slate-800">
                     시작하기 <ArrowRight className="w-4 h-4 ml-1" />
                   </div>
                 </div>
