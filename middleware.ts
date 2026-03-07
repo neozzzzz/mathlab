@@ -1,24 +1,24 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const stripV2 = (pathname: string) => {
+function stripV2(pathname: string) {
+  if (!pathname.startsWith("/v2")) {
+    return pathname;
+  }
   if (pathname === "/v2") return "/";
   return pathname.replace(/^\/v2\//, "/");
-};
+}
 
 export function middleware(req: NextRequest) {
-  const { pathname, search } = req.nextUrl;
-
-  if (!pathname.startsWith("/v2")) {
+  const url = req.nextUrl.clone();
+  if (!url.pathname.startsWith("/v2")) {
     return NextResponse.next();
   }
 
-  const targetPath = stripV2(pathname);
-  const url = req.nextUrl.clone();
-  url.pathname = targetPath;
+  url.pathname = stripV2(url.pathname);
   return NextResponse.rewrite(url);
 }
 
 export const config = {
-  matcher: ["/v2", "/v2/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };
