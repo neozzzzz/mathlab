@@ -1,18 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: "/v2/:path*",
-        destination: "/:path*",
-      },
-      {
-        source: "/v2",
-        destination: "/",
-      },
-    ];
-  },
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
