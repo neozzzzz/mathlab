@@ -31,6 +31,13 @@ export default function RootLayout({
       <head>
         <meta name="google-adsense-account" content="ca-pub-1873835300306825" />
         <Script
+          id="google-adsense"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1873835300306825"
+          strategy="afterInteractive"
+          async
+          crossOrigin="anonymous"
+        />
+        <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
           strategy="afterInteractive"
         />
@@ -46,12 +53,6 @@ export default function RootLayout({
       <body className={`${notoSansKr.className} bg-gray-50 text-gray-900`}>
         <GAProvider />
         {children}
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1873835300306825"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
       </body>
     </html>
   );
