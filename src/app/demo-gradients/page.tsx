@@ -58,7 +58,7 @@ export default function GradientSamplesPage() {
     <main className="min-h-screen bg-slate-100/70 py-8 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <section className="rounded-[26px] border border-slate-200 bg-white/95 p-6 sm:p-8">
-          <p className="text-xs tracking-[0.22em] text-slate-500 font-bold">MATHLAB EXPERIENCE</p>
+          <p className="text-xs tracking-[0.22em] text-slate-500 font-bold">MATHLAB EXPERIENCE2</p>
           <h1 className="mt-2 text-3xl sm:text-5xl font-black tracking-tight text-slate-900">
             타이틀 그라데이션 샘플
           </h1>
