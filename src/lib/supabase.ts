@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { MatchProblem, CalcProblem, Calc3Problem } from "@/lib/math-generator";
+import type { MatchProblem, CalcProblem, Calc3Problem, ScreenshotAdditionProblem } from "@/lib/math-generator";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -25,9 +25,11 @@ export type WorksheetType =
   | "add_sub"
   | "mul"
   | "div"
-  | "mul_div";
+  | "mul_div"
+  | "mixed_addition"
+  | "screenshot_addition";
 
-export type WorksheetProblems = MatchProblem[][] | CalcProblem[][] | Calc3Problem[][];
+export type WorksheetProblems = MatchProblem[][] | CalcProblem[][] | Calc3Problem[][] | ScreenshotAdditionProblem[][];
 
 export interface WorksheetRow {
   id: string;

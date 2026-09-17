@@ -24,6 +24,16 @@ const MODES = [
     badgeClass: "bg-sky-50 text-sky-700",
   },
   {
+    href: "/vertical",
+    title: "사칙 연산 (세로셈)",
+    desc: "두 자리 수 덧셈을\n세로셈으로 연습해요",
+    badge: "세로셈 · 두 자리 수 덧셈",
+    icon: PencilLine,
+    accent: "from-amber-100/80 via-white to-orange-100/40",
+    hover: "hover:border-slate-400",
+    badgeClass: "bg-amber-50 text-amber-700",
+  },
+  {
     href: "/calc3",
     title: "사칙 연산 (3수)",
     desc: "세 개의 수로 구성된\n연산 연습 문제",

@@ -30,10 +30,6 @@ export default function Home() {
   );
 
   const rangeReady = rangeMin > 0 && rangeMax > 0 && rangeMin <= rangeMax;
-  const hasOperands = operandList.length > 0;
-  const isReady = rangeReady && hasOperands && count > 0 && sheets > 0;
-  const statusText = isReady ? "현재 설정으로 즉시 생성 가능합니다" : "현재 설정을 확인해 주세요";
-
   const sampleTop = useMemo(() => {
     if (!rangeReady) return [11, 13, 18];
     return [rangeMin, Math.min(rangeMin + 2, rangeMax), rangeMax];
@@ -103,16 +99,6 @@ export default function Home() {
       <h1 className="text-2xl font-black text-slate-900 text-center mb-6 tracking-tight">짝 맞추기</h1>
 
       <div className="max-w-[600px] mx-auto bg-white rounded-3xl border border-slate-200/80 shadow-[0_8px_40px_rgba(15,23,42,0.06)] p-6 md:p-7">
-        <div className="mb-4 inline-flex items-center gap-2 text-xs">
-          <span
-            className={`inline-flex px-3 py-1 rounded-full border ${
-              isReady ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-amber-300 bg-amber-50 text-amber-700"
-            }`}
-          >
-            {statusText}
-          </span>
-        </div>
-
         <div className="mb-5">
           <label className="block font-bold text-sm mb-2">연산 유형</label>
           <div className="rounded-xl border border-slate-200/80 bg-white p-3">

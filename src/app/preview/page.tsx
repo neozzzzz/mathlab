@@ -316,45 +316,47 @@ function PreviewContent() {
   }
 
   return (
-    <div>
+    <div className="min-h-[100dvh] bg-slate-100/80">
       {toast && (
         <div className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
           {toast}
         </div>
       )}
-      {/* 상단 버튼 (인쇄 시 숨김) */}
-      <div className="print:hidden max-w-[800px] mx-auto px-8 pt-6">
-        <Link href="/match" onClick={() => trackEvent(GA_EVENTS.NAV_BACK, { from: 'match' })} className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
-          <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
-          <span className="ml-1 transition-all duration-150 group-hover:font-bold">돌아가기</span>
-        </Link>
-      </div>
-      <div className="print:hidden flex justify-center items-center gap-3 py-4 bg-white border-b flex-wrap">
-        <button
-          onClick={() => { trackEvent(GA_EVENTS.PRINT, { page: 'match' }); window.print(); }}
-          className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
-        >
-          <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
-        </button>
-        {!shareUrl ? (
-          <button
-            onClick={handleShare}
-            disabled={saving}
-            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer disabled:opacity-50"
-          >
-            {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
-          </button>
-        ) : (
-          <button
-            onClick={handleCopy}
-            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
-          >
-            {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
-          </button>
-        )}
+      <div className="print:hidden border-b bg-white">
+        <div className="max-w-[880px] mx-auto px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <Link href="/match" onClick={() => trackEvent(GA_EVENTS.NAV_BACK, { from: 'match' })} className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
+            <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
+            <span className="ml-1 transition-all duration-150 group-hover:font-bold">문제 생성으로 돌아가기</span>
+          </Link>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => { trackEvent(GA_EVENTS.PRINT, { page: 'match' }); window.print(); }}
+              className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
+            >
+              <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
+            </button>
+            {!shareUrl ? (
+              <button
+                onClick={handleShare}
+                disabled={saving}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer disabled:opacity-50"
+              >
+                {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
+              </button>
+            ) : (
+              <button
+                onClick={handleCopy}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
+              >
+                {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
       {shareUrl && (
-        <div className="print:hidden text-center py-2 bg-green-50 border-b border-green-200">
+        <div className="print:hidden text-center py-2 px-4 md:px-6 bg-green-50 border-b border-green-200">
           <span className="text-sm text-green-800">공유 링크: </span>
           <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">{shareUrl}</a>
         </div>
