@@ -1,5 +1,5 @@
 export type MatchType = "add" | "sub";
-export type CalcType = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
+export type CalcType = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div" | "mixed_addition";
 
 export interface MatchProblem {
   top: number[];
@@ -35,6 +35,7 @@ export interface CalcParams {
   answerMulMax?: number;
   answerDivMin?: number;
   answerDivMax?: number;
+  gugudan?: number[];
   layout: "a" | "b";
 }
 
@@ -43,6 +44,7 @@ export interface CalcProblem {
   b: number;
   type: CalcType;
   answer: number;
+  variant?: "vertical" | "horizontal";
 }
 
 export interface Calc3Params {
@@ -64,6 +66,29 @@ export interface Calc3Problem {
   op1: string;
   op2: string;
   answer: number;
+}
+
+export interface ScreenshotAdditionProblem {
+  a: number;
+  b: number;
+  leftRoundedA: number;
+  leftCorrection: number;
+  leftIntermediate: number;
+  rightRoundedB: number;
+  rightCorrection: number;
+  rightIntermediate: number;
+  answer: number;
+  kind: "screenshot_addition";
+}
+
+export interface ScreenshotAdditionParams {
+  mode: "screenshot_addition";
+  count: number;
+  sheets: number;
+  firstMin: number;
+  firstMax: number;
+  secondMin: number;
+  secondMax: number;
 }
 
 const MAX_COUNT = 100;
@@ -157,7 +182,9 @@ export function encodeCalcParams(params: CalcParams): string {
     layout: params.layout,
   });
 
-  if (params.type === "add_sub") {
+  if (params.type === "mul" && params.gugudan && params.gugudan.length > 0) {
+    encoded.set("g", params.gugudan.join(","));
+  } else if (params.type === "add_sub") {
     if (params.answerAddMin !== undefined && params.answerAddMax !== undefined) {
       encoded.set("amnA", String(params.answerAddMin));
       encoded.set("amxA", String(params.answerAddMax));
@@ -283,8 +310,9 @@ export function parseCalcParams(search: string | URLSearchParams): CalcParams | 
   const parsedAnswerMulMax = safeNumber(p.get("amxM"));
   const parsedAnswerDivMin = safeNumber(p.get("amnD"));
   const parsedAnswerDivMax = safeNumber(p.get("amxD"));
+  const rawGugudan = p.get("g");
 
-  const validTypes = new Set(["add", "sub", "add_sub", "mul", "div", "mul_div"]);
+  const validTypes = new Set(["add", "sub", "add_sub", "mul", "div", "mul_div", "mixed_addition"]);
   if (!t || !validTypes.has(t)) return null;
   if (layout !== "a" && layout !== "b") return null;
   if (!isIntInRange(count, 1, MAX_COUNT) || !isIntInRange(sheets, 1, MAX_SHEETS)) return null;
@@ -308,6 +336,13 @@ export function parseCalcParams(search: string | URLSearchParams): CalcParams | 
 
   const hasMixedAnswerRange = t === "add_sub" && (hasAddAnswerRange || hasSubAnswerRange || hasAnswerRange);
   const hasMixedMulDivAnswerRange = t === "mul_div" && (hasMulAnswerRange || hasDivAnswerRange || hasAnswerRange);
+  const hasMixedAdditionAnswerRange = t === "mixed_addition" && (hasAnswerRange || hasAddAnswerRange);
+
+  if (t === "mixed_addition") {
+    if (rangeMin < 10 || rangeMax > 99 || opMin < 10 || opMax > 99) {
+      return null;
+    }
+  }
 
   if (hasMixedAnswerRange) {
     if (
@@ -319,6 +354,16 @@ export function parseCalcParams(search: string | URLSearchParams): CalcParams | 
       finalAnswerSubMin > finalAnswerSubMax
     ) {
       return null;
+    }
+  } else if (t === "mixed_addition") {
+    if (hasMixedAdditionAnswerRange) {
+      if (
+        !isIntInRange(finalAnswerAddMin, MIN_RANGE, MAX_RANGE) ||
+        !isIntInRange(finalAnswerAddMax, MIN_RANGE, MAX_RANGE) ||
+        finalAnswerAddMin > finalAnswerAddMax
+      ) {
+        return null;
+      }
     }
   } else if (hasMixedMulDivAnswerRange) {
     if (
@@ -341,6 +386,14 @@ export function parseCalcParams(search: string | URLSearchParams): CalcParams | 
     }
   }
 
+  const gugudan =
+    t === "mul" && rawGugudan
+      ? rawGugudan
+          .split(",")
+          .map((n) => Number(n.trim()))
+          .filter((n) => Number.isInteger(n) && n >= 1 && n <= 99)
+      : [];
+
   return {
     type: t as CalcType,
     count,
@@ -349,6 +402,7 @@ export function parseCalcParams(search: string | URLSearchParams): CalcParams | 
     rangeMax,
     opMin,
     opMax,
+    gugudan: gugudan.length > 0 ? gugudan : undefined,
     answerMin: hasAnswerRange ? parsedAnswerMin : undefined,
     answerMax: hasAnswerRange ? parsedAnswerMax : undefined,
     answerAddMin: finalAnswerAddMin,
@@ -368,6 +422,55 @@ export function generateCalcSheet(params: CalcParams, queryString: string, sheet
   const problems: CalcProblem[] = [];
   const used = new Set<string>();
   let attempts = 0;
+
+  if (params.type === "mixed_addition") {
+    while (problems.length < params.count && attempts < 5000) {
+      attempts++;
+      const a = randInt(rng, Math.max(10, params.rangeMin), Math.min(99, params.rangeMax));
+      const b = randInt(rng, Math.max(10, params.opMin), Math.min(99, params.opMax));
+      const answer = a + b;
+
+      if (answer < 0) continue;
+      if (params.answerMin !== undefined && params.answerMax !== undefined && (answer < params.answerMin || answer > params.answerMax)) continue;
+
+      const key = `${a}-${b}`;
+      if (used.has(key)) continue;
+      used.add(key);
+
+      problems.push({
+        a,
+        b,
+        type: "mixed_addition",
+        answer,
+        variant: "vertical",
+      });
+    }
+
+    return problems;
+  }
+
+  if (params.type === "mul" && params.gugudan && params.gugudan.length > 0) {
+    // 선택한 구구단(단) × 1~9 조합을 만들고, 섞은 뒤 문제 수만큼 채운다.
+    // 조합 수보다 문제 수가 많으면 다시 섞어 반복하므로, 같은 답이 나와도 문제 수를 맞춘다.
+    const multipliers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const combos: Array<{ a: number; b: number }> = [];
+    for (const table of params.gugudan) {
+      for (const m of multipliers) {
+        combos.push({ a: table, b: m });
+      }
+    }
+
+    if (combos.length === 0) return problems;
+
+    let pool: Array<{ a: number; b: number }> = [];
+    while (problems.length < params.count) {
+      if (pool.length === 0) pool = shuffleInPlace([...combos], rng);
+      const combo = pool.pop() as { a: number; b: number };
+      problems.push({ a: combo.a, b: combo.b, type: "mul", answer: combo.a * combo.b });
+    }
+
+    return problems;
+  }
 
   while (problems.length < params.count && attempts < 1000) {
     attempts++;
@@ -462,6 +565,8 @@ function pickOp(type: CalcType, rng: () => number): [string, string] {
       return ["÷", "÷"];
     case "mul_div":
       return [mulDiv(), mulDiv()];
+    case "mixed_addition":
+      return ["+", "+"];
   }
 }
 
@@ -579,4 +684,107 @@ export function generateCalc3Sheet(params: Calc3Params, queryString: string, she
 
 export function generateCalc3AllSheets(params: Calc3Params, queryString: string): Calc3Problem[][] {
   return Array.from({ length: params.sheets }, (_, i) => generateCalc3Sheet(params, queryString, i));
+}
+
+function roundDownToTens(v: number): number {
+  return Math.floor(v / 10) * 10;
+}
+
+function roundUpToTens(v: number): number {
+  const tens = Math.floor(v / 10) * 10;
+  return v % 10 === 0 ? tens : tens + 10;
+}
+
+export function encodeScreenshotAdditionParams(params: ScreenshotAdditionParams): string {
+  return new URLSearchParams({
+    mode: params.mode,
+    c: String(params.count),
+    s: String(params.sheets),
+    fmn: String(params.firstMin),
+    fmx: String(params.firstMax),
+    smn: String(params.secondMin),
+    smx: String(params.secondMax),
+  }).toString();
+}
+
+export function parseScreenshotAdditionParams(search: string | URLSearchParams): ScreenshotAdditionParams | null {
+  const p = parseSource(search);
+  const mode = p.get("mode");
+  if (mode !== "screenshot_addition") return null;
+
+  const count = safeNumber(p.get("c"));
+  const sheets = safeNumber(p.get("s"));
+  const firstMin = safeNumber(p.get("fmn"));
+  const firstMax = safeNumber(p.get("fmx"));
+  const secondMin = safeNumber(p.get("smn"));
+  const secondMax = safeNumber(p.get("smx"));
+
+  if (!isIntInRange(count, 1, MAX_COUNT) || !isIntInRange(sheets, 1, MAX_SHEETS)) return null;
+  if (!isIntInRange(firstMin, 10, 99) || !isIntInRange(firstMax, 10, 99) || firstMin > firstMax) return null;
+  if (!isIntInRange(secondMin, 10, 99) || !isIntInRange(secondMax, 10, 99) || secondMin > secondMax) return null;
+
+  return {
+    mode: "screenshot_addition",
+    count,
+    sheets,
+    firstMin,
+    firstMax,
+    secondMin,
+    secondMax,
+  };
+}
+
+export function generateScreenshotAdditionSheet(
+  params: ScreenshotAdditionParams,
+  queryString: string,
+  sheetIndex = 0,
+): ScreenshotAdditionProblem[] {
+  const rng = mulberry32(buildSeed("screenshot_addition", queryString, sheetIndex));
+  const problems: ScreenshotAdditionProblem[] = [];
+  const used = new Set<string>();
+  let attempts = 0;
+
+  while (problems.length < params.count && attempts < 3000) {
+    attempts++;
+    const a = randInt(rng, params.firstMin, params.firstMax);
+    const b = randInt(rng, params.secondMin, params.secondMax);
+
+    if (a < 10 || a > 99 || b < 10 || b > 99) continue;
+    // 1의 자리가 0인 수는 보정값이 0이 되어 학습 포맷 의미가 약해지므로 제외
+    if (a % 10 === 0 || b % 10 === 0) continue;
+
+    const leftRoundedA = a - Math.floor(a / 10);
+    const leftCorrection = a - leftRoundedA;
+    const leftIntermediate = leftCorrection + b;
+    const rightRoundedB = roundUpToTens(b);
+    const rightCorrection = rightRoundedB - b;
+    const rightIntermediate = a + rightRoundedB;
+    const answer = a + b;
+
+    const key = `${a}-${b}`;
+    if (used.has(key)) continue;
+    used.add(key);
+
+    problems.push({
+      a,
+      b,
+      leftRoundedA,
+      leftCorrection,
+      leftIntermediate,
+      rightRoundedB,
+      rightCorrection,
+      rightIntermediate,
+      answer,
+      kind: "screenshot_addition",
+    });
+  }
+
+  return problems;
+}
+
+export function generateScreenshotAdditionAllSheets(
+  params: ScreenshotAdditionParams,
+  queryString: string,
+): ScreenshotAdditionProblem[][] {
+  return Array.from({ length: params.sheets }, (_, i) => generateScreenshotAdditionSheet(params, queryString, i));
 }

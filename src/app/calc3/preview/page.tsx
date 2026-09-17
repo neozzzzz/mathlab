@@ -5,6 +5,8 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { saveWorksheet } from "@/lib/supabase";
 import { Printer, Share2, Copy, Check } from "lucide-react";
 import Link from "next/link";
+import { trackEvent, GA_EVENTS } from "@/lib/ga";
+import { NumberBox, NumberBoxRowCells } from "@/components/math/BoxCell";
 
 type OpType3 = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
 
@@ -119,23 +121,18 @@ function Calc3Sheet({
   sheetNum: number;
   totalSheets: number;
 }) {
-  const cols = 3;
-  const rows = Math.ceil(problems.length / cols);
-  const PAGE_HEIGHT_MM = 297;
-  const PAGE_PADDING_Y_MM = 20;
-  const HEADER_BLOCK_MM = 16;
-  const INSTRUCTION_BLOCK_MM = 18;
-  const gridHeightMm = Math.max(120, PAGE_HEIGHT_MM - PAGE_PADDING_Y_MM - HEADER_BLOCK_MM - INSTRUCTION_BLOCK_MM);
-
-  const grid: (Calc3Problem | null)[][] = [];
-  for (let r = 0; r < rows; r++) {
-    const row: (Calc3Problem | null)[] = [];
-    for (let c = 0; c < cols; c++) {
-      const idx = c * rows + r;
-      row.push(idx < problems.length ? problems[idx] : null);
-    }
-    grid.push(row);
-  }
+  const rowStyle: React.CSSProperties = {
+    display: "inline-grid",
+    gridTemplateColumns: "1.8ch 2.2ch 2.2ch 2.2ch",
+    alignItems: "end",
+    rowGap: 4,
+    columnGap: 0,
+    fontFamily: "'SFMono-Regular', 'Consolas', 'Menlo', 'Monaco', 'ui-monospace', 'Noto Sans KR', sans-serif",
+    fontVariantNumeric: "tabular-nums",
+    fontSize: "1.35rem",
+    fontWeight: 700,
+    lineHeight: 1,
+  };
 
   return (
     <div
@@ -163,38 +160,166 @@ function Calc3Sheet({
         )}
       </div>
 
-      <div className="pb-3 mb-4 border-b border-gray-300" style={{ fontSize: ".9rem", fontWeight: 700, color: "#555" }}>
-        계산해 보세요.
-      </div>
-
-      <div
-        className="grid grid-cols-3 gap-x-12"
-        style={{
-          gap: "0 48px",
-          height: `${gridHeightMm}mm`,
-          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
-        }}
-      >
-        {grid.map((row, r) =>
-          row.map((p, c) => {
-            if (!p) return <div key={`${r}-${c}`} />;
-            const num = c * rows + r + 1;
-            return (
-              <div
-                key={`${r}-${c}`}
-                className="flex items-center h-full"
-                style={{ borderBottom: "1px solid #f0f0f0" }}
+      <div className="grid gap-10" style={{
+        paddingTop: 2,
+        fontSize: "1.2rem",
+        color: "#2f2f2f",
+        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+        rowGap: 16,
+        columnGap: 24,
+      }}>
+        {problems.map((p, i) => (
+          <div key={`${sheetNum}-${i}`} className="flex items-start gap-3 min-w-0">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold mt-1 shrink-0">
+              {i + 1}
+            </span>
+            <div style={rowStyle}>
+              <NumberBox
+                tone="number"
+                width="1.8ch"
+                align="center"
+                className="text-transparent"
+                style={{
+                  gridRow: 1,
+                  gridColumn: "1 / span 4",
+                  borderColor: "#d2d2d2",
+                  backgroundColor: "#fff",
+                }}
               >
-                <span className="shrink-0 mr-4 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">
-                  {num}
-                </span>
-                <span className="text-lg font-semibold tracking-wide">
-                  {p.a} {p.op1} {p.b} {p.op2} {p.c} =
-                </span>
-              </div>
-            );
-          })
-        )}
+                &nbsp;
+              </NumberBox>
+              <NumberBoxRowCells
+                value={p.a}
+                cellCount={3}
+                width="2.2ch"
+                style={{
+                  gridRow: 1,
+                  gridColumn: "2 / span 3",
+                  height: "2.2rem",
+                  lineHeight: 1,
+                  paddingTop: 0,
+                  paddingBottom: 0,
+                  zIndex: 3,
+                }}
+              />
+
+              <span
+                aria-hidden="true"
+                style={{
+                  gridRow: 2,
+                  gridColumn: "1",
+                  width: "1.8ch",
+                  height: "2.2rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.35rem",
+                  lineHeight: 1,
+                }}
+              >
+                {p.op1}
+              </span>
+
+              <NumberBoxRowCells
+                value={p.b}
+                cellCount={3}
+                width="2.2ch"
+                style={{
+                  gridRow: 2,
+                  gridColumn: "2 / span 3",
+                  height: "2.2rem",
+                  lineHeight: 1,
+                  paddingTop: 0,
+                  paddingBottom: 0,
+                  zIndex: 3,
+                }}
+              />
+
+              <span
+                style={{
+                  gridRow: 3,
+                  gridColumn: "1 / span 4",
+                  display: "inline-block",
+                  borderBottom: "2px solid #222",
+                  width: "100%",
+                  marginLeft: 0,
+                }}
+              />
+
+              <NumberBox
+                tone="answer"
+                width="6.9ch"
+                align="right"
+                style={{
+                  gridRow: 4,
+                  gridColumn: "2 / span 3",
+                  height: "2.2rem",
+                  backgroundColor: "#fff",
+                  zIndex: 3,
+                }}
+              />
+
+              <span
+                aria-hidden="true"
+                style={{
+                  gridRow: 5,
+                  gridColumn: "1",
+                  width: "1.8ch",
+                  height: "2.2rem",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.35rem",
+                  lineHeight: 1,
+                  marginTop: 4,
+                }}
+              >
+                {p.op2}
+              </span>
+
+              <NumberBoxRowCells
+                value={p.c}
+                cellCount={3}
+                width="2.2ch"
+                style={{
+                  gridRow: 5,
+                  gridColumn: "2 / span 3",
+                  height: "2.2rem",
+                  lineHeight: 1,
+                  paddingTop: 0,
+                  paddingBottom: 0,
+                  marginTop: 4,
+                  zIndex: 3,
+                }}
+              />
+
+              <span
+                style={{
+                  gridRow: 6,
+                  gridColumn: "1 / span 4",
+                  display: "inline-block",
+                  borderBottom: "2px solid #222",
+                  width: "100%",
+                  marginTop: 4,
+                }}
+              />
+
+              <NumberBox
+                tone="answer"
+                width="6.9ch"
+                align="right"
+                style={{
+                  gridRow: 7,
+                  gridColumn: "2 / span 3",
+                  height: "2.2rem",
+                  backgroundColor: "#fff",
+                  zIndex: 3,
+                  marginTop: 4,
+                }}
+              />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -267,8 +392,6 @@ function Calc3PreviewContent() {
     mul_div: "곱하기·나누기 혼합",
   };
   const title = `${typeLabelMap[params.type] || "연산"} 연습 (3수)`;
-  const expectedCount = params.count * params.sheets;
-  const generatedCount = allSheets.reduce((acc, problems) => acc + problems.length, 0);
 
   async function handleShare() {
     if (allSheets.length === 0) {
@@ -291,20 +414,10 @@ function Calc3PreviewContent() {
       if ("shortCode" in result) {
         setShareUrl(`${window.location.origin}/s/${result.shortCode}`);
       } else {
-        const err = result.error;
-        if (err.toLowerCase().includes("failed to fetch") || err.toLowerCase().includes("fetch")) {
-          showToast("저장 실패: 네트워크 연결에 문제가 있어 공유 링크를 생성할 수 없어요.");
-        } else {
-          showToast("저장 실패: " + err);
-        }
+        showToast("공유 실패: " + result.error);
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "알 수 없는 오류";
-      if (message.includes("Failed to fetch") || message.includes("fetch")) {
-        showToast("공유 링크 생성에 실패했어요: 네트워크 연결/DB 접속을 확인해 주세요.");
-      } else {
-        showToast(`공유 링크 생성 중 오류가 발생했습니다: ${message}`);
-      }
+    } catch {
+      showToast("공유 링크 생성 중 오류가 발생했습니다");
     } finally {
       setSaving(false);
     }
@@ -323,67 +436,62 @@ function Calc3PreviewContent() {
   }
 
   return (
-    <div>
+    <div className="min-h-[100dvh] bg-slate-100/80">
       {toast && (
         <div className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
           {toast}
         </div>
       )}
 
-      <div className="print:hidden max-w-[800px] mx-auto px-8 pt-6">
-        <Link href="/calc3" className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
-          <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
-          <span className="ml-1 transition-all duration-150 group-hover:font-bold">돌아가기</span>
-        </Link>
-      </div>
-
-      <div className="print:hidden flex justify-center items-center gap-3 py-4 bg-white border-b flex-wrap">
-        <button onClick={() => window.print()} className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer">
-          <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />
-          인쇄
-        </button>
-        {!shareUrl ? (
-          <button
-            onClick={handleShare}
-            disabled={saving}
-            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer disabled:opacity-50"
+      <div className="print:hidden border-b bg-white">
+        <div className="max-w-[880px] mx-auto px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <Link
+            href="/calc3"
+            onClick={() => trackEvent(GA_EVENTS.NAV_BACK, { from: "calc3" })}
+            className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold"
           >
-            {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
-          </button>
-        ) : (
-          <button onClick={handleCopy} className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer">
-            {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
-          </button>
-        )}
+            <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
+            <span className="ml-1 transition-all duration-150 group-hover:font-bold">문제 생성으로 돌아가기</span>
+          </Link>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                trackEvent(GA_EVENTS.PRINT, { page: "calc3" });
+                window.print();
+              }}
+              className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
+            >
+              <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
+            </button>
+            {!shareUrl ? (
+              <button
+                onClick={handleShare}
+                disabled={saving}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer disabled:opacity-50"
+              >
+                {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
+              </button>
+            ) : (
+              <button
+                onClick={handleCopy}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
+              >
+                {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {shareUrl && (
-        <div className="print:hidden text-center py-2 bg-green-50 border-b border-green-200">
+        <div className="print:hidden text-center py-2 px-4 md:px-6 bg-green-50 border-b border-green-200">
           <span className="text-sm text-green-800">공유 링크: </span>
           <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">
             {shareUrl}
           </a>
         </div>
       )}
-
-      {(allSheets.length > 0 && generatedCount !== expectedCount) ? (
-        <div className="max-w-[800px] mx-auto px-4 py-3 bg-amber-50 border border-amber-300 rounded-lg mb-3 text-amber-900 text-sm">
-          <p className="font-bold mb-2">요청 문항을 모두 만들지 못했습니다.</p>
-          <p>
-            목표: <span className="font-bold">{expectedCount}문제</span> · 생성됨: <span className="font-bold">{generatedCount}문제</span>
-          </p>
-          <div className="mt-2 flex gap-2 justify-center flex-wrap">
-            <a href="/calc3" className="inline-flex items-center rounded-full bg-amber-700 text-white px-3 py-1 text-xs font-bold hover:bg-amber-800">설정으로 돌아가기</a>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="inline-flex items-center rounded-full border border-amber-700 text-amber-800 px-3 py-1 text-xs font-bold hover:bg-amber-100"
-            >
-              다시 생성
-            </button>
-          </div>
-        </div>
-      ) : null}
 
       {allSheets.map((problems, i) => (
         <div key={i} className={i < allSheets.length - 1 ? "break-after-page" : ""}>

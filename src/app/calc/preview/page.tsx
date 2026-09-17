@@ -2,268 +2,359 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { saveWorksheet } from "@/lib/supabase";
-import { Printer, Share2, Copy, Check } from "lucide-react";
 import Link from "next/link";
+import { Printer, Share2, Copy, Check } from "lucide-react";
+import {
+  generateCalcAllSheets,
+  parseCalcParams,
+  type CalcProblem,
+  type ScreenshotAdditionProblem,
+  generateScreenshotAdditionAllSheets,
+  parseScreenshotAdditionParams,
+} from "@/lib/math-generator";
+import { saveWorksheet } from "@/lib/supabase";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
 
-interface CalcProblem {
-  a: number;
-  b: number;
-  type: "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
-  answer: number;
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function generateCalcSheet(params: {
-  type: "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
-  count: number;
-  rangeMin: number;
-  rangeMax: number;
-  opMin: number;
-  opMax: number;
-  answerMin?: number;
-  answerMax?: number;
-  answerAddMin?: number;
-  answerAddMax?: number;
-  answerSubMin?: number;
-  answerSubMax?: number;
-  answerMulMin?: number;
-  answerMulMax?: number;
-  answerDivMin?: number;
-  answerDivMax?: number;
-}): CalcProblem[] {
-  const problems: CalcProblem[] = [];
-  const used = new Set<string>();
-  let attempts = 0;
-
-  while (problems.length < params.count && attempts < 1000) {
-    attempts++;
-    // 혼합 타입이면 랜덤으로 선택
-    let op = params.type as string;
-    if (op === "add_sub") op = Math.random() < 0.5 ? "add" : "sub";
-    if (op === "mul_div") op = Math.random() < 0.5 ? "mul" : "div";
-
-    let a: number, b: number, answer: number;
-    if (op === "div") {
-      // 나누기: b * q = a (나누어 떨어지도록)
-      b = params.opMin + Math.floor(Math.random() * (params.opMax - params.opMin + 1));
-      if (b === 0) continue;
-      const qMin = Math.ceil(params.rangeMin / b);
-      const qMax = Math.floor(params.rangeMax / b);
-      if (qMin > qMax) continue;
-      const q = qMin + Math.floor(Math.random() * (qMax - qMin + 1));
-      a = b * q;
-      answer = q;
-    } else {
-      a = params.rangeMin + Math.floor(Math.random() * (params.rangeMax - params.rangeMin + 1));
-      b = params.opMin + Math.floor(Math.random() * (params.opMax - params.opMin + 1));
-      if (op === "sub") answer = a - b;
-      else if (op === "mul") answer = a * b;
-      else answer = a + b;
-    }
-    if (answer < 0) continue;
-    if (params.type === "add_sub") {
-      if (
-        op === "add" &&
-        params.answerAddMin !== undefined &&
-        params.answerAddMax !== undefined &&
-        (answer < params.answerAddMin || answer > params.answerAddMax)
-      ) {
-        continue;
-      }
-      if (
-        op === "sub" &&
-        params.answerSubMin !== undefined &&
-        params.answerSubMax !== undefined &&
-        (answer < params.answerSubMin || answer > params.answerSubMax)
-      ) {
-        continue;
-      }
-    } else if (params.type === "mul_div") {
-      if (
-        params.answerMulMin !== undefined &&
-        params.answerMulMax !== undefined &&
-        params.answerDivMin !== undefined &&
-        params.answerDivMax !== undefined
-      ) {
-        if (
-          op === "mul" &&
-          (answer < params.answerMulMin || answer > params.answerMulMax)
-        ) {
-          continue;
-        }
-        if (
-          op === "div" &&
-          (answer < params.answerDivMin || answer > params.answerDivMax)
-        ) {
-          continue;
-        }
-      } else if (params.answerMin !== undefined && params.answerMax !== undefined) {
-        if (answer < params.answerMin || answer > params.answerMax) continue;
-      }
-    } else if (params.answerMin !== undefined && params.answerMax !== undefined) {
-      if (answer < params.answerMin || answer > params.answerMax) continue;
-    }
-    const key = `${op}-${a}-${b}`;
-    if (used.has(key)) continue;
-    used.add(key);
-    problems.push({ a, b, type: op as CalcProblem["type"], answer });
-  }
-
-  return problems;
-}
+import { BoxCell, NumberBox, NumberBoxRowCells, splitToCells } from "@/components/math/BoxCell";
 
 function CalcSheet({
   problems,
   title,
+  count,
   sheetNum,
   totalSheets,
   type,
-  layout,
 }: {
   problems: CalcProblem[];
   title: string;
+  count: number;
   sheetNum: number;
   totalSheets: number;
-  type: "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
-  layout: "a" | "b";
+  type: "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div" | "mixed_addition";
 }) {
-  const signMap = { add: "+", sub: "−", mul: "×", div: "÷", add_sub: "+", mul_div: "×" } as const;
-  const cols = layout === "a" ? 3 : 2;
+  const operatorByType: Record<string, string> = {
+    add: "+",
+    sub: "−",
+    add_sub: "+",
+    mul: "×",
+    div: "÷",
+    mul_div: "×",
+    mixed_addition: "+",
+  };
+  const cols = 3;
   const rows = Math.ceil(problems.length / cols);
-  // A4(210x297mm) 한 장 기준으로 그리드 영역을 고정하고, 행 수에 따라 균등 분배한다.
   const PAGE_HEIGHT_MM = 297;
-  const PAGE_PADDING_Y_MM = 20; // 상하 패딩 10mm + 10mm
+  const PAGE_PADDING_Y_MM = 20;
   const HEADER_BLOCK_MM = 16;
   const INSTRUCTION_BLOCK_MM = 18;
-  const gridHeightMm = Math.max(
-    120,
-    PAGE_HEIGHT_MM - PAGE_PADDING_Y_MM - HEADER_BLOCK_MM - INSTRUCTION_BLOCK_MM
-  );
+  const gridHeightMm = Math.max(120, PAGE_HEIGHT_MM - PAGE_PADDING_Y_MM - HEADER_BLOCK_MM - INSTRUCTION_BLOCK_MM);
 
   const grid: (CalcProblem | null)[][] = [];
   for (let r = 0; r < rows; r++) {
     const row: (CalcProblem | null)[] = [];
     for (let c = 0; c < cols; c++) {
-      const idx = layout === "a" ? c * rows + r : r * cols + c;
+      const idx = c * rows + r;
       row.push(idx < problems.length ? problems[idx] : null);
     }
     grid.push(row);
   }
 
-  const maxOperandDigits = problems.reduce(
-    (acc, p) => Math.max(acc, String(p.a).length, String(p.b).length),
-    2
-  );
-  const operandColWidth = `${Math.min(4, Math.max(2, maxOperandDigits))}ch`;
-
   return (
-    <div
-      className={`bg-white mx-auto ${layout === "b" ? "layout-b" : ""}`}
-      style={{
-        width: "210mm",
-        minHeight: "297mm",
-        boxSizing: "border-box",
-        padding: "10mm 12mm",
-        fontFamily: "'Noto Sans KR', sans-serif",
-      }}
-    >
-      {/* 1행: 날짜 · 이름 · 점수 */}
+    <div className="sheet bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm" }}>
       <div className="flex justify-between items-center text-sm mb-4 text-gray-400">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
           <span>이름: ___________</span>
         </div>
-        <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {problems.length}</span>
+        <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {count}</span>
       </div>
-
-      {/* 2행: 제목 */}
       <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
         {title}
-        {totalSheets > 1 && (
-          <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>
-        )}
+        {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
       </div>
-
-      {/* 3행: 설명 */}
       <div className="pb-3 mb-4 border-b border-gray-300" style={{ fontSize: ".9rem", fontWeight: 700, color: "#555" }}>
-        계산해 보세요.
+        연산해 보세요.
       </div>
-
-      {/* 문제 그리드 */}
       <div
-        className="grid"
+        className="grid grid-cols-3 gap-x-12"
         style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-          gap: `0 ${layout === "b" ? "24px" : "48px"}`,
+          gap: "0 48px",
           height: `${gridHeightMm}mm`,
           gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
         }}
       >
-        {grid.map((row, r) => (
+        {grid.map((row, r) =>
           row.map((p, c) => {
             if (!p) return <div key={`${r}-${c}`} />;
             const num = c * rows + r + 1;
-            const firstNum = String(p.a);
-            const secondNum = String(p.b);
             return (
               <div
                 key={`${r}-${c}`}
-                className="flex items-center h-full gap-0"
+                className="flex items-center h-full"
                 style={{ borderBottom: "1px solid #f0f0f0" }}
               >
-                <span className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">
+                <span className="shrink-0 mr-4 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold">
                   {num}
                 </span>
-                <span className="inline-flex items-center text-lg font-semibold whitespace-nowrap" style={{ marginLeft: "30px" }}>
-                  <span
-                    className="inline-grid items-center text-lg font-semibold"
-                    style={{
-                      gridTemplateColumns:
-                        layout === "b"
-                          ? `${operandColWidth} 30px ${operandColWidth} 44px 72px`
-                          : `${operandColWidth} 22px ${operandColWidth} 24px 56px`,
-                      fontFamily: "'SFMono-Regular', 'Consolas', 'Menlo', 'Monaco', 'ui-monospace', 'Noto Sans KR', sans-serif",
-                      fontVariantNumeric: "tabular-nums",
-                      letterSpacing: "0",
-                    }}
-                  >
-                    <span className="justify-self-end">{firstNum}</span>
-                    <span className="justify-self-center">{p.type === "sub" ? "−" : p.type === "mul" ? "×" : p.type === "div" ? "÷" : "+"}</span>
-                    <span className="justify-self-end">{secondNum}</span>
-                    <span className="justify-self-center">=</span>
-                    {layout === "b" ? (
-                      <span className="inline-flex h-9 w-11 border-2 border-gray-700 rounded" />
-                    ) : null}
-                  </span>
+                <span className="text-lg font-semibold tracking-wide">
+                  {p.a} {operatorByType[p.type]} {p.b} =
                 </span>
               </div>
             );
           })
-        ))}
+        )}
       </div>
     </div>
   );
 }
 
-function CalcPreviewContent() {
-  type LayoutMode = "a" | "b";
-  const MAX_COUNT = 100;
-  const MAX_SHEETS = 10;
-  const MIN_RANGE = 1;
-  const MAX_RANGE = 9999;
+function MixedAdditionSheet({
+  problems,
+  title,
+  count,
+  sheetNum,
+  totalSheets,
+}: {
+  problems: CalcProblem[];
+  title: string;
+  count: number;
+  sheetNum: number;
+  totalSheets: number;
+}) {
+  const rowStyle: React.CSSProperties = {
+    display: "inline-grid",
+    gridTemplateColumns: "12px 2.2ch 2.2ch",
+    alignItems: "end",
+    rowGap: 4,
+    columnGap: 0,
+    fontFamily: "'SFMono-Regular', 'Consolas', 'Menlo', 'Monaco', 'ui-monospace', 'Noto Sans KR', sans-serif",
+    fontVariantNumeric: "tabular-nums",
+    fontSize: "1.35rem",
+    fontWeight: 700,
+    lineHeight: 1,
+  };
+
+  const digitCellStyle: React.CSSProperties = {
+    height: "2rem",
+    lineHeight: 1,
+    paddingTop: 0,
+    paddingBottom: 0,
+    zIndex: 3,
+  };
+
+  const verticalGridStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    rowGap: 16,
+    columnGap: 24,
+  };
+
+  return (
+    <div className="sheet bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm", fontFamily: "'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif" }}>
+      <div className="flex justify-between items-center text-sm mb-4 text-gray-400">
+        <div className="flex" style={{ gap: 40 }}>
+          <span>날짜: ___________</span>
+          <span>이름: ___________</span>
+        </div>
+        <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {count}</span>
+      </div>
+      <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
+        {title}
+        {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
+      </div>
+      <div style={{ fontSize: ".9rem", fontWeight: 700, color: "#555", borderBottom: "1px solid #e5e7eb", paddingBottom: 12, marginBottom: 16 }}>연산해 보세요.</div>
+
+      <div style={{ paddingTop: 2, fontSize: "1.2rem", color: "#2f2f2f" }}>
+        <div style={verticalGridStyle}>
+          {problems.map((p, i) => {
+            const number = i + 1;
+            const topDigits = splitToCells(p.a, 2);
+            const bottomDigits = splitToCells(p.b, 2);
+
+            return (
+              <div key={`v-${p.a}-${p.b}-${i}`} className="flex items-start gap-3 min-w-0">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold mt-1 shrink-0">{number}</span>
+                <div className="min-w-0">
+                  <div style={rowStyle}>
+                    {topDigits.map((digit, idx) => (
+                      <BoxCell key={`top-${p.a}-${p.b}-${i}-${idx}`} tone="number" width="2.2ch" align="center" style={{ ...digitCellStyle, gridRow: 1, gridColumn: 2 + idx }}>
+                        {digit === " " ? "\u00A0" : digit}
+                      </BoxCell>
+                    ))}
+                    <span style={{ gridRow: 2, gridColumn: 1, textAlign: "center" }}>+</span>
+                    {bottomDigits.map((digit, idx) => (
+                      <BoxCell key={`bottom-${p.a}-${p.b}-${i}-${idx}`} tone="number" width="2.2ch" align="center" style={{ ...digitCellStyle, gridRow: 2, gridColumn: 2 + idx }}>
+                        {digit === " " ? "\u00A0" : digit}
+                      </BoxCell>
+                    ))}
+                    <span style={{ gridRow: 3, gridColumn: "1 / 4", display: "inline-block", borderBottom: "2px solid #222", width: "100%" }} />
+                  </div>
+                  <div style={{ marginTop: 6, marginLeft: 12 }}>
+                    <NumberBox tone="answer" width="4.4ch" height="2.2rem" align="right" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function ScreenshotAdditionSheet({
+  problems,
+  title,
+  count,
+  sheetNum,
+  totalSheets,
+}: {
+  problems: ScreenshotAdditionProblem[];
+  title: string;
+  count: number;
+  sheetNum: number;
+  totalSheets: number;
+}) {
+  const cols = 1;
+  const rows = Math.ceil(problems.length / cols);
+  const PAGE_HEIGHT_MM = 297;
+  const PAGE_PADDING_Y_MM = 20;
+  const HEADER_BLOCK_MM = 16;
+  const INSTRUCTION_BLOCK_MM = 22;
+  const TOP_OFFSET_MM = 4;
+  const gridHeightMm = Math.max(140, PAGE_HEIGHT_MM - PAGE_PADDING_Y_MM - HEADER_BLOCK_MM - INSTRUCTION_BLOCK_MM - TOP_OFFSET_MM);
+
+  const grid: (ScreenshotAdditionProblem | null)[][] = [];
+  for (let r = 0; r < rows; r++) {
+    const row: (ScreenshotAdditionProblem | null)[] = [];
+    for (let c = 0; c < cols; c++) {
+      const idx = r * cols + c;
+      row.push(idx < problems.length ? problems[idx] : null);
+    }
+    grid.push(row);
+  }
+
+  const blankBox = (answer: number, key: string) => (
+    <span
+      key={key}
+      data-answer={answer}
+      className="inline-flex h-8 min-w-[34px] items-center justify-center rounded-md border border-[#b9b9b9] bg-white px-2 align-middle"
+    >
+      &nbsp;
+    </span>
+  );
+
+  return (
+    <div className="sheet bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm", fontFamily: "'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif" }}>
+      <div className="flex justify-between items-center text-sm mb-4 text-gray-400">
+        <div className="flex" style={{ gap: 40 }}>
+          <span>날짜: ___________</span>
+          <span>이름: ___________</span>
+        </div>
+        <span>점수:&nbsp;&nbsp;&nbsp;&nbsp;/ {count}</span>
+      </div>
+      <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
+        {title}
+        {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
+      </div>
+      <div style={{ fontSize: ".9rem", fontWeight: 700, color: "#555", borderBottom: "1px solid #e5e7eb", paddingBottom: 12, marginBottom: 16 }}>연산해 보세요.</div>
+
+      <div
+        className="grid gap-10"
+        style={{
+          paddingTop: `${TOP_OFFSET_MM}mm`,
+          fontSize: "1.2rem",
+          color: "#2f2f2f",
+          height: `${gridHeightMm}mm`,
+          gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+        }}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(1, minmax(0, 1fr))", rowGap: 16, columnGap: 24 }}>
+          {grid.map((row, r) =>
+            row.map((p, c) => {
+              if (!p) return <div key={`s-empty-${r}-${c}`} />;
+              const number = r * cols + c + 1;
+              return (
+                <div key={`s-${p.a}-${p.b}-${number}`} className="flex items-start h-full min-w-0">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-xs font-bold mt-1 shrink-0">{number}</span>
+                  <div className="flex-1 min-w-0 text-[#2f2f2f]" style={{ marginLeft: 24 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", columnGap: 18 }}>
+                      <div style={{ paddingRight: 14, borderRight: "1px dotted #c7c7c7" }}>
+                        <div className="leading-8 whitespace-nowrap text-[15px] text-slate-600">
+                          <span className="font-semibold text-slate-900">{p.a} + {p.b}</span>
+                          <span> = </span>
+                          <span className="font-medium text-slate-900">{p.leftRoundedA}</span>
+                          <span> + </span>
+                          {blankBox(p.leftCorrection, `left-correction-${number}`)}
+                          <span> + </span>
+                          <span>{p.b}</span>
+                        </div>
+                        <div className="leading-8 whitespace-nowrap text-[15px] text-slate-600">
+                          <span>= </span>
+                          <span className="font-medium text-slate-900">{p.leftRoundedA}</span>
+                          <span> + </span>
+                          {blankBox(p.leftIntermediate, `left-intermediate-${number}`)}
+                        </div>
+                        <div className="leading-8 whitespace-nowrap text-[15px] text-slate-600">
+                          <span>= </span>
+                          {blankBox(p.answer, `left-answer-${number}`)}
+                        </div>
+                      </div>
+
+                      <div style={{ paddingLeft: 2 }}>
+                        <div className="leading-8 whitespace-nowrap text-[15px] text-slate-600">
+                          <span className="font-semibold text-slate-900">{p.a} + {p.b}</span>
+                          <span> = </span>
+                          <span>{p.a}</span>
+                          <span> + </span>
+                          <span className="inline-flex rounded-full bg-[#ededed] px-3 py-1 align-middle leading-none">{p.rightRoundedB}</span>
+                          <span> - </span>
+                          {blankBox(p.rightCorrection, `right-correction-top-${number}`)}
+                        </div>
+                        <div className="leading-8 whitespace-nowrap text-[15px] text-slate-600">
+                          <span>= </span>
+                          <span className="font-medium text-slate-900">{p.rightIntermediate}</span>
+                          <span> - </span>
+                          {blankBox(p.rightCorrection, `right-correction-mid-${number}`)}
+                        </div>
+                        <div className="leading-8 whitespace-nowrap text-[15px] text-slate-600">
+                          <span>= </span>
+                          {blankBox(p.answer, `right-answer-${number}`)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function useGeneratedSheets(mode: "calc" | "screenshot_addition") {
   const searchParams = useSearchParams();
-  const queryString = useMemo(() => searchParams.toString(), [searchParams]);
+  const modeAwareParams = useMemo(() => {
+    if (mode === "screenshot_addition") return parseScreenshotAdditionParams(searchParams);
+    return parseCalcParams(searchParams);
+  }, [mode, searchParams]);
+
+  return modeAwareParams;
+}
+
+function isModeScreenshot(params: unknown): params is ReturnType<typeof parseScreenshotAdditionParams> {
+  return params != null && typeof params === "object" && (params as { mode?: string }).mode === "screenshot_addition";
+}
+
+function PreviewContent() {
+  const searchParams = useSearchParams();
+  const mode = searchParams.get("mode") === "screenshot_addition" ? "screenshot_addition" : "calc";
+  const params = useGeneratedSheets(mode);
+
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -271,155 +362,23 @@ function CalcPreviewContent() {
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [allSheets, setAllSheets] = useState<CalcProblem[][] | ScreenshotAdditionProblem[][]>([]);
+
   function showToast(msg: string) {
     setToast(msg);
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     toastTimeoutRef.current = setTimeout(() => setToast(null), 2500);
   }
 
-  const params = useMemo(() => {
-    const t = searchParams.get("t") as "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
-    const c = Number(searchParams.get("c"));
-    const s = Number(searchParams.get("s"));
-    const mn = Number(searchParams.get("mn"));
-    const mx = Number(searchParams.get("mx"));
-    const omn = Number(searchParams.get("omn"));
-    const omx = Number(searchParams.get("omx"));
-    const amn = searchParams.get("amn");
-    const amx = searchParams.get("amx");
-    const amnA = searchParams.get("amnA");
-    const amxA = searchParams.get("amxA");
-    const amnS = searchParams.get("amnS");
-    const amxS = searchParams.get("amxS");
-    const amnM = searchParams.get("amnM");
-    const amxM = searchParams.get("amxM");
-    const amnD = searchParams.get("amnD");
-    const amxD = searchParams.get("amxD");
-    const layout = searchParams.get("layout") || "a";
-    const validTypes = new Set(["add", "sub", "add_sub", "mul", "div", "mul_div"]);
-    const parsedAnswerMin = amn !== null ? Number(amn) : undefined;
-    const parsedAnswerMax = amx !== null ? Number(amx) : undefined;
-    const parsedAnswerAddMin = amnA !== null ? Number(amnA) : undefined;
-    const parsedAnswerAddMax = amxA !== null ? Number(amxA) : undefined;
-    const parsedAnswerSubMin = amnS !== null ? Number(amnS) : undefined;
-    const parsedAnswerSubMax = amxS !== null ? Number(amxS) : undefined;
-    const parsedAnswerMulMin = amnM !== null ? Number(amnM) : undefined;
-    const parsedAnswerMulMax = amxM !== null ? Number(amxM) : undefined;
-    const parsedAnswerDivMin = amnD !== null ? Number(amnD) : undefined;
-    const parsedAnswerDivMax = amxD !== null ? Number(amxD) : undefined;
-    const hasAnswerRange = parsedAnswerMin !== undefined && parsedAnswerMax !== undefined;
-    const hasAddAnswerRange = parsedAnswerAddMin !== undefined && parsedAnswerAddMax !== undefined;
-    const hasSubAnswerRange = parsedAnswerSubMin !== undefined && parsedAnswerSubMax !== undefined;
-    const hasMulAnswerRange = parsedAnswerMulMin !== undefined && parsedAnswerMulMax !== undefined;
-    const hasDivAnswerRange = parsedAnswerDivMin !== undefined && parsedAnswerDivMax !== undefined;
-    if (!validTypes.has(t)) return null;
-    if (layout !== "a" && layout !== "b") return null;
-    const normalizedCount = c;
-    if (!Number.isInteger(normalizedCount) || normalizedCount < 1 || normalizedCount > MAX_COUNT) return null;
-    if (!Number.isInteger(s) || s < 1 || s > MAX_SHEETS) return null;
-    if (!Number.isInteger(mn) || !Number.isInteger(mx) || mn < MIN_RANGE || mx > MAX_RANGE || mn > mx) return null;
-    if (!Number.isInteger(omn) || !Number.isInteger(omx) || omn < MIN_RANGE || omx > MAX_RANGE || omn > omx) return null;
-    const finalAnswerMin = hasAnswerRange ? parsedAnswerMin : undefined;
-    const finalAnswerMax = hasAnswerRange ? parsedAnswerMax : undefined;
-    const finalAnswerAddMin = hasAddAnswerRange ? parsedAnswerAddMin : hasAnswerRange ? parsedAnswerMin : undefined;
-    const finalAnswerAddMax = hasAddAnswerRange ? parsedAnswerAddMax : hasAnswerRange ? parsedAnswerMax : undefined;
-    const finalAnswerSubMin = hasSubAnswerRange ? parsedAnswerSubMin : hasAnswerRange ? parsedAnswerMin : undefined;
-    const finalAnswerSubMax = hasSubAnswerRange ? parsedAnswerSubMax : hasAnswerRange ? parsedAnswerMax : undefined;
-    const finalAnswerMulMin = hasMulAnswerRange ? parsedAnswerMulMin : hasAnswerRange ? parsedAnswerMin : undefined;
-    const finalAnswerMulMax = hasMulAnswerRange ? parsedAnswerMulMax : hasAnswerRange ? parsedAnswerMax : undefined;
-    const finalAnswerDivMin = hasDivAnswerRange ? parsedAnswerDivMin : hasAnswerRange ? parsedAnswerMin : undefined;
-    const finalAnswerDivMax = hasDivAnswerRange ? parsedAnswerDivMax : hasAnswerRange ? parsedAnswerMax : undefined;
-    const hasMixedAnswerRange =
-      t === "add_sub" && (hasAddAnswerRange || hasSubAnswerRange || hasAnswerRange);
-    const hasMixedMulDivAnswerRange =
-      t === "mul_div" && (hasMulAnswerRange || hasDivAnswerRange || hasAnswerRange);
-
-    if (hasMixedAnswerRange) {
-      if (
-        typeof finalAnswerAddMin !== "number" ||
-        typeof finalAnswerAddMax !== "number" ||
-        typeof finalAnswerSubMin !== "number" ||
-        typeof finalAnswerSubMax !== "number" ||
-        !Number.isInteger(finalAnswerAddMin) ||
-        !Number.isInteger(finalAnswerAddMax) ||
-        !Number.isInteger(finalAnswerSubMin) ||
-        !Number.isInteger(finalAnswerSubMax)
-      ) {
-        return null;
-      }
-      if (
-        finalAnswerAddMin < MIN_RANGE ||
-        finalAnswerAddMax > MAX_RANGE ||
-        finalAnswerSubMin < MIN_RANGE ||
-        finalAnswerSubMax > MAX_RANGE ||
-        finalAnswerAddMin > finalAnswerAddMax ||
-        finalAnswerSubMin > finalAnswerSubMax
-      ) {
-        return null;
-      }
-    } else if (hasMixedMulDivAnswerRange) {
-      if (
-        typeof finalAnswerMulMin !== "number" ||
-        typeof finalAnswerMulMax !== "number" ||
-        typeof finalAnswerDivMin !== "number" ||
-        typeof finalAnswerDivMax !== "number" ||
-        !Number.isInteger(finalAnswerMulMin) ||
-        !Number.isInteger(finalAnswerMulMax) ||
-        !Number.isInteger(finalAnswerDivMin) ||
-        !Number.isInteger(finalAnswerDivMax)
-      ) {
-        return null;
-      }
-      if (
-        finalAnswerMulMin < MIN_RANGE ||
-        finalAnswerMulMax > MAX_RANGE ||
-        finalAnswerDivMin < MIN_RANGE ||
-        finalAnswerDivMax > MAX_RANGE ||
-        finalAnswerMulMin > finalAnswerMulMax ||
-        finalAnswerDivMin > finalAnswerDivMax
-      ) {
-        return null;
-      }
-    } else if (hasAnswerRange) {
-      if (
-        !Number.isInteger(parsedAnswerMin) ||
-        !Number.isInteger(parsedAnswerMax) ||
-        parsedAnswerMin < MIN_RANGE ||
-        parsedAnswerMax > MAX_RANGE ||
-        parsedAnswerMin > parsedAnswerMax
-      ) {
-        return null;
-      }
-    }
-
-    return {
-      type: t,
-      count: normalizedCount,
-      sheets: s,
-      rangeMin: mn,
-      rangeMax: mx,
-      opMin: omn,
-      opMax: omx,
-      answerMin: hasAnswerRange ? parsedAnswerMin : undefined,
-      answerMax: hasAnswerRange ? parsedAnswerMax : undefined,
-      answerAddMin: finalAnswerAddMin,
-      answerAddMax: finalAnswerAddMax,
-      answerSubMin: finalAnswerSubMin,
-      answerSubMax: finalAnswerSubMax,
-      answerMulMin: finalAnswerMulMin,
-      answerMulMax: finalAnswerMulMax,
-      answerDivMin: finalAnswerDivMin,
-      answerDivMax: finalAnswerDivMax,
-      layout: layout as LayoutMode,
-    };
-  }, [queryString, MAX_COUNT, MAX_SHEETS, MIN_RANGE, MAX_RANGE]);
-
-  const [allSheets, setAllSheets] = useState<CalcProblem[][]>([]);
-  
   useEffect(() => {
     if (!params) return;
-    setAllSheets(Array.from({ length: params.sheets }, () => generateCalcSheet(params)));
-  }, [params]);
+    if (mode === "screenshot_addition") {
+      setAllSheets(generateScreenshotAdditionAllSheets(params as ReturnType<typeof parseScreenshotAdditionParams> as never, searchParams.toString()));
+      return;
+    }
+
+    setAllSheets(generateCalcAllSheets(params as ReturnType<typeof parseCalcParams> as never, searchParams.toString()));
+  }, [params, mode, searchParams]);
 
   useEffect(() => () => {
     if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
@@ -435,12 +394,27 @@ function CalcPreviewContent() {
     );
   }
 
-  const resolvedParams = params;
-  const typeLabelMap: Record<string, string> = { add: "더하기", sub: "빼기", add_sub: "더하기·빼기 혼합", mul: "곱하기", div: "나누기", mul_div: "곱하기·나누기 혼합" };
-  const typeLabel = typeLabelMap[resolvedParams.type] || "연산";
-  const title = `${typeLabel} 연습`;
+  const safeParams = params as Exclude<NonNullable<typeof params>, null>;
 
-  const expectedCount = resolvedParams.count * resolvedParams.sheets;
+  const isScreenshot = mode === "screenshot_addition" && isModeScreenshot(safeParams);
+  const calcParams = isScreenshot ? null : (safeParams as ReturnType<typeof parseCalcParams>);
+  const title = isScreenshot
+    ? "고급 사칙연산"
+    : (() => {
+        if (!calcParams) return "연산 연습";
+        const map: Record<string, string> = {
+          add: "더하기 연습",
+          sub: "빼기 연습",
+          add_sub: "더하기/빼기 연습",
+          mul: "곱하기 연습",
+          div: "나누기 연습",
+          mul_div: "곱하기/나누기 연습",
+          mixed_addition: "세로셈 연습",
+        };
+        return `${map[calcParams.type]} `;
+      })();
+
+  const expectedCount = safeParams.count * safeParams.sheets;
   const generatedCount = allSheets.reduce((acc, problems) => acc + problems.length, 0);
 
   async function handleShare() {
@@ -450,16 +424,35 @@ function CalcPreviewContent() {
     }
 
     if (shareUrl || saving) return;
-    trackEvent(GA_EVENTS.SHARE_CREATE, { page: 'calc' });
+    trackEvent(GA_EVENTS.SHARE_CREATE, { page: "calc", mode: isScreenshot ? "screenshot_addition" : "calc" });
     try {
       setSaving(true);
+      const savePayload = isScreenshot && isModeScreenshot(safeParams)
+        ? {
+            type: "screenshot_addition" as const,
+            operands: [safeParams.firstMin, safeParams.firstMax, safeParams.secondMin, safeParams.secondMax],
+            rangeMin: safeParams.firstMin,
+            rangeMax: safeParams.firstMax,
+          }
+        : (() => {
+            const calcParams = params as Exclude<ReturnType<typeof parseCalcParams>, null>;
+            return {
+              type: calcParams.type,
+              operands: [calcParams.opMin, calcParams.opMax] as number[],
+              rangeMin: calcParams.rangeMin,
+              rangeMax: calcParams.rangeMax,
+            };
+          })();
+
+      const { type, operands, rangeMin, rangeMax } = savePayload;
+
       const result = await saveWorksheet({
         title,
-        type: resolvedParams.type,
-        operands: [resolvedParams.opMin, resolvedParams.opMax],
-        rangeMin: resolvedParams.rangeMin,
-        rangeMax: resolvedParams.rangeMax,
-        problemCount: resolvedParams.count,
+        type,
+        operands,
+        rangeMin,
+        rangeMax,
+        problemCount: safeParams.count,
         problems: allSheets,
       });
       if ("shortCode" in result) {
@@ -487,6 +480,7 @@ function CalcPreviewContent() {
 
   async function handleCopy() {
     if (!shareUrl) return;
+    trackEvent(GA_EVENTS.SHARE_COPY, { page: "calc" });
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
@@ -498,44 +492,50 @@ function CalcPreviewContent() {
   }
 
   return (
-    <div>
+    <div className="min-h-[100dvh] bg-slate-100/80">
       {toast && (
         <div className="print:hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-xl shadow-lg text-sm font-bold animate-fade-in">
           {toast}
         </div>
       )}
-      <div className="print:hidden max-w-[800px] mx-auto px-8 pt-6">
-        <Link href="/calc" className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
-          <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
-          <span className="ml-1 transition-all duration-150 group-hover:font-bold">돌아가기</span>
-        </Link>
-      </div>
-      <div className="print:hidden flex justify-center items-center gap-3 py-4 bg-white border-b flex-wrap">
-        <button
-          onClick={() => window.print()}
-          className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
-        >
-          <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
-        </button>
-        {!shareUrl ? (
-          <button
-            onClick={handleShare}
-            disabled={saving}
-            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer disabled:opacity-50"
-          >
-            {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
-          </button>
-        ) : (
-          <button
-            onClick={handleCopy}
-            className="px-5 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
-          >
-            {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
-          </button>
-        )}
+      <div className="print:hidden border-b bg-white">
+        <div className="max-w-[880px] mx-auto px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <Link href="/calc" onClick={() => trackEvent(GA_EVENTS.NAV_BACK, { from: "calc" })} className="group inline-flex items-center w-fit text-sm text-slate-500 hover:text-slate-700 font-semibold">
+            <span className="inline-block transition-all duration-150 group-hover:translate-x-[-2px]">←</span>
+            <span className="ml-1 transition-all duration-150 group-hover:font-bold">문제 생성으로 돌아가기</span>
+          </Link>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                trackEvent(GA_EVENTS.PRINT, { page: "calc" });
+                window.print();
+              }}
+              className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
+            >
+              <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
+            </button>
+            {!shareUrl ? (
+              <button
+                onClick={handleShare}
+                disabled={saving}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer disabled:opacity-50"
+              >
+                {saving ? "저장 중..." : <><Share2 className="w-4 h-4 inline mr-1" strokeWidth={1.5} />공유 링크 생성</>}
+              </button>
+            ) : (
+              <button
+                onClick={handleCopy}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
+              >
+                {copied ? <><Check className="w-4 h-4 inline mr-1" strokeWidth={1.5} />복사됨</> : <><Copy className="w-4 h-4 inline mr-1" strokeWidth={1.5} />링크 복사</>}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
       {shareUrl && (
-        <div className="print:hidden text-center py-2 bg-green-50 border-b border-green-200">
+        <div className="print:hidden text-center py-2 px-4 md:px-6 bg-green-50 border-b border-green-200">
           <span className="text-sm text-green-800">공유 링크: </span>
           <a href={shareUrl} className="text-sm text-green-700 font-bold underline" target="_blank" rel="noopener noreferrer">{shareUrl}</a>
         </div>
@@ -544,34 +544,50 @@ function CalcPreviewContent() {
       {(allSheets.length > 0 && generatedCount !== expectedCount) ? (
         <div className="max-w-[800px] mx-auto px-4 py-3 bg-amber-50 border border-amber-300 rounded-lg mb-3 text-amber-900 text-sm">
           <p className="font-bold mb-2">요청 문항을 모두 만들지 못했습니다.</p>
-          <p>목표: <span className="font-bold">{expectedCount}문제</span> · 생성됨: <span className="font-bold">{generatedCount}문제</span></p>
-          <div className="mt-2 flex gap-2 justify-center flex-wrap">
-            <a href="/calc" className="inline-flex items-center rounded-full bg-amber-700 text-white px-3 py-1 text-xs font-bold hover:bg-amber-800">설정으로 돌아가기</a>
-            <button type="button" onClick={() => window.location.reload()} className="inline-flex items-center rounded-full border border-amber-700 text-amber-800 px-3 py-1 text-xs font-bold hover:bg-amber-100">다시 생성</button>
-          </div>
+          <p>
+            목표: <span className="font-bold">{expectedCount}문제</span> · 생성됨: <span className="font-bold">{generatedCount}문제</span>
+          </p>
         </div>
       ) : null}
 
       {allSheets.map((problems, i) => (
         <div key={i} className={i < allSheets.length - 1 ? "break-after-page" : ""}>
-          <CalcSheet
-            problems={problems}
-            title={title}
-            sheetNum={i + 1}
-            totalSheets={resolvedParams.sheets}
-            type={resolvedParams.type}
-            layout={resolvedParams.layout}
-          />
+          {isScreenshot && "firstMin" in (safeParams as Exclude<ReturnType<typeof parseScreenshotAdditionParams>, null>) ? (
+            <ScreenshotAdditionSheet
+              problems={problems as ScreenshotAdditionProblem[]}
+              title={title}
+              count={safeParams.count}
+              sheetNum={i + 1}
+              totalSheets={safeParams.sheets}
+            />
+          ) : (safeParams as Exclude<ReturnType<typeof parseCalcParams>, null>).type === "mixed_addition" ? (
+            <MixedAdditionSheet
+              problems={problems as CalcProblem[]}
+              title={title}
+              count={safeParams.count}
+              sheetNum={i + 1}
+              totalSheets={safeParams.sheets}
+            />
+          ) : (
+            <CalcSheet
+              problems={problems as CalcProblem[]}
+              title={title}
+              count={safeParams.count}
+              sheetNum={i + 1}
+              totalSheets={safeParams.sheets}
+              type={(safeParams as Exclude<ReturnType<typeof parseCalcParams>, null>).type}
+            />
+          )}
         </div>
       ))}
     </div>
   );
 }
 
-export default function CalcPreviewPage() {
+export default function PreviewPage() {
   return (
     <Suspense fallback={<div className="text-center py-20">로딩 중...</div>}>
-      <CalcPreviewContent />
+      <PreviewContent />
     </Suspense>
   );
 }
