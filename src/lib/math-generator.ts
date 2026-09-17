@@ -208,6 +208,11 @@ export function encodeCalcParams(params: CalcParams): string {
       encoded.set("amn", String(params.answerMin));
       encoded.set("amx", String(params.answerMax));
     }
+  } else if (params.type === "mixed_addition") {
+    if (params.answerAddMin !== undefined && params.answerAddMax !== undefined) {
+      encoded.set("amnA", String(params.answerAddMin));
+      encoded.set("amxA", String(params.answerAddMax));
+    }
   } else if (params.answerMin !== undefined && params.answerMax !== undefined) {
     encoded.set("amn", String(params.answerMin));
     encoded.set("amx", String(params.answerMax));
@@ -431,7 +436,9 @@ export function generateCalcSheet(params: CalcParams, queryString: string, sheet
       const answer = a + b;
 
       if (answer < 0) continue;
-      if (params.answerMin !== undefined && params.answerMax !== undefined && (answer < params.answerMin || answer > params.answerMax)) continue;
+      const ansMin = params.answerAddMin ?? params.answerMin;
+      const ansMax = params.answerAddMax ?? params.answerMax;
+      if (ansMin !== undefined && ansMax !== undefined && (answer < ansMin || answer > ansMax)) continue;
 
       const key = `${a}-${b}`;
       if (used.has(key)) continue;
