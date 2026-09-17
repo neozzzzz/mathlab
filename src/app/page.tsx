@@ -40,7 +40,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-slate-100/70 py-6 sm:py-8 px-4">
       <div className="mx-auto max-w-6xl relative">
         <header className="relative z-10 rounded-[26px] border border-slate-200 bg-white/90 backdrop-blur p-6 sm:p-8">
-          <p className="text-xs tracking-[0.22em] text-slate-500 font-bold">MATHLAB EXPERIENCE2</p>
+          <p className="text-xs tracking-[0.22em] text-slate-500 font-bold">MATHLAB EXPERIENCE</p>
           <h1 className="mt-2 text-4xl sm:text-5xl font-black tracking-tight leading-tight bg-gradient-to-r from-blue-500 via-indigo-600 to-fuchsia-500 bg-clip-text text-transparent">
             매일 똑똑해지는 계산 연습,
             <br className="sm:hidden" />
