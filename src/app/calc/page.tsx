@@ -134,6 +134,7 @@ export default function CalcPage() {
   const [answerDivMax, setAnswerDivMax] = useState(99);
 
   const [gugudanTables, setGugudanTables] = useState<number[]>([]);
+  const [gugudanOrdered, setGugudanOrdered] = useState(true);
 
   const [layout, setLayout] = useState<"a" | "b">("a");
   const [toast, setToast] = useState<string | null>(null);
@@ -181,6 +182,8 @@ export default function CalcPage() {
   const isMul = type === "mul";
   const isDiv = type === "div";
   const isGugudanActive = mode === "standard" && isMul && gugudanTables.length > 0;
+  const isGugudanOrdered = isGugudanActive && gugudanOrdered;
+  const gugudanOrderedCount = gugudanTables.length * 9;
 
   function toggleGugudanTable(table: number) {
     setGugudanTables((prev) =>
@@ -413,10 +416,10 @@ export default function CalcPage() {
       params.set("amx", String(answerMax));
     }
 
-    trackEvent(GA_EVENTS.GENERATE, { page: "calc", type, count, sheets, range_min: rangeMin, range_max: rangeMax, layout });
+    trackEvent(GA_EVENTS.GENERATE, { page: "calc", type, count: isGugudanOrdered ? gugudanOrderedCount : count, sheets, range_min: rangeMin, range_max: rangeMax, layout });
     router.push(`/calc/preview?${encodeCalcParams({
       type,
-      count,
+      count: isGugudanOrdered ? gugudanOrderedCount : count,
       sheets,
       rangeMin,
       rangeMax,
@@ -434,6 +437,7 @@ export default function CalcPage() {
       answerDivMin,
       answerDivMax,
       gugudan: isGugudanActive ? gugudanTables : undefined,
+      gugudanOrdered: isGugudanOrdered ? true : undefined,
     })}`);
   }
 
@@ -545,9 +549,31 @@ export default function CalcPage() {
                       </button>
                     ))}
                   </div>
+                  {gugudanTables.length > 0 && (
+                    <div className="mt-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        {([[true, "순서대로"], [false, "섞어서"]] as [boolean, string][]).map(([ordered, label]) => (
+                          <button
+                            key={label}
+                            type="button"
+                            onClick={() => setGugudanOrdered(ordered)}
+                            className={`py-2.5 border-2 rounded-lg font-bold text-sm cursor-pointer transition-all ${
+                              gugudanOrdered === ordered
+                                ? "border-slate-900 bg-slate-900/5 text-slate-900"
+                                : "border-slate-200 bg-white hover:border-slate-400"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <p className="text-xs text-slate-400 mt-2">
                     {gugudanTables.length > 0
-                      ? "선택한 단 × 1~9 문제를 문제 수에 맞춰 출제합니다. (아래 수 범위·결과값 설정은 무시됩니다)"
+                      ? gugudanOrdered
+                        ? `선택한 단을 n×1부터 n×9까지 순서대로 출제합니다. 문제 수는 ${gugudanOrderedCount}문제로 자동 설정됩니다. (아래 수 범위·결과값 설정은 무시됩니다)`
+                        : "선택한 단 × 1~9 문제를 섞어서 문제 수에 맞춰 출제합니다. (아래 수 범위·결과값 설정은 무시됩니다)"
                       : "단을 선택하면 해당 구구단만 출제합니다. 선택하지 않으면 아래 수 범위로 문제를 만듭니다."}
                   </p>
                 </div>
@@ -838,14 +864,20 @@ export default function CalcPage() {
                 </div>
                 <div>
                   <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
-                  <Dropdown
-                    value={count}
-                    options={countOptions.map((n) => ({ value: n, label: `${n}문제` }))}
-                    onChange={(v) => {
-                      setCount(v);
-                      setStandardCount(v);
-                    }}
-                  />
+                  {isGugudanOrdered ? (
+                    <div className="h-11 rounded-lg border-2 border-slate-200 bg-slate-100 text-slate-500 font-bold text-sm flex items-center justify-center">
+                      {gugudanOrderedCount}문제 자동
+                    </div>
+                  ) : (
+                    <Dropdown
+                      value={count}
+                      options={countOptions.map((n) => ({ value: n, label: `${n}문제` }))}
+                      onChange={(v) => {
+                        setCount(v);
+                        setStandardCount(v);
+                      }}
+                    />
+                  )}
                 </div>
                 <div>
                   <p className="block text-xs text-slate-500 font-bold mb-2">장수</p>

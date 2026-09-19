@@ -36,6 +36,7 @@ export interface CalcParams {
   answerDivMin?: number;
   answerDivMax?: number;
   gugudan?: number[];
+  gugudanOrdered?: boolean;
   layout: "a" | "b";
 }
 
@@ -184,6 +185,9 @@ export function encodeCalcParams(params: CalcParams): string {
 
   if (params.type === "mul" && params.gugudan && params.gugudan.length > 0) {
     encoded.set("g", params.gugudan.join(","));
+    if (params.gugudanOrdered) {
+      encoded.set("go", "1");
+    }
   } else if (params.type === "add_sub") {
     if (params.answerAddMin !== undefined && params.answerAddMax !== undefined) {
       encoded.set("amnA", String(params.answerAddMin));
@@ -316,6 +320,7 @@ export function parseCalcParams(search: string | URLSearchParams): CalcParams | 
   const parsedAnswerDivMin = safeNumber(p.get("amnD"));
   const parsedAnswerDivMax = safeNumber(p.get("amxD"));
   const rawGugudan = p.get("g");
+  const rawGugudanOrdered = p.get("go");
 
   const validTypes = new Set(["add", "sub", "add_sub", "mul", "div", "mul_div", "mixed_addition"]);
   if (!t || !validTypes.has(t)) return null;
@@ -399,6 +404,8 @@ export function parseCalcParams(search: string | URLSearchParams): CalcParams | 
           .filter((n) => Number.isInteger(n) && n >= 1 && n <= 99)
       : [];
 
+  const gugudanOrdered = gugudan.length > 0 && rawGugudanOrdered === "1";
+
   return {
     type: t as CalcType,
     count,
@@ -408,6 +415,7 @@ export function parseCalcParams(search: string | URLSearchParams): CalcParams | 
     opMin,
     opMax,
     gugudan: gugudan.length > 0 ? gugudan : undefined,
+    gugudanOrdered: gugudanOrdered ? true : undefined,
     answerMin: hasAnswerRange ? parsedAnswerMin : undefined,
     answerMax: hasAnswerRange ? parsedAnswerMax : undefined,
     answerAddMin: finalAnswerAddMin,
@@ -457,8 +465,7 @@ export function generateCalcSheet(params: CalcParams, queryString: string, sheet
   }
 
   if (params.type === "mul" && params.gugudan && params.gugudan.length > 0) {
-    // 선택한 구구단(단) × 1~9 조합을 만들고, 섞은 뒤 문제 수만큼 채운다.
-    // 조합 수보다 문제 수가 많으면 다시 섞어 반복하므로, 같은 답이 나와도 문제 수를 맞춘다.
+    // 선택한 구구단(단) × 1~9 조합을 만든다. 단은 오름차순, 곱하는 수는 1~9 순서다.
     const multipliers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
     const combos: Array<{ a: number; b: number }> = [];
     for (const table of params.gugudan) {
@@ -469,6 +476,20 @@ export function generateCalcSheet(params: CalcParams, queryString: string, sheet
 
     if (combos.length === 0) return problems;
 
+    if (params.gugudanOrdered) {
+      // 순서대로: 각 단의 n×1~9를 순서 그대로 배치한다. 문제 수가 조합 수보다
+      // 많으면 같은 순서를 처음부터 다시 반복해 문제 수를 맞춘다.
+      let i = 0;
+      while (problems.length < params.count) {
+        const combo = combos[i % combos.length];
+        problems.push({ a: combo.a, b: combo.b, type: "mul", answer: combo.a * combo.b });
+        i++;
+      }
+      return problems;
+    }
+
+    // 섞어서: 조합을 섞은 뒤 문제 수만큼 채운다. 조합 수보다 문제 수가 많으면
+    // 다시 섞어 반복하므로, 같은 답이 나와도 문제 수를 맞춘다.
     let pool: Array<{ a: number; b: number }> = [];
     while (problems.length < params.count) {
       if (pool.length === 0) pool = shuffleInPlace([...combos], rng);
