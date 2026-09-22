@@ -98,7 +98,7 @@ function MatchSheet({ problems, title, sheetNum, totalSheets, problemCount, type
       <div className="flex justify-between items-end mb-4 pb-2.5">
         <div style={{ fontSize: "1.4rem", fontWeight: 900 }}>
           {title}
-          {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
+          {totalSheets > 1 && <span className="text-sm font-normal text-gray-500 ml-2">({sheetNum}/{totalSheets})</span>}
         </div>
         <div className="flex text-sm" style={{ gap: 120 }}>
           <span>날짜: </span>
@@ -183,7 +183,7 @@ function CalcSheet({
 }) {
   return (
     <div className="bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm", fontFamily: "'Noto Sans KR', sans-serif" }}>
-      <div className="flex justify-between items-center text-sm mb-4 text-gray-400">
+      <div className="flex justify-between items-center text-sm mb-4 text-gray-500">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
           <span>이름: ___________</span>
@@ -192,7 +192,7 @@ function CalcSheet({
       </div>
       <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
         {title}
-        {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
+        {totalSheets > 1 && <span className="text-sm font-normal text-gray-500 ml-2">({sheetNum}/{totalSheets})</span>}
       </div>
       <div style={{ fontSize: ".9rem", fontWeight: 700, color: "#555", borderBottom: "1px solid #e5e7eb", paddingBottom: 12, marginBottom: 16 }}>연산해 보세요.</div>
       <div className="grid grid-cols-3" style={{ gap: "0 48px" }}>
@@ -243,7 +243,7 @@ function Calc3Sheet({
 
   return (
     <div className="sheet bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm", fontFamily: "'Noto Sans KR', sans-serif" }}>
-      <div className="flex justify-between items-center text-sm mb-4 text-gray-400">
+      <div className="flex justify-between items-center text-sm mb-4 text-gray-500">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
           <span>이름: ___________</span>
@@ -252,7 +252,7 @@ function Calc3Sheet({
       </div>
       <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
         {title}
-        {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
+        {totalSheets > 1 && <span className="text-sm font-normal text-gray-500 ml-2">({sheetNum}/{totalSheets})</span>}
       </div>
       <div className="grid gap-10" style={{
         paddingTop: 2,
@@ -467,7 +467,7 @@ function MixedAdditionSheet({
 
   return (
     <div className="sheet bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm", fontFamily: "'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif" }}>
-      <div className="flex justify-between items-center text-sm mb-4 text-gray-400">
+      <div className="flex justify-between items-center text-sm mb-4 text-gray-500">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
           <span>이름: ___________</span>
@@ -476,7 +476,7 @@ function MixedAdditionSheet({
       </div>
       <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
         {title}
-        {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
+        {totalSheets > 1 && <span className="text-sm font-normal text-gray-500 ml-2">({sheetNum}/{totalSheets})</span>}
       </div>
       <div style={{ fontSize: ".9rem", fontWeight: 700, color: "#555", borderBottom: "1px solid #e5e7eb", paddingBottom: 12, marginBottom: 16 }}>연산해 보세요.</div>
 
@@ -562,7 +562,7 @@ function ScreenshotAdditionSheet({
 
   return (
     <div className="sheet bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm", fontFamily: "'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif" }}>
-      <div className="flex justify-between items-center text-sm mb-4 text-gray-400">
+      <div className="flex justify-between items-center text-sm mb-4 text-gray-500">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
           <span>이름: ___________</span>
@@ -571,7 +571,7 @@ function ScreenshotAdditionSheet({
       </div>
       <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
         {title}
-        {totalSheets > 1 && <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>}
+        {totalSheets > 1 && <span className="text-sm font-normal text-gray-500 ml-2">({sheetNum}/{totalSheets})</span>}
       </div>
       <div style={{ fontSize: ".9rem", fontWeight: 700, color: "#555", borderBottom: "1px solid #e5e7eb", paddingBottom: 12, marginBottom: 16 }}>연산해 보세요.</div>
 
