@@ -23,7 +23,8 @@ for (const [name, filePath] of [
 ]) {
   test(`${name}: screenshot worksheet uses textbook-style header and row layout`, () => {
     const source = getComponentBlock(read(filePath), 'ScreenshotAdditionSheet');
-    assert.match(source, /text-sm mb-4 text-gray-400/);
+    // AF-707에서 흰 배경 대비 WCAG 2 AA 충족을 위해 text-gray-400 → text-gray-500으로 상향함
+    assert.match(source, /text-sm mb-4 text-gray-500/);
     assert.match(source, /점수:&nbsp;&nbsp;&nbsp;&nbsp;\/ \{count\}/);
     assert.match(source, /bg-gray-200 text-gray-600 text-xs font-bold/);
     assert.match(source, /rounded-md border border-\[#b9b9b9\] bg-white/);
