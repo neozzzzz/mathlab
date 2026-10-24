@@ -145,7 +145,7 @@ function Calc3Sheet({
         fontFamily: "'Noto Sans KR', sans-serif",
       }}
     >
-      <div className="flex justify-between items-center text-sm mb-4 text-gray-400">
+      <div className="flex justify-between items-center text-sm mb-4 text-gray-500">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
           <span>이름: ___________</span>
@@ -156,7 +156,7 @@ function Calc3Sheet({
       <div className="mb-3 text-center" style={{ fontSize: "1.4rem", fontWeight: 900 }}>
         {title}
         {totalSheets > 1 && (
-          <span className="text-sm font-normal text-gray-400 ml-2">({sheetNum}/{totalSheets})</span>
+          <span className="text-sm font-normal text-gray-500 ml-2">({sheetNum}/{totalSheets})</span>
         )}
       </div>
 
