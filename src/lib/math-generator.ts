@@ -816,3 +816,149 @@ export function generateScreenshotAdditionAllSheets(
 ): ScreenshotAdditionProblem[][] {
   return Array.from({ length: params.sheets }, (_, i) => generateScreenshotAdditionSheet(params, queryString, i));
 }
+
+// ── 시간 단위 변환·비교 ─────────────────────────────────────────────
+
+export type TimeMode = "time_convert" | "time_compare";
+
+export interface TimeParams {
+  mode: TimeMode;
+  count: number;
+  sheets: number;
+  /** 출제 범위 최소 시간(분) */
+  minMinutes: number;
+  /** 출제 범위 최대 시간(분) */
+  maxMinutes: number;
+}
+
+/** 1시간 36분 = [ ]분 (to_minutes) / 75분 = [ ]시간 [ ]분 (to_hours) */
+export interface TimeConvertProblem {
+  kind: "time_convert";
+  direction: "to_minutes" | "to_hours";
+  minutes: number;
+  hours: number;
+  restMinutes: number;
+}
+
+export interface TimeValue {
+  minutes: number;
+  /** hm: ○시간 ○분, m: ○분 */
+  format: "hm" | "m";
+}
+
+/** 두 시간 중 더 긴 쪽에 O 표 */
+export interface TimeCompareProblem {
+  kind: "time_compare";
+  left: TimeValue;
+  right: TimeValue;
+  longer: "left" | "right";
+}
+
+export type TimeProblem = TimeConvertProblem | TimeCompareProblem;
+
+export const TIME_MIN_MINUTES = 60;
+export const TIME_MAX_MINUTES = 600;
+
+const TIME_MODES: readonly TimeMode[] = ["time_convert", "time_compare"];
+
+export function formatHoursMinutes(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}분`;
+  if (minutes === 0) return `${hours}시간`;
+  return `${hours}시간 ${minutes}분`;
+}
+
+export function formatTimeValue(value: TimeValue): string {
+  return value.format === "m" ? `${value.minutes}분` : formatHoursMinutes(value.minutes);
+}
+
+/** 60의 배수는 "○시간 0분"이 되어 변환 문제로 의미가 약하므로 출제하지 않는다. */
+function timeCandidates(minMinutes: number, maxMinutes: number): number[] {
+  const values: number[] = [];
+  for (let v = minMinutes; v <= maxMinutes; v++) {
+    if (v % 60 !== 0) values.push(v);
+  }
+  return values;
+}
+
+export function encodeTimeParams(params: TimeParams): string {
+  return new URLSearchParams({
+    m: params.mode,
+    c: String(params.count),
+    s: String(params.sheets),
+    mn: String(params.minMinutes),
+    mx: String(params.maxMinutes),
+  }).toString();
+}
+
+export function parseTimeParams(search: string | URLSearchParams): TimeParams | null {
+  const p = parseSource(search);
+  const mode = p.get("m") as TimeMode | null;
+  if (!mode || !TIME_MODES.includes(mode)) return null;
+
+  const count = safeNumber(p.get("c"));
+  const sheets = safeNumber(p.get("s"));
+  const minMinutes = safeNumber(p.get("mn"));
+  const maxMinutes = safeNumber(p.get("mx"));
+
+  if (!isIntInRange(count, 1, MAX_COUNT) || !isIntInRange(sheets, 1, MAX_SHEETS)) return null;
+  if (!isIntInRange(minMinutes, TIME_MIN_MINUTES, TIME_MAX_MINUTES)) return null;
+  if (!isIntInRange(maxMinutes, TIME_MIN_MINUTES, TIME_MAX_MINUTES)) return null;
+  if (minMinutes > maxMinutes || timeCandidates(minMinutes, maxMinutes).length === 0) return null;
+
+  return { mode, count, sheets, minMinutes, maxMinutes };
+}
+
+function generateTimeConvertSheet(params: TimeParams, rng: () => number): TimeConvertProblem[] {
+  const directions: TimeConvertProblem["direction"][] = ["to_minutes", "to_hours"];
+  const pool = timeCandidates(params.minMinutes, params.maxMinutes).flatMap((minutes) =>
+    directions.map((direction) => ({ minutes, direction })),
+  );
+  shuffleInPlace(pool, rng);
+
+  return pool.slice(0, params.count).map(({ minutes, direction }) => ({
+    kind: "time_convert",
+    direction,
+    minutes,
+    hours: Math.floor(minutes / 60),
+    restMinutes: minutes % 60,
+  }));
+}
+
+function generateTimeCompareSheet(params: TimeParams, rng: () => number): TimeCompareProblem[] {
+  const candidates = timeCandidates(params.minMinutes, params.maxMinutes);
+  const problems: TimeCompareProblem[] = [];
+  if (candidates.length < 2) return problems;
+
+  const used = new Set<string>();
+  let attempts = 0;
+  while (problems.length < params.count && attempts < 5000) {
+    attempts++;
+    const a = candidates[randInt(rng, 0, candidates.length - 1)];
+    const b = candidates[randInt(rng, 0, candidates.length - 1)];
+    if (a === b) continue;
+
+    const key = `${Math.min(a, b)}-${Math.max(a, b)}`;
+    if (used.has(key)) continue;
+    used.add(key);
+
+    // 한쪽은 "○시간 ○분", 다른 쪽은 "○분"으로 적어 단위를 바꿔 비교하게 한다.
+    const aFormat: TimeValue["format"] = rng() < 0.5 ? "hm" : "m";
+    const left: TimeValue = { minutes: a, format: aFormat };
+    const right: TimeValue = { minutes: b, format: aFormat === "hm" ? "m" : "hm" };
+    problems.push({ kind: "time_compare", left, right, longer: a > b ? "left" : "right" });
+  }
+  return problems;
+}
+
+export function generateTimeSheet(params: TimeParams, queryString: string, sheetIndex = 0): TimeProblem[] {
+  const rng = mulberry32(buildSeed(params.mode, queryString, sheetIndex));
+  return params.mode === "time_convert"
+    ? generateTimeConvertSheet(params, rng)
+    : generateTimeCompareSheet(params, rng);
+}
+
+export function generateTimeAllSheets(params: TimeParams, queryString: string): TimeProblem[][] {
+  return Array.from({ length: params.sheets }, (_, i) => generateTimeSheet(params, queryString, i));
+}
