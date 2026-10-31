@@ -76,13 +76,12 @@ function CompareRow({ problem, number }: { problem: TimeCompareProblem; number: 
   return (
     <div className="flex items-center gap-3 min-w-0">
       <ProblemNumber number={number} />
-      <div className="grid grid-cols-2 flex-1 min-w-0" style={{ border: "1px solid #d2d2d2" }}>
+      <div className="grid grid-cols-2 flex-1 min-w-0">
         {[problem.left, problem.right].map((value, idx) => (
           <div
             key={idx}
             className="text-center whitespace-nowrap"
             style={{
-              borderLeft: idx === 1 ? "1px solid #d2d2d2" : undefined,
               fontSize: "1.1rem",
               fontWeight: 600,
               padding: "16px 4px",

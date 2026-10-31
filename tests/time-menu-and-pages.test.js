@@ -61,3 +61,11 @@ test('time preview: compare sheet also spreads rows over the page height', () =>
   assert.match(source, /const compareRows = Math\.max\(Math\.ceil\(problems\.length \/ 2\), 1\)/);
   assert.match(source, /gridTemplateRows: `repeat\(\$\{compareRows\}, minmax\(3\.6rem, 1fr\)\)`/);
 });
+
+test('time preview: compare times are shown without box borders', () => {
+  const source = read('src/app/time/preview/page.tsx');
+  const compareRow = source.slice(source.indexOf('function CompareRow'), source.indexOf('function TimeSheet'));
+
+  assert.ok(compareRow.length > 0);
+  assert.doesNotMatch(compareRow, /border/, '비교 문제의 시간에는 네모 칸을 두지 않는다');
+});
