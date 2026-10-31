@@ -1175,3 +1175,327 @@ export function generateTimeSheet(params: TimeParams, queryString: string, sheet
 export function generateTimeAllSheets(params: TimeParams, queryString: string): TimeProblem[][] {
   return Array.from({ length: params.sheets }, (_, i) => generateTimeSheet(params, queryString, i));
 }
+
+// ── 시간 2: 걸린 시간 알아보기 ─────────────────────────────────────
+// 교재 수학 2-2 「4. 시각과 시간 ⑥ 걸린 시간을 알아볼까요」 확인 문제 한 쪽의 네 가지 문제.
+// 시각은 12시간제(1~12시)로 적는다. 시각 값은 0시 기준 분(0~1439)으로 다루고 화면에 낼 때 바꾼다.
+
+/**
+ * convert: (1) 1시간 20분 = [ ]분 (2) 100분 = [ ]시간 [ ]분
+ * schedule: 체험 시간표를 보고 보낸 시간 구하기
+ * clock: 시작한 시각·끝난 시각 시계를 보고 걸린 시간 구하기
+ * end: 시작 시각과 걸린 시간을 주고 끝난 시각 구하기
+ */
+export type Time2Format = "convert" | "schedule" | "clock" | "end";
+
+export const TIME2_FORMATS: readonly Time2Format[] = ["convert", "schedule", "clock", "end"];
+
+const TIME2_FORMAT_CODES: Record<Time2Format, string> = { convert: "v", schedule: "t", clock: "k", end: "e" };
+
+/** 한 장에 넣을 수 있는 문제 수. 교재 한 쪽은 6문제. */
+export const TIME2_COUNT_OPTIONS: readonly number[] = [4, 6, 8];
+
+export interface Time2Params {
+  formats: Time2Format[];
+  count: number;
+  sheets: number;
+}
+
+/** 단위 바꾸기 한 문제 = (1) 시간·분 → 분, (2) 분 → 시간·분 두 칸 */
+export interface Time2ConvertProblem {
+  kind: "time2_convert";
+  toMinutes: number;
+  toHours: number;
+}
+
+export interface Time2ScheduleRow {
+  name: string;
+  /** 활동이면 시작·끝 시각, 쉬는 시간이면 duration 만 둔다. */
+  start?: number;
+  end?: number;
+  duration?: number;
+}
+
+export interface Time2ScheduleProblem {
+  kind: "time2_schedule";
+  text: string;
+  rows: Time2ScheduleRow[];
+  /** 정답(분): 첫 활동 시작부터 마지막 활동 끝까지 */
+  answer: number;
+}
+
+export interface Time2ClockProblem {
+  kind: "time2_clock";
+  text: string;
+  start: number;
+  end: number;
+  answer: number;
+}
+
+export interface Time2EndProblem {
+  kind: "time2_end";
+  text: string;
+  start: number;
+  duration: number;
+  /** 정답 시각(분) */
+  answer: number;
+}
+
+export type Time2Problem = Time2ConvertProblem | Time2ScheduleProblem | Time2ClockProblem | Time2EndProblem;
+
+/** 9:00, 1:30 처럼 시간표에 적는 시각(12시간제) */
+export function formatClockDigits(minuteOfDay: number): string {
+  const m = ((minuteOfDay % 1440) + 1440) % 1440;
+  const hour = Math.floor(m / 60) % 12 || 12;
+  return `${hour}:${String(m % 60).padStart(2, "0")}`;
+}
+
+/** 12시 45분, 4시 처럼 문장에 적는 시각(12시간제) */
+export function formatClockKorean(minuteOfDay: number): string {
+  const m = ((minuteOfDay % 1440) + 1440) % 1440;
+  const hour = Math.floor(m / 60) % 12 || 12;
+  return m % 60 === 0 ? `${hour}시` : `${hour}시 ${m % 60}분`;
+}
+
+/** 마지막 글자에 받침이 있는지 */
+function hasBatchim(word: string): boolean {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return code >= 0 && code <= 11171 && code % 28 !== 0;
+}
+
+/** 이름 부르기: 민준 → 민준이, 시아 → 시아 (뒤에 는/가 를 붙여 쓴다) */
+function callName(name: string): string {
+  return hasBatchim(name) ? `${name}이` : name;
+}
+
+function objectParticle(word: string): string {
+  return hasBatchim(word) ? "을" : "를";
+}
+
+const TIME2_CHILDREN = ["시아", "주아", "소민", "민준", "서연", "도윤", "하은", "지호", "예린", "준서", "유나", "태오"];
+
+const TIME2_SCHEDULE_PLACES: readonly { place: string; activities: [string, string] }[] = [
+  { place: "우주 체험관", activities: ["우주인 체험", "우주선 만들기"] },
+  { place: "과학관", activities: ["로봇 체험", "별자리 관찰"] },
+  { place: "미술관", activities: ["그림 감상", "도자기 만들기"] },
+  { place: "도서관", activities: ["책 읽기", "독서 퀴즈"] },
+  { place: "동물원", activities: ["동물 구경", "먹이 주기 체험"] },
+  { place: "박물관", activities: ["유물 관람", "탁본 체험"] },
+  { place: "농장", activities: ["딸기 따기", "치즈 만들기"] },
+];
+
+const TIME2_CLOCK_ACTIVITIES: readonly { noun: string; doing: string }[] = [
+  { noun: "청소", doing: "청소하는" },
+  { noun: "등산", doing: "등산하는" },
+  { noun: "김장", doing: "김장하는" },
+  { noun: "캠핑 준비", doing: "캠핑을 준비하는" },
+  { noun: "집 정리", doing: "집을 정리하는" },
+  { noun: "자전거 여행", doing: "자전거 여행을 하는" },
+];
+
+/** 끝난 시각 구하기 문장. 시작 시각 범위(0시 기준 분)와 걸린 시간 범위(분)는 생활에 맞게 정했다. */
+const TIME2_END_ACTIVITIES: readonly {
+  begin: string;
+  during: string;
+  finish: string;
+  start: [number, number];
+  duration: [number, number];
+}[] = [
+  { begin: "점심을 먹기 시작하여", during: "점심을 먹었습니다", finish: "점심 식사를 마친", start: [11 * 60 + 30, 12 * 60 + 50], duration: [25, 50] },
+  { begin: "숙제를 하기 시작하여", during: "숙제를 했습니다", finish: "숙제를 마친", start: [15 * 60, 17 * 60 + 50], duration: [30, 90] },
+  { begin: "피아노 연습을 시작하여", during: "피아노 연습을 했습니다", finish: "피아노 연습을 마친", start: [14 * 60, 17 * 60 + 50], duration: [30, 80] },
+  { begin: "책을 읽기 시작하여", during: "책을 읽었습니다", finish: "책 읽기를 마친", start: [9 * 60, 16 * 60 + 50], duration: [25, 75] },
+  { begin: "축구를 하기 시작하여", during: "축구를 했습니다", finish: "축구를 마친", start: [9 * 60 + 30, 16 * 60 + 50], duration: [40, 100] },
+  { begin: "영화를 보기 시작하여", during: "영화를 보았습니다", finish: "영화 보기를 마친", start: [10 * 60, 16 * 60 + 50], duration: [90, 140] },
+];
+
+/**
+ * 12시를 지나는지(예: 11:30~1:10, 12:40~2:10). 시간표·시계 문제는 12시간제로 적으므로
+ * 12시를 넘기면 시각의 차를 바로 구하기 어려워 내지 않는다. 끝난 시각 구하기는 교재처럼 넘겨도 된다.
+ */
+function crossesNoon(start: number, end: number): boolean {
+  return start < 13 * 60 && end > 12 * 60;
+}
+
+/** 고른 형식을 정해진 순서로 정렬하고 중복을 없앤다. 비어 있으면 네 형식을 모두 낸다. */
+export function normalizeTime2Formats(formats: readonly Time2Format[] | undefined): Time2Format[] {
+  const picked = TIME2_FORMATS.filter((f) => formats?.includes(f));
+  return picked.length > 0 ? picked : [...TIME2_FORMATS];
+}
+
+/**
+ * 고른 형식마다 같은 수를 나누고 남는 문제는 맨 앞 형식에 준다.
+ * 예: 6문제 × 4형식 → 3·1·1·1 (교재 한 쪽과 같은 구성), 8문제 × 4형식 → 2·2·2·2
+ */
+export function splitTime2Counts(count: number, formats: readonly Time2Format[]): Record<Time2Format, number> {
+  const result: Record<Time2Format, number> = { convert: 0, schedule: 0, clock: 0, end: 0 };
+  const list = normalizeTime2Formats(formats);
+  const base = Math.floor(count / list.length);
+  list.forEach((f) => {
+    result[f] = base;
+  });
+  result[list[0]] += count - base * list.length;
+  return result;
+}
+
+/** A4 한 장에서 형식별 한 문제가 차지하는 대략의 높이(px). 문장이 한 줄 더 늘어나는 경우까지 넉넉히 잡았다. */
+const TIME2_PROBLEM_PX: Record<Time2Format, number> = { convert: 120, schedule: 215, clock: 245, end: 160 };
+const TIME2_PROBLEM_GAP_PX = 12;
+const TIME2_COLUMN_PX = 935;
+
+/** 고른 형식으로 한 장에 들어가는 문제 수만 고른다(왼쪽 열을 먼저 채우고 오른쪽 열로 넘어간다). */
+export function time2CountOptions(formats: readonly Time2Format[]): number[] {
+  const list = normalizeTime2Formats(formats);
+  return TIME2_COUNT_OPTIONS.filter((count) => {
+    const counts = splitTime2Counts(count, list);
+    const order = list.flatMap((f) => Array.from({ length: counts[f] }, () => f));
+    const half = Math.ceil(order.length / 2);
+    return [order.slice(0, half), order.slice(half)].every(
+      (column) =>
+        column.reduce((sum, f) => sum + TIME2_PROBLEM_PX[f], 0) + TIME2_PROBLEM_GAP_PX * Math.max(column.length - 1, 0) <=
+        TIME2_COLUMN_PX,
+    );
+  });
+}
+
+export function encodeTime2Params(params: Time2Params): string {
+  return new URLSearchParams({
+    f: normalizeTime2Formats(params.formats).map((f) => TIME2_FORMAT_CODES[f]).join(""),
+    c: String(params.count),
+    s: String(params.sheets),
+  }).toString();
+}
+
+export function parseTime2Params(search: string | URLSearchParams): Time2Params | null {
+  const p = parseSource(search);
+  const raw = p.get("f");
+  if (!raw) return null;
+  const formats: Time2Format[] = [];
+  for (const code of raw) {
+    const format = TIME2_FORMATS.find((f) => TIME2_FORMAT_CODES[f] === code);
+    if (!format) return null;
+    formats.push(format);
+  }
+  const count = safeNumber(p.get("c"));
+  const sheets = safeNumber(p.get("s"));
+  if (!isIntInRange(count, 1, Math.max(...TIME2_COUNT_OPTIONS))) return null;
+  if (!isIntInRange(sheets, 1, MAX_SHEETS)) return null;
+  return { formats: normalizeTime2Formats(formats), count, sheets };
+}
+
+/** 5분 단위, 60의 배수가 아닌 시간(65~235분) */
+const TIME2_CONVERT_VALUES = Array.from({ length: 35 }, (_, i) => 65 + i * 5).filter((v) => v % 60 !== 0);
+
+function generateTime2Convert(count: number, rng: () => number): Time2ConvertProblem[] {
+  const a = shuffleInPlace([...TIME2_CONVERT_VALUES], rng);
+  const b = shuffleInPlace([...TIME2_CONVERT_VALUES], rng);
+  return Array.from({ length: count }, (_, i) => ({
+    kind: "time2_convert",
+    toMinutes: a[i % a.length],
+    toHours: b[i % b.length],
+  }));
+}
+
+/** step 단위로 [min, max] 사이 값을 고른다. */
+function randStep(rng: () => number, min: number, max: number, step: number): number {
+  return min + randInt(rng, 0, Math.floor((max - min) / step)) * step;
+}
+
+function generateTime2Schedule(count: number, rng: () => number): Time2ScheduleProblem[] {
+  const places = shuffleInPlace([...TIME2_SCHEDULE_PLACES], rng);
+  const children = shuffleInPlace([...TIME2_CHILDREN], rng);
+  return Array.from({ length: count }, (_, i) => {
+    const { place, activities } = places[i % places.length];
+    let start = 0;
+    let first = 0;
+    let rest = 0;
+    let second = 0;
+    for (let tries = 0; tries < 100; tries++) {
+      start = randStep(rng, 9 * 60, 14 * 60, 10);
+      first = randStep(rng, 40, 90, 10);
+      rest = randStep(rng, 10, 20, 10);
+      second = randStep(rng, 40, 90, 10);
+      if (!crossesNoon(start, start + first + rest + second)) break;
+    }
+    const secondStart = start + first + rest;
+    const end = secondStart + second;
+    return {
+      kind: "time2_schedule",
+      text: `체험 시간표를 보고 ${callName(children[i % children.length])}가 ${place}에서 보낸 시간은 몇 시간 몇 분인지 구해 보세요.`,
+      rows: [
+        { name: activities[0], start, end: start + first },
+        { name: "쉬는 시간", duration: rest },
+        { name: activities[1], start: secondStart, end },
+      ],
+      answer: end - start,
+    };
+  });
+}
+
+function generateTime2Clock(count: number, rng: () => number): Time2ClockProblem[] {
+  const activities = shuffleInPlace([...TIME2_CLOCK_ACTIVITIES], rng);
+  const children = shuffleInPlace([...TIME2_CHILDREN], rng);
+  return Array.from({ length: count }, (_, i) => {
+    const activity = activities[i % activities.length];
+    // 시작 시각은 정각 또는 5분 단위, 걸린 시간은 1시간 5분 ~ 4시간 55분(딱 떨어지는 시간 제외)
+    let answer = 0;
+    let start = 0;
+    for (let tries = 0; tries < 100; tries++) {
+      answer = randStep(rng, 65, 295, 5);
+      start = randStep(rng, 8 * 60, 14 * 60, 5);
+      if (answer % 60 !== 0 && !crossesNoon(start, start + answer)) break;
+    }
+    const name = children[i % children.length];
+    return {
+      kind: "time2_clock",
+      text:
+        `${callName(name)}네 가족이 ${activity.noun}${objectParticle(activity.noun)} 시작한 시각과 끝난 시각입니다. ` +
+        `${activity.doing} 데 걸린 시간은 몇 시간 몇 분일까요?`,
+      start,
+      end: start + answer,
+      answer,
+    };
+  });
+}
+
+function generateTime2End(count: number, rng: () => number): Time2EndProblem[] {
+  const activities = shuffleInPlace([...TIME2_END_ACTIVITIES], rng);
+  const children = shuffleInPlace([...TIME2_CHILDREN], rng);
+  return Array.from({ length: count }, (_, i) => {
+    const activity = activities[i % activities.length];
+    // 끝난 시각이 시작한 시각과 다른 '시'가 되도록(정시를 넘어가도록) 고른다.
+    let start = 0;
+    let duration = 0;
+    for (let tries = 0; tries < 100; tries++) {
+      start = randStep(rng, activity.start[0], activity.start[1], 5);
+      duration = randStep(rng, activity.duration[0], activity.duration[1], 5);
+      if (Math.floor((start + duration) / 60) !== Math.floor(start / 60) && (start + duration) % 60 !== 0) break;
+    }
+    const name = callName(children[i % children.length]);
+    return {
+      kind: "time2_end",
+      text:
+        `${name}는 ${formatClockKorean(start)}에 ${activity.begin} ${formatHoursMinutes(duration)} 동안 ${activity.during}. ` +
+        `${name}가 ${activity.finish} 시각은 몇 시 몇 분일까요?`,
+      start,
+      duration,
+      answer: start + duration,
+    };
+  });
+}
+
+/** 형식 순서(단위 바꾸기 → 시간표 → 시계 → 끝난 시각)대로 이어 붙인다. */
+export function generateTime2Sheet(params: Time2Params, queryString: string, sheetIndex = 0): Time2Problem[] {
+  const rng = mulberry32(buildSeed("time2", queryString, sheetIndex));
+  const counts = splitTime2Counts(params.count, params.formats);
+  return [
+    ...generateTime2Convert(counts.convert, rng),
+    ...generateTime2Schedule(counts.schedule, rng),
+    ...generateTime2Clock(counts.clock, rng),
+    ...generateTime2End(counts.end, rng),
+  ];
+}
+
+export function generateTime2AllSheets(params: Time2Params, queryString: string): Time2Problem[][] {
+  return Array.from({ length: params.sheets }, (_, i) => generateTime2Sheet(params, queryString, i));
+}
