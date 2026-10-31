@@ -4,29 +4,37 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
+const SRC = path.join(root, 'src');
+const PRINT_HELPER = path.join(SRC, 'lib', 'print.ts');
 
 function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
-const PRINT_PAGES = [
-  'src/app/preview/page.tsx',
-  'src/app/calc/preview/page.tsx',
-  'src/app/calc3/preview/page.tsx',
-  'src/app/vertical/preview/page.tsx',
-  'src/app/time/preview/page.tsx',
-  'src/app/s/[id]/page.tsx',
-];
+function sourceFiles(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return sourceFiles(full);
+    return /\.(tsx?|jsx?)$/.test(entry.name) ? [full] : [];
+  });
+}
 
-// window.print() 는 대화상자가 닫힐 때까지 메인 스레드를 막는다.
-// 클릭 핸들러에서 바로 부르면 그 시간이 INP 로 잡히므로 paint 이후로 미뤄야 한다.
-test('print buttons defer window.print() until after the next paint', () => {
-  for (const file of PRINT_PAGES) {
-    const source = read(file);
-    assert.doesNotMatch(source, /window\.print\(/, `${file} calls window.print() directly`);
-    assert.match(source, /import \{ printAfterPaint \} from "@\/lib\/print";/, `${file} must import printAfterPaint`);
-    assert.match(source, /printAfterPaint/, `${file} must use printAfterPaint`);
+// 대화상자가 닫힐 때까지 메인 스레드를 막는 브라우저 API.
+// 클릭 핸들러에서 부르면 대화상자에 머문 시간 전체가 INP 로 잡힌다(AF-1052, CLAUDE.md 참고).
+const BLOCKING_CALL = /(?<![\w.])(?:window\.)?(print|alert|confirm|prompt)\(/g;
+
+test('src never calls blocking dialog APIs directly (INP)', () => {
+  const offenders = [];
+  for (const file of sourceFiles(SRC)) {
+    if (file === PRINT_HELPER) continue;
+    const lines = fs.readFileSync(file, 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      for (const m of line.matchAll(BLOCKING_CALL)) {
+        offenders.push(`${path.relative(root, file)}:${i + 1} ${m[0]}`);
+      }
+    });
   }
+  assert.deepEqual(offenders, [], 'window.print() 대신 printAfterPaint(), alert/confirm/prompt 대신 화면 안 안내를 쓰세요');
 });
 
 test('printAfterPaint schedules print after a frame and a macrotask', () => {
