@@ -69,3 +69,11 @@ test('time preview: compare times are shown without box borders', () => {
   assert.ok(compareRow.length > 0);
   assert.doesNotMatch(compareRow, /border/, '비교 문제의 시간에는 네모 칸을 두지 않는다');
 });
+
+test('time settings: 단위 바꾸기 offers 26 problems, 더 긴 시간 고르기 stays at max 20', () => {
+  const source = read('src/app/time/page.tsx');
+
+  assert.match(source, /time_convert: \[10, 16, 20, 26\]/);
+  assert.match(source, /time_compare: \[10, 16, 20\]/);
+  assert.match(source, /options=\{COUNT_OPTIONS\[mode\]\.map/);
+});

@@ -61,6 +61,12 @@ const MODE_OPTIONS: { value: TimeMode; label: string; sample: string }[] = [
   { value: "time_compare", label: "더 긴 시간 고르기", sample: "1시간 55분 / 75분" },
 ];
 
+// 더 긴 시간 고르기는 한 장(A4)에 20문제까지 들어간다.
+const COUNT_OPTIONS: Record<TimeMode, number[]> = {
+  time_convert: [10, 16, 20, 26],
+  time_compare: [10, 16, 20],
+};
+
 function MinutesField({
   label,
   value,
@@ -103,6 +109,13 @@ export default function TimePage() {
   useEffect(() => () => {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
   }, []);
+
+  function selectMode(next: TimeMode) {
+    setMode(next);
+    // 바꾼 유형에 없는 문제 수(예: 더 긴 시간 고르기의 26문제)는 그 유형의 최대값으로 맞춘다.
+    const options = COUNT_OPTIONS[next];
+    if (!options.includes(count)) setCount(options[options.length - 1]);
+  }
 
   function normalizeRange() {
     if (maxMinutes > 0 && maxMinutes < minMinutes) {
@@ -173,7 +186,7 @@ export default function TimePage() {
                   type="button"
                   role="radio"
                   aria-checked={selected}
-                  onClick={() => setMode(option.value)}
+                  onClick={() => selectMode(option.value)}
                   className={`rounded-xl border-2 px-3 py-3 text-left transition-colors cursor-pointer ${
                     selected ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-400"
                   }`}
@@ -207,7 +220,7 @@ export default function TimePage() {
               <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
               <Dropdown
                 value={count}
-                options={[10, 16, 20].map((n) => ({ value: n, label: `${n}문제` }))}
+                options={COUNT_OPTIONS[mode].map((n) => ({ value: n, label: `${n}문제` }))}
                 onChange={setCount}
               />
             </div>
