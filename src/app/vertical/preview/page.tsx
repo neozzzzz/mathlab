@@ -9,18 +9,58 @@ import { saveWorksheet } from "@/lib/supabase";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
 import { BoxCell, NumberBox, splitToCells } from "@/components/math/BoxCell";
 
+// 네모를 끄면 테두리만 투명하게 바꿔 칸 크기와 정렬은 그대로 둔다.
+const HIDDEN_BOX_BORDER: React.CSSProperties = { border: "1px solid transparent" };
+
+const BOX_VISIBILITY_STORAGE_KEY = "mathlab.vertical.boxVisibility";
+
+function BoxToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:border-slate-400 cursor-pointer"
+    >
+      <span>{label}</span>
+      <span
+        aria-hidden
+        className={`relative inline-block w-8 h-[18px] rounded-full transition-colors ${checked ? "bg-slate-900" : "bg-slate-300"}`}
+      >
+        <span
+          className={`absolute top-[2px] left-[2px] w-[14px] h-[14px] rounded-full bg-white transition-transform ${checked ? "translate-x-[14px]" : ""}`}
+        />
+      </span>
+      <span className="w-5 text-xs text-slate-500">{checked ? "ON" : "OFF"}</span>
+    </button>
+  );
+}
+
 function MixedAdditionSheet({
   problems,
   title,
   count,
   sheetNum,
   totalSheets,
+  showDigitBoxes,
+  showAnswerBox,
 }: {
   problems: CalcProblem[];
   title: string;
   count: number;
   sheetNum: number;
   totalSheets: number;
+  showDigitBoxes: boolean;
+  showAnswerBox: boolean;
 }) {
   const rowStyle: React.CSSProperties = {
     display: "inline-grid",
@@ -41,6 +81,7 @@ function MixedAdditionSheet({
     paddingTop: 0,
     paddingBottom: 0,
     zIndex: 3,
+    ...(showDigitBoxes ? null : HIDDEN_BOX_BORDER),
   };
 
   const verticalGridStyle: React.CSSProperties = {
@@ -91,7 +132,7 @@ function MixedAdditionSheet({
                     <span style={{ gridRow: 3, gridColumn: "1 / 4", display: "inline-block", borderBottom: "2px solid #222", width: "100%" }} />
                   </div>
                   <div style={{ marginTop: 6, marginLeft: 12 }}>
-                    <NumberBox tone="answer" width="4.4ch" height="2.2rem" align="right" />
+                    <NumberBox tone="answer" width="4.4ch" height="2.2rem" align="right" style={showAnswerBox ? undefined : HIDDEN_BOX_BORDER} />
                   </div>
                 </div>
               </div>
@@ -109,6 +150,9 @@ function PreviewContent() {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [showDigitBoxes, setShowDigitBoxes] = useState(true);
+  const [showAnswerBox, setShowAnswerBox] = useState(true);
+  const [boxVisibilityLoaded, setBoxVisibilityLoaded] = useState(false);
   const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -116,6 +160,32 @@ function PreviewContent() {
     if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
   }, []);
+
+  // 네모 표시 설정은 문제 생성 시드(쿼리)와 무관하게 브라우저에 저장해 다음 생성 때도 유지한다.
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(BOX_VISIBILITY_STORAGE_KEY) ?? "null");
+      if (saved && typeof saved === "object") {
+        if (typeof saved.digit === "boolean") setShowDigitBoxes(saved.digit);
+        if (typeof saved.answer === "boolean") setShowAnswerBox(saved.answer);
+      }
+    } catch {
+      // 저장값이 깨졌거나 저장소를 쓸 수 없으면 기본값(모두 표시)을 쓴다.
+    }
+    setBoxVisibilityLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!boxVisibilityLoaded) return;
+    try {
+      window.localStorage.setItem(
+        BOX_VISIBILITY_STORAGE_KEY,
+        JSON.stringify({ digit: showDigitBoxes, answer: showAnswerBox }),
+      );
+    } catch {
+      // 저장소를 쓸 수 없어도 화면 토글은 동작한다.
+    }
+  }, [boxVisibilityLoaded, showDigitBoxes, showAnswerBox]);
 
   const queryString = searchParams.toString();
   const params = useMemo(() => parseCalcParams(searchParams), [searchParams]);
@@ -242,6 +312,14 @@ function PreviewContent() {
         </div>
       </div>
 
+      <div className="print:hidden border-b bg-slate-50">
+        <div className="max-w-[880px] mx-auto px-4 md:px-6 py-3 flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold text-slate-500 mr-1">네모 표시</span>
+          <BoxToggle label="숫자 네모" checked={showDigitBoxes} onChange={setShowDigitBoxes} />
+          <BoxToggle label="답 네모" checked={showAnswerBox} onChange={setShowAnswerBox} />
+        </div>
+      </div>
+
       {shareUrl && (
         <div className="print:hidden text-center py-2 px-4 md:px-6 bg-green-50 border-b border-green-200">
           <span className="text-sm text-green-800">공유 링크: </span>
@@ -266,6 +344,8 @@ function PreviewContent() {
             count={safeParams.count}
             sheetNum={index + 1}
             totalSheets={safeParams.sheets}
+            showDigitBoxes={showDigitBoxes}
+            showAnswerBox={showAnswerBox}
           />
         </div>
       ))}
