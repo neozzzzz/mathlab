@@ -10,18 +10,26 @@ import {
   type TimeConvertProblem,
   type TimeCompareProblem,
   type TimeSplitProblem,
+  type TimeActivityProblem,
+  type TimeWordProblem,
+  type TimeProblem,
+  splitTimeConvertCounts,
+  timeConvertCountOptions,
+  TIME_ACTIVITIES,
 } from "../src/lib/math-generator.ts";
 
 const convertParams: TimeParams = {
   mode: "time_convert",
+  formats: ["direct"],
   count: 20,
   sheets: 2,
   minMinutes: 61,
   maxMinutes: 179,
 };
 
-const compareParams: TimeParams = { ...convertParams, mode: "time_compare" };
-const splitParams: TimeParams = { ...convertParams, mode: "time_split", count: 12 };
+const { formats: _formats, ...baseParams } = convertParams;
+const compareParams: TimeParams = { ...baseParams, mode: "time_compare" };
+const splitParams: TimeParams = { ...baseParams, mode: "time_split", count: 12 };
 
 test("time: 쿼리 인코딩 후 파싱하면 같은 설정으로 복원된다", () => {
   for (const params of [convertParams, compareParams, splitParams]) {
@@ -143,4 +151,69 @@ test("time_split: 문제 수가 적어도 세 단계가 모두 나온다", () =>
     const blanks = new Set(problems.filter((p) => p.direction === direction).map((p) => p.blank));
     assert.deepEqual([...blanks].sort(), ["hours", "none", "rest"]);
   }
+});
+
+const mixedParams: TimeParams = { ...convertParams, formats: ["direct", "compare", "activity", "word"], count: 22 };
+
+test("time_convert 형식 섞기: 주소에 형식을 담고, 형식이 없는 예전 주소는 바로 바꾸기로 읽는다", () => {
+  const query = encodeTimeParams(mixedParams);
+  assert.match(query, /f=dcaw/);
+  assert.deepEqual(parseTimeParams(query), mixedParams);
+
+  // 고른 순서와 관계없이 바로 바꾸기 → 더 긴 시간 → 활동 → 문장 순으로 정리한다.
+  const shuffled = encodeTimeParams({ ...mixedParams, formats: ["word", "direct"] });
+  assert.deepEqual(parseTimeParams(shuffled)?.formats, ["direct", "word"]);
+
+  assert.doesNotMatch(encodeTimeParams(convertParams), /f=/, "바로 바꾸기만 내면 예전 주소 그대로");
+  assert.deepEqual(parseTimeParams("m=time_convert&c=20&s=1&mn=61&mx=179")?.formats, ["direct"]);
+  assert.equal(parseTimeParams("m=time_convert&c=20&s=1&mn=61&mx=179&f=dx"), null, "알 수 없는 형식");
+  assert.equal(parseTimeParams("m=time_convert&c=20&s=1&mn=61&mx=179&f="), null, "빈 형식");
+});
+
+test("time_convert 형식 섞기: 22문제 × 4형식은 교재처럼 6·6·6·4로 나눈다", () => {
+  assert.deepEqual(splitTimeConvertCounts(22, ["direct", "compare", "activity", "word"]), {
+    direct: 6,
+    compare: 6,
+    activity: 6,
+    word: 4,
+  });
+  assert.deepEqual(splitTimeConvertCounts(12, ["direct", "word"]), { direct: 6, compare: 0, activity: 0, word: 6 });
+  assert.deepEqual(splitTimeConvertCounts(26, ["direct"]), { direct: 26, compare: 0, activity: 0, word: 0 });
+});
+
+test("time_convert 문제 수 선택지: 바로 바꾸기만이면 예전 그대로, 섞으면 한 장에 들어가는 수만", () => {
+  assert.deepEqual(timeConvertCountOptions(["direct"]), [10, 16, 20, 26]);
+  assert.deepEqual(timeConvertCountOptions(["direct", "compare", "activity", "word"]), [8, 12, 16, 20, 22]);
+  for (const count of timeConvertCountOptions(["activity"])) {
+    assert.ok(count <= TIME_ACTIVITIES.length, "활동 그림이 겹치지 않을 만큼만");
+  }
+});
+
+test("time_convert 형식 섞기: 형식 순서대로 이어 붙이고 각 문제의 답이 맞다", () => {
+  const problems = generateTimeSheet(mixedParams, encodeTimeParams(mixedParams), 0) as TimeProblem[];
+  assert.equal(problems.length, 22);
+  assert.deepEqual(
+    problems.map((p) => p.kind),
+    [
+      ...Array(6).fill("time_convert"),
+      ...Array(6).fill("time_compare"),
+      ...Array(6).fill("time_activity"),
+      ...Array(4).fill("time_word"),
+    ],
+  );
+
+  const activities = problems.filter((p): p is TimeActivityProblem => p.kind === "time_activity");
+  assert.equal(new Set(activities.map((p) => p.activityId)).size, activities.length, "한 장 안에서 활동이 겹치지 않는다");
+  const words = problems.filter((p): p is TimeWordProblem => p.kind === "time_word");
+  for (const p of [...activities, ...words]) {
+    assert.ok(p.minutes >= 61 && p.minutes <= 179);
+    assert.notEqual(p.minutes % 60, 0);
+    assert.equal(p.hours * 60 + p.restMinutes, p.minutes);
+  }
+  // 왼쪽 열은 분 → 시간·분, 오른쪽 열은 시간·분 → 분으로 번갈아 낸다.
+  assert.deepEqual(
+    activities.map((p) => p.direction),
+    ["to_hours", "to_minutes", "to_hours", "to_minutes", "to_hours", "to_minutes"],
+  );
+  assert.deepEqual(words.map((p) => p.direction), ["to_hours", "to_minutes", "to_hours", "to_minutes"]);
 });

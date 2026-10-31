@@ -7,8 +7,11 @@ import Dropdown from "@/components/Dropdown";
 import {
   encodeTimeParams,
   formatHoursMinutes,
+  normalizeTimeConvertFormats,
+  timeConvertCountOptions,
   TIME_MAX_MINUTES,
   TIME_MIN_MINUTES,
+  type TimeConvertFormat,
   type TimeMode,
 } from "@/lib/math-generator";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
@@ -63,11 +66,29 @@ const MODE_OPTIONS: { value: TimeMode; label: string; sample: string }[] = [
 ];
 
 // 더 긴 시간 고르기는 한 장(A4)에 20문제, 두 줄로 풀어 쓰는 60분 이용해 바꾸기는 16문제까지 들어간다.
-const COUNT_OPTIONS: Record<TimeMode, number[]> = {
-  time_convert: [10, 16, 20, 26],
+const COUNT_OPTIONS: Record<Exclude<TimeMode, "time_convert">, number[]> = {
   time_compare: [10, 16, 20],
   time_split: [10, 12, 16],
 };
+
+// 단위 바꾸기는 형식을 골라 한 장에 섞을 수 있다. 문제 수 선택지는 고른 형식에 따라 달라진다.
+const FORMAT_OPTIONS: { value: TimeConvertFormat; label: string; sample: string }[] = [
+  { value: "direct", label: "바로 바꾸기", sample: "1시간 36분 = □분" },
+  { value: "compare", label: "더 긴 시간 고르기", sample: "1시간 25분 / 75분" },
+  { value: "activity", label: "활동 시간 바꾸기", sample: "그림 그리기 95분 → □시간 □분" },
+  { value: "word", label: "문장 문제", sample: "87분은 몇 시간 몇 분인가요?" },
+];
+
+function countOptionsFor(mode: TimeMode, formats: TimeConvertFormat[]): number[] {
+  return mode === "time_convert" ? timeConvertCountOptions(formats) : COUNT_OPTIONS[mode];
+}
+
+/** 지금 문제 수가 새 선택지에 없으면 넘지 않는 가장 큰 값(없으면 가장 작은 값)으로 맞춘다. */
+function fitCount(count: number, options: number[]): number {
+  if (options.includes(count)) return count;
+  const smaller = options.filter((n) => n <= count);
+  return smaller.length > 0 ? smaller[smaller.length - 1] : options[0];
+}
 
 function MinutesField({
   label,
@@ -95,6 +116,7 @@ function MinutesField({
 export default function TimePage() {
   const router = useRouter();
   const [mode, setMode] = useState<TimeMode>("time_convert");
+  const [formats, setFormats] = useState<TimeConvertFormat[]>(["direct"]);
   const [minMinutes, setMinMinutes] = useState(61);
   const [maxMinutes, setMaxMinutes] = useState(179);
   const [count, setCount] = useState(20);
@@ -114,9 +136,19 @@ export default function TimePage() {
 
   function selectMode(next: TimeMode) {
     setMode(next);
-    // 바꾼 유형에 없는 문제 수(예: 더 긴 시간 고르기의 26문제)는 그 유형의 최대값으로 맞춘다.
-    const options = COUNT_OPTIONS[next];
-    if (!options.includes(count)) setCount(options[options.length - 1]);
+    // 바꾼 유형에 없는 문제 수(예: 더 긴 시간 고르기의 26문제)는 그 유형에서 고를 수 있는 값으로 맞춘다.
+    setCount(fitCount(count, countOptionsFor(next, formats)));
+  }
+
+  function toggleFormat(format: TimeConvertFormat) {
+    const next = formats.includes(format) ? formats.filter((f) => f !== format) : [...formats, format];
+    if (next.length === 0) {
+      showToast("형식을 하나 이상 골라 주세요");
+      return;
+    }
+    const normalized = normalizeTimeConvertFormats(next);
+    setFormats(normalized);
+    setCount(fitCount(count, countOptionsFor(mode, normalized)));
   }
 
   function normalizeRange() {
@@ -140,11 +172,12 @@ export default function TimePage() {
       return;
     }
 
-    const query = encodeTimeParams({ mode, count, sheets, minMinutes, maxMinutes });
+    const query = encodeTimeParams({ mode, formats, count, sheets, minMinutes, maxMinutes });
 
     trackEvent(GA_EVENTS.GENERATE, {
       page: "time",
       type: mode,
+      formats: mode === "time_convert" ? formats.join(",") : undefined,
       count,
       sheets,
       range_min: minMinutes,
@@ -201,6 +234,44 @@ export default function TimePage() {
           </div>
         </div>
 
+        {mode === "time_convert" && (
+          <div>
+            <label className="block text-sm font-bold mb-2">문제 형식</label>
+            <div className="grid grid-cols-2 gap-2" role="group" aria-label="문제 형식">
+              {FORMAT_OPTIONS.map((option) => {
+                const selected = formats.includes(option.value);
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => toggleFormat(option.value)}
+                    className={`rounded-xl border-2 px-3 py-2.5 text-left transition-colors cursor-pointer ${
+                      selected ? "border-slate-900 bg-slate-50 text-slate-900" : "border-slate-200 bg-white text-slate-500 hover:border-slate-400"
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5 text-sm font-bold">
+                      <span
+                        aria-hidden
+                        className={`inline-flex items-center justify-center w-4 h-4 rounded border text-[10px] leading-none ${
+                          selected ? "bg-slate-900 border-slate-900 text-white" : "border-slate-300 bg-white"
+                        }`}
+                      >
+                        {selected ? "✓" : ""}
+                      </span>
+                      {option.label}
+                    </span>
+                    <span className="block mt-1 text-xs text-slate-500">{option.sample}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              여러 형식을 고르면 한 장에 형식별로 나눠 섞어 냅니다.
+            </p>
+          </div>
+        )}
+
         <div>
           <label className="block text-sm font-bold mb-2">시간 범위</label>
           <div className="rounded-xl border border-slate-200/80 bg-white p-3">
@@ -222,7 +293,7 @@ export default function TimePage() {
               <p className="block text-xs text-slate-500 font-bold mb-2">문제수</p>
               <Dropdown
                 value={count}
-                options={COUNT_OPTIONS[mode].map((n) => ({ value: n, label: `${n}문제` }))}
+                options={countOptionsFor(mode, formats).map((n) => ({ value: n, label: `${n}문제` }))}
                 onChange={setCount}
               />
             </div>

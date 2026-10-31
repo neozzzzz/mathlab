@@ -70,12 +70,12 @@ test('time preview: compare times are shown without box borders', () => {
   assert.doesNotMatch(compareRow, /border/, '비교 문제의 시간에는 네모 칸을 두지 않는다');
 });
 
-test('time settings: 단위 바꾸기 offers 26 problems, 더 긴 시간 고르기 stays at max 20', () => {
+test('time settings: 더 긴 시간 고르기 stays at max 20, 단위 바꾸기 options follow the chosen formats', () => {
   const source = read('src/app/time/page.tsx');
 
-  assert.match(source, /time_convert: \[10, 16, 20, 26\]/);
   assert.match(source, /time_compare: \[10, 16, 20\]/);
-  assert.match(source, /options=\{COUNT_OPTIONS\[mode\]\.map/);
+  assert.match(source, /mode === "time_convert" \? timeConvertCountOptions\(formats\) : COUNT_OPTIONS\[mode\]/);
+  assert.match(source, /options=\{countOptionsFor\(mode, formats\)\.map/);
 });
 
 test('time settings: 60분 이용해 바꾸기 유형은 두 줄 문제라 한 장에 16문제까지', () => {
@@ -93,4 +93,25 @@ test('time preview: 60분 이용해 바꾸기는 가운데 식과 답 줄을 같
   assert.match(source, /<MinutesPart value=\{problem\.hours \* 60\} blank=\{problem\.blank === "hours"\} \/>/);
   assert.match(source, /<MinutesPart value=\{problem\.restMinutes\} blank=\{problem\.blank === "rest"\} \/>/);
   assert.match(source, /mode === "time_split" \? \(\s*<SplitColumns/);
+});
+
+test('time settings: 단위 바꾸기에서 네 가지 형식을 골라 섞을 수 있다', () => {
+  const source = read('src/app/time/page.tsx');
+
+  for (const label of ['바로 바꾸기', '더 긴 시간 고르기', '활동 시간 바꾸기', '문장 문제']) {
+    assert.match(source, new RegExp(`label: "${label}"`));
+  }
+  assert.match(source, /mode === "time_convert" && \(/, '형식 선택은 단위 바꾸기에서만 보인다');
+  assert.match(source, /encodeTimeParams\(\{ mode, formats, count, sheets, minMinutes, maxMinutes \}\)/);
+});
+
+test('time preview: 섞인 단위 바꾸기는 형식마다 안내가 붙은 구역으로 나눈다', () => {
+  const source = read('src/app/time/preview/page.tsx');
+
+  assert.match(source, /const groups = mode === "time_convert" \? groupByFormat\(problems\) : \[\]/);
+  assert.match(source, /\{FORMAT_INSTRUCTION\[group\.format\]\}/);
+  assert.match(source, /function ActivityRow/);
+  assert.match(source, /function WordRow/);
+  assert.match(source, /은 몇 분인가요\?/);
+  assert.match(source, /분은 몇 시간 몇 분인가요\?/);
 });

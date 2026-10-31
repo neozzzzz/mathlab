@@ -821,8 +821,19 @@ export function generateScreenshotAdditionAllSheets(
 
 export type TimeMode = "time_convert" | "time_compare" | "time_split";
 
+/**
+ * 단위 바꾸기 문제지에 섞어 넣는 형식(교재 "1시간 알아보기" 한 쪽의 네 가지 문제).
+ * direct: 1시간 36분 = [ ]분 / compare: 더 긴 시간에 O 표 /
+ * activity: 활동에 걸린 시간 95분 → [ ]시간 [ ]분 / word: 87분은 몇 시간 몇 분인가요?
+ */
+export type TimeConvertFormat = "direct" | "compare" | "activity" | "word";
+
+export const TIME_CONVERT_FORMATS: readonly TimeConvertFormat[] = ["direct", "compare", "activity", "word"];
+
 export interface TimeParams {
   mode: TimeMode;
+  /** time_convert 에서만 쓴다. 고른 순서와 관계없이 TIME_CONVERT_FORMATS 순으로 정렬해 둔다. */
+  formats?: TimeConvertFormat[];
   count: number;
   sheets: number;
   /** 출제 범위 최소 시간(분) */
@@ -870,7 +881,53 @@ export interface TimeSplitProblem {
   blank: "none" | "hours" | "rest";
 }
 
-export type TimeProblem = TimeConvertProblem | TimeCompareProblem | TimeSplitProblem;
+export interface TimeActivity {
+  id: string;
+  name: string;
+}
+
+/** 문제지에 쓰는 활동. 그림은 미리보기에서 id 별 아이콘으로 그린다. */
+export const TIME_ACTIVITIES: readonly TimeActivity[] = [
+  { id: "drawing", name: "그림 그리기" },
+  { id: "piano", name: "피아노 연습" },
+  { id: "reading", name: "책 읽기" },
+  { id: "swimming", name: "수영하기" },
+  { id: "tv", name: "텔레비전 보기" },
+  { id: "bike", name: "자전거 타기" },
+  { id: "exercise", name: "운동하기" },
+  { id: "homework", name: "숙제하기" },
+  { id: "walking", name: "산책하기" },
+  { id: "puzzle", name: "퍼즐 맞추기" },
+  { id: "cooking", name: "요리하기" },
+  { id: "movie", name: "영화 보기" },
+];
+
+/** 활동에 걸린 시간을 다른 단위로 바꾸기. to_minutes: 1시간 40분 → [ ]분, to_hours: 95분 → [ ]시간 [ ]분 */
+export interface TimeActivityProblem {
+  kind: "time_activity";
+  activityId: string;
+  activityName: string;
+  direction: "to_minutes" | "to_hours";
+  minutes: number;
+  hours: number;
+  restMinutes: number;
+}
+
+/** 문장 문제. to_hours: 87분은 몇 시간 몇 분인가요? / to_minutes: 1시간 20분은 몇 분인가요? */
+export interface TimeWordProblem {
+  kind: "time_word";
+  direction: "to_minutes" | "to_hours";
+  minutes: number;
+  hours: number;
+  restMinutes: number;
+}
+
+export type TimeProblem =
+  | TimeConvertProblem
+  | TimeCompareProblem
+  | TimeSplitProblem
+  | TimeActivityProblem
+  | TimeWordProblem;
 
 export const TIME_MIN_MINUTES = 60;
 export const TIME_MAX_MINUTES = 600;
@@ -898,14 +955,79 @@ function timeCandidates(minMinutes: number, maxMinutes: number): number[] {
   return values;
 }
 
+const TIME_FORMAT_CODES: Record<TimeConvertFormat, string> = { direct: "d", compare: "c", activity: "a", word: "w" };
+
+/** 형식을 정해진 순서로 정렬하고 중복을 없앤다. 비어 있으면 바로 바꾸기만 낸다. */
+export function normalizeTimeConvertFormats(formats: readonly TimeConvertFormat[] | undefined): TimeConvertFormat[] {
+  const picked = TIME_CONVERT_FORMATS.filter((f) => formats?.includes(f));
+  return picked.length > 0 ? picked : ["direct"];
+}
+
+/**
+ * 고른 형식마다 문제 수를 나눈다. 두 열로 놓으므로 2문제씩 나누고, 남는 문제는 앞 형식부터 2개씩 더 준다.
+ * 예: 22문제 × 4형식 → 6·6·6·4 (교재 한 쪽과 같은 구성)
+ */
+export function splitTimeConvertCounts(count: number, formats: readonly TimeConvertFormat[]): Record<TimeConvertFormat, number> {
+  const result: Record<TimeConvertFormat, number> = { direct: 0, compare: 0, activity: 0, word: 0 };
+  const list = normalizeTimeConvertFormats(formats);
+  if (list.length === 1) {
+    result[list[0]] = count;
+    return result;
+  }
+  const base = Math.floor(count / (2 * list.length)) * 2;
+  let rest = count - base * list.length;
+  for (const f of list) {
+    const extra = Math.min(rest, 2);
+    result[f] = base + extra;
+    rest -= extra;
+  }
+  return result;
+}
+
+/** A4 한 장에서 형식별 한 줄(두 문제)이 차지하는 대략의 높이(px)와 구역 머리말 높이. */
+const TIME_FORMAT_ROW_PX: Record<TimeConvertFormat, number> = { direct: 52, compare: 60, activity: 78, word: 72 };
+const TIME_SECTION_HEADER_PX = 44;
+const TIME_SHEET_BODY_PX = 900;
+
+/** 바로 바꾸기만 고르면 예전과 같은 선택지, 여러 형식을 섞으면 한 장에 들어가는 문제 수만 보여 준다. */
+export function timeConvertCountOptions(formats: readonly TimeConvertFormat[]): number[] {
+  const list = normalizeTimeConvertFormats(formats);
+  if (list.length === 1 && list[0] === "direct") return [10, 16, 20, 26];
+  const candidates = list.length === 1 ? [10, 12, 16, 20] : [8, 12, 16, 20, 22, 24];
+  return candidates.filter((count) => {
+    const counts = splitTimeConvertCounts(count, list);
+    const header = list.length > 1 ? TIME_SECTION_HEADER_PX * list.length : 0;
+    const body = list.reduce((sum, f) => sum + Math.ceil(counts[f] / 2) * TIME_FORMAT_ROW_PX[f], 0);
+    // 활동 그림은 서로 달라야 하므로 활동 수보다 많이 낼 수 없다.
+    return header + body <= TIME_SHEET_BODY_PX && counts.activity <= TIME_ACTIVITIES.length;
+  });
+}
+
 export function encodeTimeParams(params: TimeParams): string {
-  return new URLSearchParams({
+  const query = new URLSearchParams({
     m: params.mode,
     c: String(params.count),
     s: String(params.sheets),
     mn: String(params.minMinutes),
     mx: String(params.maxMinutes),
-  }).toString();
+  });
+  // 바로 바꾸기만 내는 기본 구성은 예전 주소와 같게 둔다.
+  const formats = normalizeTimeConvertFormats(params.formats);
+  if (params.mode === "time_convert" && !(formats.length === 1 && formats[0] === "direct")) {
+    query.set("f", formats.map((f) => TIME_FORMAT_CODES[f]).join(""));
+  }
+  return query.toString();
+}
+
+function parseTimeConvertFormats(raw: string | null): TimeConvertFormat[] | null {
+  if (raw === null) return ["direct"];
+  const formats: TimeConvertFormat[] = [];
+  for (const code of raw) {
+    const format = TIME_CONVERT_FORMATS.find((f) => TIME_FORMAT_CODES[f] === code);
+    if (!format) return null;
+    formats.push(format);
+  }
+  return formats.length > 0 ? normalizeTimeConvertFormats(formats) : null;
 }
 
 export function parseTimeParams(search: string | URLSearchParams): TimeParams | null {
@@ -923,16 +1045,19 @@ export function parseTimeParams(search: string | URLSearchParams): TimeParams | 
   if (!isIntInRange(maxMinutes, TIME_MIN_MINUTES, TIME_MAX_MINUTES)) return null;
   if (minMinutes > maxMinutes || timeCandidates(minMinutes, maxMinutes).length === 0) return null;
 
-  return { mode, count, sheets, minMinutes, maxMinutes };
+  if (mode !== "time_convert") return { mode, count, sheets, minMinutes, maxMinutes };
+  const formats = parseTimeConvertFormats(p.get("f"));
+  if (!formats) return null;
+  return { mode, formats, count, sheets, minMinutes, maxMinutes };
 }
 
 /**
  * 앞 절반은 "○시간 ○분 = [ ]분", 뒤 절반은 "○분 = [ ]시간 [ ]분".
  * 문제지에서 왼쪽 열·오른쪽 열로 유형을 나눠 배치한다(홀수면 왼쪽이 하나 더 많음).
  */
-function generateTimeConvertSheet(params: TimeParams, rng: () => number): TimeConvertProblem[] {
-  const toMinutesCount = Math.ceil(params.count / 2);
-  const toHoursCount = params.count - toMinutesCount;
+function generateTimeDirectProblems(params: TimeParams, count: number, rng: () => number): TimeConvertProblem[] {
+  const toMinutesCount = Math.ceil(count / 2);
+  const toHoursCount = count - toMinutesCount;
   const pick = (direction: TimeConvertProblem["direction"], n: number): TimeConvertProblem[] =>
     shuffleInPlace(timeCandidates(params.minMinutes, params.maxMinutes), rng)
       .slice(0, n)
@@ -947,14 +1072,14 @@ function generateTimeConvertSheet(params: TimeParams, rng: () => number): TimeCo
   return [...pick("to_minutes", toMinutesCount), ...pick("to_hours", toHoursCount)];
 }
 
-function generateTimeCompareSheet(params: TimeParams, rng: () => number): TimeCompareProblem[] {
+function generateTimeCompareSheet(params: TimeParams, rng: () => number, count = params.count): TimeCompareProblem[] {
   const candidates = timeCandidates(params.minMinutes, params.maxMinutes);
   const problems: TimeCompareProblem[] = [];
   if (candidates.length < 2) return problems;
 
   const used = new Set<string>();
   let attempts = 0;
-  while (problems.length < params.count && attempts < 5000) {
+  while (problems.length < count && attempts < 5000) {
     attempts++;
     const a = candidates[randInt(rng, 0, candidates.length - 1)];
     const b = candidates[randInt(rng, 0, candidates.length - 1)];
@@ -970,6 +1095,43 @@ function generateTimeCompareSheet(params: TimeParams, rng: () => number): TimeCo
     const right: TimeValue = { minutes: b, format: aFormat === "hm" ? "m" : "hm" };
     problems.push({ kind: "time_compare", left, right, longer: a > b ? "left" : "right" });
   }
+  return problems;
+}
+
+/** 두 방향을 번갈아 낸다(왼쪽 열 문제와 오른쪽 열 문제가 서로 다른 방향이 되도록). */
+function pickAlternating(params: TimeParams, count: number, rng: () => number) {
+  return shuffleInPlace(timeCandidates(params.minMinutes, params.maxMinutes), rng)
+    .slice(0, count)
+    .map((minutes, i) => ({
+      direction: (i % 2 === 0 ? "to_hours" : "to_minutes") as "to_hours" | "to_minutes",
+      minutes,
+      hours: Math.floor(minutes / 60),
+      restMinutes: minutes % 60,
+    }));
+}
+
+function generateTimeActivityProblems(params: TimeParams, count: number, rng: () => number): TimeActivityProblem[] {
+  const activities = shuffleInPlace([...TIME_ACTIVITIES], rng);
+  return pickAlternating(params, Math.min(count, activities.length), rng).map((base, i) => ({
+    kind: "time_activity",
+    activityId: activities[i].id,
+    activityName: activities[i].name,
+    ...base,
+  }));
+}
+
+function generateTimeWordProblems(params: TimeParams, count: number, rng: () => number): TimeWordProblem[] {
+  return pickAlternating(params, count, rng).map((base) => ({ kind: "time_word", ...base }));
+}
+
+/** 고른 형식을 정해진 순서(바로 바꾸기 → 더 긴 시간 → 활동 → 문장)로 이어 붙인다. */
+function generateTimeConvertSheet(params: TimeParams, rng: () => number): TimeProblem[] {
+  const counts = splitTimeConvertCounts(params.count, normalizeTimeConvertFormats(params.formats));
+  const problems: TimeProblem[] = [];
+  if (counts.direct > 0) problems.push(...generateTimeDirectProblems(params, counts.direct, rng));
+  if (counts.compare > 0) problems.push(...generateTimeCompareSheet(params, rng, counts.compare));
+  if (counts.activity > 0) problems.push(...generateTimeActivityProblems(params, counts.activity, rng));
+  if (counts.word > 0) problems.push(...generateTimeWordProblems(params, counts.word, rng));
   return problems;
 }
 
