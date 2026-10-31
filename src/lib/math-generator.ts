@@ -910,20 +910,25 @@ export function parseTimeParams(search: string | URLSearchParams): TimeParams | 
   return { mode, count, sheets, minMinutes, maxMinutes };
 }
 
+/**
+ * 앞 절반은 "○시간 ○분 = [ ]분", 뒤 절반은 "○분 = [ ]시간 [ ]분".
+ * 문제지에서 왼쪽 열·오른쪽 열로 유형을 나눠 배치한다(홀수면 왼쪽이 하나 더 많음).
+ */
 function generateTimeConvertSheet(params: TimeParams, rng: () => number): TimeConvertProblem[] {
-  const directions: TimeConvertProblem["direction"][] = ["to_minutes", "to_hours"];
-  const pool = timeCandidates(params.minMinutes, params.maxMinutes).flatMap((minutes) =>
-    directions.map((direction) => ({ minutes, direction })),
-  );
-  shuffleInPlace(pool, rng);
+  const toMinutesCount = Math.ceil(params.count / 2);
+  const toHoursCount = params.count - toMinutesCount;
+  const pick = (direction: TimeConvertProblem["direction"], n: number): TimeConvertProblem[] =>
+    shuffleInPlace(timeCandidates(params.minMinutes, params.maxMinutes), rng)
+      .slice(0, n)
+      .map((minutes) => ({
+        kind: "time_convert",
+        direction,
+        minutes,
+        hours: Math.floor(minutes / 60),
+        restMinutes: minutes % 60,
+      }));
 
-  return pool.slice(0, params.count).map(({ minutes, direction }) => ({
-    kind: "time_convert",
-    direction,
-    minutes,
-    hours: Math.floor(minutes / 60),
-    restMinutes: minutes % 60,
-  }));
+  return [...pick("to_minutes", toMinutesCount), ...pick("to_hours", toHoursCount)];
 }
 
 function generateTimeCompareSheet(params: TimeParams, rng: () => number): TimeCompareProblem[] {

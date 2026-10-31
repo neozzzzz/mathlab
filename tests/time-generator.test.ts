@@ -62,6 +62,11 @@ test("time_convert: 범위 안의 시간을 두 방향으로 출제하고 답이
     keys.add(`${p.direction}-${p.minutes}`);
   }
   assert.deepEqual([...directions].sort(), ["to_hours", "to_minutes"]);
+  // 왼쪽 열(앞 절반)은 시간·분 → 분, 오른쪽 열(뒤 절반)은 분 → 시간·분
+  assert.deepEqual(
+    problems.map((p) => p.direction),
+    [...Array(10).fill("to_minutes"), ...Array(10).fill("to_hours")],
+  );
   assert.equal(keys.size, problems.length, "한 장 안에서 같은 문제가 반복되면 안 된다");
 });
 

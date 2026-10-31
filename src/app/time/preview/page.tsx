@@ -34,11 +34,11 @@ function AnswerBox({ width }: { width: string }) {
   return <NumberBox tone="answer" width={width} height="2.2rem" align="center" style={{ borderColor: "#c8c8c8" }} />;
 }
 
-// 모든 줄이 같은 열을 쓰도록 고정 폭 grid로 배치한다.
-// [번호] [문제 시간(오른쪽 정렬)] [=] [답 칸] [단위] [답 칸] [단위]
+// 같은 열(유형)의 줄이 모두 같은 칸 위치를 쓰도록 고정 폭 grid로 배치한다.
+// 왼쪽 열: [번호] [○시간 ○분] [=] [답 칸] [분]
+// 오른쪽 열: [번호] [○분] [=] [답 칸] [시간] [답 칸] [분]
 const CONVERT_GRID: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "24px 5.6em 1em 2.8rem 2.1em 2.8rem 1.1em",
   columnGap: 6,
   alignItems: "center",
   fontSize: "1.1rem",
@@ -46,10 +46,15 @@ const CONVERT_GRID: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
+const CONVERT_COLUMNS: Record<TimeConvertProblem["direction"], string> = {
+  to_minutes: "24px 5.6em 1em 3.4rem 1.1em",
+  to_hours: "24px 3.2em 1em 2.8rem 2.1em 2.8rem 1.1em",
+};
+
 function ConvertRow({ problem, number }: { problem: TimeConvertProblem; number: number }) {
   const toMinutes = problem.direction === "to_minutes";
   return (
-    <div style={CONVERT_GRID}>
+    <div style={{ ...CONVERT_GRID, gridTemplateColumns: CONVERT_COLUMNS[problem.direction] }}>
       <ProblemNumber number={number} />
       <span style={{ textAlign: "right" }}>
         {toMinutes ? formatHoursMinutes(problem.minutes) : `${problem.minutes}분`}
@@ -107,7 +112,7 @@ function TimeSheet({
   const copy = SHEET_COPY[mode];
 
   return (
-    <div className="sheet bg-white mx-auto" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm", fontFamily: "'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif" }}>
+    <div className="sheet bg-white mx-auto flex flex-col" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm", fontFamily: "'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif" }}>
       <div className="flex justify-between items-center text-sm mb-4 text-gray-500">
         <div className="flex" style={{ gap: 40 }}>
           <span>날짜: ___________</span>
@@ -123,14 +128,44 @@ function TimeSheet({
         {copy.instruction}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", rowGap: mode === "time_convert" ? 28 : 16, columnGap: 32, color: "#2f2f2f" }}>
-        {problems.map((p, i) =>
-          p.kind === "time_convert" ? (
-            <ConvertRow key={`c-${p.direction}-${p.minutes}`} problem={p} number={i + 1} />
-          ) : (
+      {mode === "time_convert" ? (
+        <ConvertColumns problems={problems as TimeConvertProblem[]} />
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", rowGap: 16, columnGap: 32, color: "#2f2f2f" }}>
+          {(problems as TimeCompareProblem[]).map((p, i) => (
             <CompareRow key={`m-${p.left.minutes}-${p.right.minutes}`} problem={p} number={i + 1} />
-          ),
-        )}
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 왼쪽 열은 "○시간 ○분 = [ ]분", 오른쪽 열은 "○분 = [ ]시간 [ ]분".
+ * 줄 높이를 남은 높이에 고르게 나눠 문제지 아래가 비지 않게 한다.
+ */
+function ConvertColumns({ problems }: { problems: TimeConvertProblem[] }) {
+  const left = problems.filter((p) => p.direction === "to_minutes");
+  const right = problems.filter((p) => p.direction === "to_hours");
+  const rows = Math.max(left.length, right.length, 1);
+  const columnStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateRows: `repeat(${rows}, minmax(3.2rem, 1fr))`,
+    alignItems: "center",
+  };
+
+  return (
+    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", columnGap: 32, color: "#2f2f2f" }}>
+      <div style={columnStyle}>
+        {left.map((p, i) => (
+          <ConvertRow key={`c-${p.direction}-${p.minutes}`} problem={p} number={i + 1} />
+        ))}
+      </div>
+      <div style={columnStyle}>
+        {right.map((p, i) => (
+          <ConvertRow key={`c-${p.direction}-${p.minutes}`} problem={p} number={left.length + i + 1} />
+        ))}
       </div>
     </div>
   );

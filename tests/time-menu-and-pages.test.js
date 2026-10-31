@@ -42,6 +42,15 @@ test('time preview: compare cells have no "( )" placeholder and convert rows sha
   const source = read('src/app/time/preview/page.tsx');
 
   assert.doesNotMatch(source, /\(&nbsp;/, '비교 문제에는 ( ) 칸을 두지 않는다');
-  assert.match(source, /const CONVERT_GRID[\s\S]*display: "grid"[\s\S]*gridTemplateColumns: "[^"]+"/);
-  assert.match(source, /<div style=\{CONVERT_GRID\}>/);
+  assert.match(source, /const CONVERT_GRID[\s\S]*display: "grid"/);
+  assert.match(source, /gridTemplateColumns: CONVERT_COLUMNS\[problem\.direction\]/);
+});
+
+test('time preview: convert sheet splits types into left/right columns and spreads rows over the page', () => {
+  const source = read('src/app/time/preview/page.tsx');
+
+  assert.match(source, /const left = problems\.filter\(\(p\) => p\.direction === "to_minutes"\)/);
+  assert.match(source, /const right = problems\.filter\(\(p\) => p\.direction === "to_hours"\)/);
+  assert.match(source, /gridTemplateRows: `repeat\(\$\{rows\}, minmax\(3\.2rem, 1fr\)\)`/);
+  assert.match(source, /className="sheet bg-white mx-auto flex flex-col"/);
 });
