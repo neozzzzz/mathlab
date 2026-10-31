@@ -37,3 +37,11 @@ test('time preview page renders answer boxes and the circle instruction', () => 
   assert.match(source, /href="\/time"/);
   assert.match(source, /설정으로 돌아가기/);
 });
+
+test('time preview: compare cells have no "( )" placeholder and convert rows share one fixed grid', () => {
+  const source = read('src/app/time/preview/page.tsx');
+
+  assert.doesNotMatch(source, /\(&nbsp;/, '비교 문제에는 ( ) 칸을 두지 않는다');
+  assert.match(source, /const CONVERT_GRID[\s\S]*display: "grid"[\s\S]*gridTemplateColumns: "[^"]+"/);
+  assert.match(source, /<div style=\{CONVERT_GRID\}>/);
+});

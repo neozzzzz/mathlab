@@ -34,26 +34,34 @@ function AnswerBox({ width }: { width: string }) {
   return <NumberBox tone="answer" width={width} height="2.2rem" align="center" style={{ borderColor: "#c8c8c8" }} />;
 }
 
+// 모든 줄이 같은 열을 쓰도록 고정 폭 grid로 배치한다.
+// [번호] [문제 시간(오른쪽 정렬)] [=] [답 칸] [단위] [답 칸] [단위]
+const CONVERT_GRID: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "24px 5.6em 1em 2.8rem 2.1em 2.8rem 1.1em",
+  columnGap: 6,
+  alignItems: "center",
+  fontSize: "1.1rem",
+  fontWeight: 600,
+  whiteSpace: "nowrap",
+};
+
 function ConvertRow({ problem, number }: { problem: TimeConvertProblem; number: number }) {
+  const toMinutes = problem.direction === "to_minutes";
   return (
-    <div className="flex items-center gap-3 min-w-0" style={{ fontSize: "1.15rem", fontWeight: 600 }}>
+    <div style={CONVERT_GRID}>
       <ProblemNumber number={number} />
-      {problem.direction === "to_minutes" ? (
-        <span className="inline-flex items-center gap-2 whitespace-nowrap">
-          <span>{formatHoursMinutes(problem.minutes)}</span>
-          <span>=</span>
-          <AnswerBox width="4.2rem" />
+      <span style={{ textAlign: "right" }}>
+        {toMinutes ? formatHoursMinutes(problem.minutes) : `${problem.minutes}분`}
+      </span>
+      <span style={{ textAlign: "center" }}>=</span>
+      <AnswerBox width="100%" />
+      <span>{toMinutes ? "분" : "시간"}</span>
+      {toMinutes ? null : (
+        <>
+          <AnswerBox width="100%" />
           <span>분</span>
-        </span>
-      ) : (
-        <span className="inline-flex items-center gap-2 whitespace-nowrap">
-          <span>{problem.minutes}분</span>
-          <span>=</span>
-          <AnswerBox width="3rem" />
-          <span>시간</span>
-          <AnswerBox width="3rem" />
-          <span>분</span>
-        </span>
+        </>
       )}
     </div>
   );
@@ -61,21 +69,21 @@ function ConvertRow({ problem, number }: { problem: TimeConvertProblem; number: 
 
 function CompareRow({ problem, number }: { problem: TimeCompareProblem; number: number }) {
   return (
-    <div className="flex items-start gap-3 min-w-0">
+    <div className="flex items-center gap-3 min-w-0">
       <ProblemNumber number={number} />
       <div className="grid grid-cols-2 flex-1 min-w-0" style={{ border: "1px solid #d2d2d2" }}>
         {[problem.left, problem.right].map((value, idx) => (
           <div
             key={idx}
-            className="flex flex-col items-center"
-            style={{ borderLeft: idx === 1 ? "1px solid #d2d2d2" : undefined }}
+            className="text-center whitespace-nowrap"
+            style={{
+              borderLeft: idx === 1 ? "1px solid #d2d2d2" : undefined,
+              fontSize: "1.1rem",
+              fontWeight: 600,
+              padding: "16px 4px",
+            }}
           >
-            <div className="w-full text-center whitespace-nowrap" style={{ fontSize: "1.1rem", fontWeight: 600, padding: "7px 4px" }}>
-              {formatTimeValue(value)}
-            </div>
-            <div className="w-full flex justify-center" style={{ borderTop: "1px solid #ebebeb", padding: "2px 0" }}>
-              <span aria-hidden style={{ fontSize: "1rem", color: "#6b7280" }}>(&nbsp;&nbsp;&nbsp;&nbsp;)</span>
-            </div>
+            {formatTimeValue(value)}
           </div>
         ))}
       </div>
@@ -115,7 +123,7 @@ function TimeSheet({
         {copy.instruction}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", rowGap: mode === "time_convert" ? 28 : 14, columnGap: 32, color: "#2f2f2f" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", rowGap: mode === "time_convert" ? 28 : 16, columnGap: 32, color: "#2f2f2f" }}>
         {problems.map((p, i) =>
           p.kind === "time_convert" ? (
             <ConvertRow key={`c-${p.direction}-${p.minutes}`} problem={p} number={i + 1} />
