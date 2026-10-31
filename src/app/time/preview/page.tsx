@@ -110,6 +110,7 @@ function TimeSheet({
   totalSheets: number;
 }) {
   const copy = SHEET_COPY[mode];
+  const compareRows = Math.max(Math.ceil(problems.length / 2), 1);
 
   return (
     <div className="sheet bg-white mx-auto flex flex-col" style={{ width: "210mm", minHeight: "297mm", boxSizing: "border-box", padding: "10mm 12mm", fontFamily: "'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif" }}>
@@ -131,7 +132,18 @@ function TimeSheet({
       {mode === "time_convert" ? (
         <ConvertColumns problems={problems as TimeConvertProblem[]} />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", rowGap: 16, columnGap: 32, color: "#2f2f2f" }}>
+        <div
+          style={{
+            flex: 1,
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            // 단위 바꾸기와 같이 줄 높이를 남은 높이에 고르게 나눠 아래가 비지 않게 한다.
+            gridTemplateRows: `repeat(${compareRows}, minmax(3.6rem, 1fr))`,
+            alignItems: "center",
+            columnGap: 32,
+            color: "#2f2f2f",
+          }}
+        >
           {(problems as TimeCompareProblem[]).map((p, i) => (
             <CompareRow key={`m-${p.left.minutes}-${p.right.minutes}`} problem={p} number={i + 1} />
           ))}

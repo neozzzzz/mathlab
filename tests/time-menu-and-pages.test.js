@@ -54,3 +54,10 @@ test('time preview: convert sheet splits types into left/right columns and sprea
   assert.match(source, /gridTemplateRows: `repeat\(\$\{rows\}, minmax\(3\.2rem, 1fr\)\)`/);
   assert.match(source, /className="sheet bg-white mx-auto flex flex-col"/);
 });
+
+test('time preview: compare sheet also spreads rows over the page height', () => {
+  const source = read('src/app/time/preview/page.tsx');
+
+  assert.match(source, /const compareRows = Math\.max\(Math\.ceil\(problems\.length \/ 2\), 1\)/);
+  assert.match(source, /gridTemplateRows: `repeat\(\$\{compareRows\}, minmax\(3\.6rem, 1fr\)\)`/);
+});
