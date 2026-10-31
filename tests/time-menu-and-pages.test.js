@@ -77,3 +77,20 @@ test('time settings: 단위 바꾸기 offers 26 problems, 더 긴 시간 고르�
   assert.match(source, /time_compare: \[10, 16, 20\]/);
   assert.match(source, /options=\{COUNT_OPTIONS\[mode\]\.map/);
 });
+
+test('time settings: 60분 이용해 바꾸기 유형은 두 줄 문제라 한 장에 16문제까지', () => {
+  const source = read('src/app/time/page.tsx');
+
+  assert.match(source, /value: "time_split", label: "60분 이용해 바꾸기"/);
+  assert.match(source, /time_split: \[10, 12, 16\]/);
+});
+
+test('time preview: 60분 이용해 바꾸기는 가운데 식과 답 줄을 같은 grid에 둔다', () => {
+  const source = read('src/app/time/preview/page.tsx');
+
+  assert.match(source, /time_split: \{ title: "1시간 = 60분 이용하기"/);
+  assert.match(source, /gridTemplateColumns: SPLIT_COLUMNS\[problem\.direction\]/);
+  assert.match(source, /<MinutesPart value=\{problem\.hours \* 60\} blank=\{problem\.blank === "hours"\} \/>/);
+  assert.match(source, /<MinutesPart value=\{problem\.restMinutes\} blank=\{problem\.blank === "rest"\} \/>/);
+  assert.match(source, /mode === "time_split" \? \(\s*<SplitColumns/);
+});

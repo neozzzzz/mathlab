@@ -819,7 +819,7 @@ export function generateScreenshotAdditionAllSheets(
 
 // ── 시간 단위 변환·비교 ─────────────────────────────────────────────
 
-export type TimeMode = "time_convert" | "time_compare";
+export type TimeMode = "time_convert" | "time_compare" | "time_split";
 
 export interface TimeParams {
   mode: TimeMode;
@@ -854,12 +854,28 @@ export interface TimeCompareProblem {
   longer: "left" | "right";
 }
 
-export type TimeProblem = TimeConvertProblem | TimeCompareProblem;
+/**
+ * 1시간 = 60분을 이용해 두 단계로 바꾸기.
+ * to_minutes: 1시간 10분 = 60분 + 10분 = [ ]분
+ * to_hours:   75분 = 60분 + 15분 = 1시간 [ ]분
+ * blank 는 가운데 식에서 비우는 칸 — none: 모두 보임, hours: [ ]분 + 10분, rest: 60분 + [ ]분.
+ * 가운데 식이 모두 보이면(none) to_hours 의 마지막 식은 시간을 적어 주고 분만 비운다.
+ */
+export interface TimeSplitProblem {
+  kind: "time_split";
+  direction: "to_minutes" | "to_hours";
+  minutes: number;
+  hours: number;
+  restMinutes: number;
+  blank: "none" | "hours" | "rest";
+}
+
+export type TimeProblem = TimeConvertProblem | TimeCompareProblem | TimeSplitProblem;
 
 export const TIME_MIN_MINUTES = 60;
 export const TIME_MAX_MINUTES = 600;
 
-const TIME_MODES: readonly TimeMode[] = ["time_convert", "time_compare"];
+const TIME_MODES: readonly TimeMode[] = ["time_convert", "time_compare", "time_split"];
 
 export function formatHoursMinutes(totalMinutes: number): string {
   const hours = Math.floor(totalMinutes / 60);
@@ -957,11 +973,41 @@ function generateTimeCompareSheet(params: TimeParams, rng: () => number): TimeCo
   return problems;
 }
 
+const TIME_SPLIT_BLANKS: readonly TimeSplitProblem["blank"][] = ["none", "hours", "rest"];
+
+/**
+ * 단위 바꾸기와 같이 왼쪽 열(앞 절반)은 시간·분 → 분, 오른쪽 열(뒤 절반)은 분 → 시간·분.
+ * 각 열은 위에서부터 "가운데 식 모두 보임 → 60분 칸 비움 → 나머지 분 칸 비움" 순으로
+ * 도움을 줄여 간다(교재의 1시간 알아보기 순서).
+ */
+function generateTimeSplitSheet(params: TimeParams, rng: () => number): TimeSplitProblem[] {
+  const toMinutesCount = Math.ceil(params.count / 2);
+  const toHoursCount = params.count - toMinutesCount;
+  const pick = (direction: TimeSplitProblem["direction"], n: number): TimeSplitProblem[] => {
+    const values = shuffleInPlace(timeCandidates(params.minMinutes, params.maxMinutes), rng).slice(0, n);
+    return values.map((minutes, i) => ({
+      kind: "time_split",
+      direction,
+      minutes,
+      hours: Math.floor(minutes / 60),
+      restMinutes: minutes % 60,
+      blank: TIME_SPLIT_BLANKS[Math.floor((i * TIME_SPLIT_BLANKS.length) / values.length)],
+    }));
+  };
+
+  return [...pick("to_minutes", toMinutesCount), ...pick("to_hours", toHoursCount)];
+}
+
 export function generateTimeSheet(params: TimeParams, queryString: string, sheetIndex = 0): TimeProblem[] {
   const rng = mulberry32(buildSeed(params.mode, queryString, sheetIndex));
-  return params.mode === "time_convert"
-    ? generateTimeConvertSheet(params, rng)
-    : generateTimeCompareSheet(params, rng);
+  switch (params.mode) {
+    case "time_convert":
+      return generateTimeConvertSheet(params, rng);
+    case "time_compare":
+      return generateTimeCompareSheet(params, rng);
+    case "time_split":
+      return generateTimeSplitSheet(params, rng);
+  }
 }
 
 export function generateTimeAllSheets(params: TimeParams, queryString: string): TimeProblem[][] {

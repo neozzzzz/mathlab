@@ -11,6 +11,7 @@ import {
   formatTimeValue,
   type TimeConvertProblem,
   type TimeCompareProblem,
+  type TimeSplitProblem,
   type TimeMode,
   type TimeProblem,
 } from "@/lib/math-generator";
@@ -21,6 +22,7 @@ import { printAfterPaint } from "@/lib/print";
 const SHEET_COPY: Record<TimeMode, { title: string; instruction: string }> = {
   time_convert: { title: "시간 단위 바꾸기", instruction: "빈칸에 알맞은 수를 써넣으세요." },
   time_compare: { title: "더 긴 시간 고르기", instruction: "더 긴 시간에 O 표 하세요." },
+  time_split: { title: "1시간 = 60분 이용하기", instruction: "1시간 = 60분을 이용해 빈칸에 알맞은 수를 써넣으세요." },
 };
 
 function ProblemNumber({ number }: { number: number }) {
@@ -69,6 +71,54 @@ function ConvertRow({ problem, number }: { problem: TimeConvertProblem; number: 
           <span>분</span>
         </>
       )}
+    </div>
+  );
+}
+
+// 60분 이용해 바꾸기: 첫 줄 [번호] [시작 시간] [=] [○시간을 분으로] [+] [나머지 분],
+// 둘째 줄은 [=] 칸 아래에서 시작해 답을 적는다. 같은 열의 칸 위치를 맞추려고 고정 폭 grid를 쓴다.
+const SPLIT_COLUMNS: Record<TimeSplitProblem["direction"], string> = {
+  to_minutes: "24px 5.6em 1em 4.4rem 1em 4.4rem",
+  to_hours: "24px 3.2em 1em 4.4rem 1em 4.4rem",
+};
+
+function MinutesPart({ value, blank }: { value: number; blank: boolean }) {
+  if (!blank) return <span style={{ textAlign: "center" }}>{value}분</span>;
+  return (
+    <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <AnswerBox width="2.8rem" />
+      <span>분</span>
+    </span>
+  );
+}
+
+function SplitRow({ problem, number }: { problem: TimeSplitProblem; number: number }) {
+  const toMinutes = problem.direction === "to_minutes";
+  const showHours = !toMinutes && problem.blank === "none";
+  return (
+    <div style={{ ...CONVERT_GRID, gridTemplateColumns: SPLIT_COLUMNS[problem.direction], rowGap: 10 }}>
+      <ProblemNumber number={number} />
+      <span style={{ textAlign: "right" }}>
+        {toMinutes ? formatHoursMinutes(problem.minutes) : `${problem.minutes}분`}
+      </span>
+      <span style={{ textAlign: "center" }}>=</span>
+      <MinutesPart value={problem.hours * 60} blank={problem.blank === "hours"} />
+      <span style={{ textAlign: "center" }}>+</span>
+      <MinutesPart value={problem.restMinutes} blank={problem.blank === "rest"} />
+
+      <span style={{ gridColumn: 3, textAlign: "center" }}>=</span>
+      <span style={{ gridColumn: "4 / -1", display: "flex", alignItems: "center", gap: 4 }}>
+        {toMinutes ? null : showHours ? (
+          <span>{problem.hours}시간</span>
+        ) : (
+          <>
+            <AnswerBox width="2.8rem" />
+            <span>시간</span>
+          </>
+        )}
+        <AnswerBox width={toMinutes ? "3.4rem" : "2.8rem"} />
+        <span>분</span>
+      </span>
     </div>
   );
 }
@@ -131,6 +181,8 @@ function TimeSheet({
 
       {mode === "time_convert" ? (
         <ConvertColumns problems={problems as TimeConvertProblem[]} />
+      ) : mode === "time_split" ? (
+        <SplitColumns problems={problems as TimeSplitProblem[]} />
       ) : (
         <div
           style={{
@@ -177,6 +229,33 @@ function ConvertColumns({ problems }: { problems: TimeConvertProblem[] }) {
       <div style={columnStyle}>
         {right.map((p, i) => (
           <ConvertRow key={`c-${p.direction}-${p.minutes}`} problem={p} number={left.length + i + 1} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** 단위 바꾸기와 같은 배치: 왼쪽 열은 시간·분 → 분, 오른쪽 열은 분 → 시간·분. */
+function SplitColumns({ problems }: { problems: TimeSplitProblem[] }) {
+  const left = problems.filter((p) => p.direction === "to_minutes");
+  const right = problems.filter((p) => p.direction === "to_hours");
+  const rows = Math.max(left.length, right.length, 1);
+  const columnStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateRows: `repeat(${rows}, minmax(6rem, 1fr))`,
+    alignItems: "center",
+  };
+
+  return (
+    <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", columnGap: 24, color: "#2f2f2f" }}>
+      <div style={columnStyle}>
+        {left.map((p, i) => (
+          <SplitRow key={`s-${p.direction}-${p.minutes}`} problem={p} number={i + 1} />
+        ))}
+      </div>
+      <div style={columnStyle}>
+        {right.map((p, i) => (
+          <SplitRow key={`s-${p.direction}-${p.minutes}`} problem={p} number={left.length + i + 1} />
         ))}
       </div>
     </div>

@@ -59,12 +59,14 @@ function NumberInput({
 const MODE_OPTIONS: { value: TimeMode; label: string; sample: string }[] = [
   { value: "time_convert", label: "단위 바꾸기", sample: "1시간 36분 = □분" },
   { value: "time_compare", label: "더 긴 시간 고르기", sample: "1시간 55분 / 75분" },
+  { value: "time_split", label: "60분 이용해 바꾸기", sample: "75분 = 60분 + 15분 = 1시간 □분" },
 ];
 
-// 더 긴 시간 고르기는 한 장(A4)에 20문제까지 들어간다.
+// 더 긴 시간 고르기는 한 장(A4)에 20문제, 두 줄로 풀어 쓰는 60분 이용해 바꾸기는 16문제까지 들어간다.
 const COUNT_OPTIONS: Record<TimeMode, number[]> = {
   time_convert: [10, 16, 20, 26],
   time_compare: [10, 16, 20],
+  time_split: [10, 12, 16],
 };
 
 function MinutesField({

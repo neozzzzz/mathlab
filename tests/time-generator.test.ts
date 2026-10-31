@@ -9,6 +9,7 @@ import {
   type TimeParams,
   type TimeConvertProblem,
   type TimeCompareProblem,
+  type TimeSplitProblem,
 } from "../src/lib/math-generator.ts";
 
 const convertParams: TimeParams = {
@@ -20,9 +21,10 @@ const convertParams: TimeParams = {
 };
 
 const compareParams: TimeParams = { ...convertParams, mode: "time_compare" };
+const splitParams: TimeParams = { ...convertParams, mode: "time_split", count: 12 };
 
 test("time: 쿼리 인코딩 후 파싱하면 같은 설정으로 복원된다", () => {
-  for (const params of [convertParams, compareParams]) {
+  for (const params of [convertParams, compareParams, splitParams]) {
     const query = encodeTimeParams(params);
     assert.deepEqual(parseTimeParams(query), params);
   }
@@ -104,4 +106,41 @@ test("time: 범위가 좁으면 만들 수 있는 만큼만 출제한다", () =>
   const problems = generateTimeSheet(narrow, encodeTimeParams(narrow), 0);
   // 61·62·63분 × 두 방향 = 6문제
   assert.equal(problems.length, 6);
+});
+
+test("time_split: 60분 단위로 가른 식과 답이 맞고, 열마다 도움을 줄여 간다", () => {
+  const query = encodeTimeParams(splitParams);
+  const problems = generateTimeSheet(splitParams, query, 0) as TimeSplitProblem[];
+  assert.equal(problems.length, 12);
+
+  for (const p of problems) {
+    assert.equal(p.kind, "time_split");
+    assert.ok(p.minutes >= 61 && p.minutes <= 179, `범위 밖: ${p.minutes}`);
+    assert.notEqual(p.minutes % 60, 0);
+    assert.equal(p.hours, Math.floor(p.minutes / 60));
+    assert.equal(p.restMinutes, p.minutes % 60);
+    // 가운데 식: ○시간을 분으로 바꾼 값 + 나머지 분 = 전체 분
+    assert.equal(p.hours * 60 + p.restMinutes, p.minutes);
+  }
+
+  // 왼쪽 열은 시간·분 → 분, 오른쪽 열은 분 → 시간·분, 각 열은 모두 보임 → 60분 칸 → 나머지 칸 순
+  const blanks = ["none", "none", "hours", "hours", "rest", "rest"];
+  assert.deepEqual(
+    problems.map((p) => `${p.direction}:${p.blank}`),
+    [...blanks.map((b) => `to_minutes:${b}`), ...blanks.map((b) => `to_hours:${b}`)],
+  );
+  for (const direction of ["to_minutes", "to_hours"]) {
+    const values = problems.filter((p) => p.direction === direction).map((p) => p.minutes);
+    assert.equal(new Set(values).size, values.length, "한 열 안에서 같은 시간이 반복되면 안 된다");
+  }
+});
+
+test("time_split: 문제 수가 적어도 세 단계가 모두 나온다", () => {
+  const params: TimeParams = { ...splitParams, count: 10 };
+  const problems = generateTimeSheet(params, encodeTimeParams(params), 0) as TimeSplitProblem[];
+  assert.equal(problems.length, 10);
+  for (const direction of ["to_minutes", "to_hours"]) {
+    const blanks = new Set(problems.filter((p) => p.direction === direction).map((p) => p.blank));
+    assert.deepEqual([...blanks].sort(), ["hours", "none", "rest"]);
+  }
 });
