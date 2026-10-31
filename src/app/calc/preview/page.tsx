@@ -16,6 +16,7 @@ import { saveWorksheet } from "@/lib/supabase";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
 
 import { BoxCell, NumberBox, NumberBoxRowCells, splitToCells } from "@/components/math/BoxCell";
+import { printAfterPaint } from "@/lib/print";
 
 function CalcSheet({
   problems,
@@ -509,7 +510,7 @@ function PreviewContent() {
             <button
               onClick={() => {
                 trackEvent(GA_EVENTS.PRINT, { page: "calc" });
-                window.print();
+                printAfterPaint();
               }}
               className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
             >

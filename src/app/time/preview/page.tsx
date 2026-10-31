@@ -16,6 +16,7 @@ import {
 } from "@/lib/math-generator";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
 import { NumberBox } from "@/components/math/BoxCell";
+import { printAfterPaint } from "@/lib/print";
 
 const SHEET_COPY: Record<TimeMode, { title: string; instruction: string }> = {
   time_convert: { title: "시간 단위 바꾸기", instruction: "빈칸에 알맞은 수를 써넣으세요." },
@@ -218,7 +219,7 @@ function PreviewContent() {
           <button
             onClick={() => {
               trackEvent(GA_EVENTS.PRINT, { page: "time" });
-              window.print();
+              printAfterPaint();
             }}
             className="w-fit px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
           >

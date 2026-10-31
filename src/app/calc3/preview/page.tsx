@@ -7,6 +7,7 @@ import { Printer, Share2, Copy, Check } from "lucide-react";
 import Link from "next/link";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
 import { NumberBox, NumberBoxRowCells } from "@/components/math/BoxCell";
+import { printAfterPaint } from "@/lib/print";
 
 type OpType3 = "add" | "sub" | "add_sub" | "mul" | "div" | "mul_div";
 
@@ -458,7 +459,7 @@ function Calc3PreviewContent() {
             <button
               onClick={() => {
                 trackEvent(GA_EVENTS.PRINT, { page: "calc3" });
-                window.print();
+                printAfterPaint();
               }}
               className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
             >

@@ -8,6 +8,7 @@ import { parseCalcParams, generateCalcAllSheets, type CalcProblem } from "@/lib/
 import { saveWorksheet } from "@/lib/supabase";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
 import { BoxCell, NumberBox, splitToCells } from "@/components/math/BoxCell";
+import { printAfterPaint } from "@/lib/print";
 
 // 네모를 끄면 테두리만 투명하게 바꿔 칸 크기와 정렬은 그대로 둔다.
 const HIDDEN_BOX_BORDER: React.CSSProperties = { border: "1px solid transparent" };
@@ -285,7 +286,7 @@ function PreviewContent() {
             <button
               onClick={() => {
                 trackEvent(GA_EVENTS.PRINT, { page: "vertical" });
-                window.print();
+                printAfterPaint();
               }}
               className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
             >

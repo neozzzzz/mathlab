@@ -7,6 +7,7 @@ import { saveWorksheet } from "@/lib/supabase";
 import { Printer, Share2, Copy, Check } from "lucide-react";
 import Link from "next/link";
 import { trackEvent, GA_EVENTS } from "@/lib/ga";
+import { printAfterPaint } from "@/lib/print";
 
 const TOP_COLORS = [
   { border: "#90caf9", label: "blue" },
@@ -331,7 +332,7 @@ function PreviewContent() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={() => { trackEvent(GA_EVENTS.PRINT, { page: 'match' }); window.print(); }}
+              onClick={() => { trackEvent(GA_EVENTS.PRINT, { page: 'match' }); printAfterPaint(); }}
               className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
             >
               <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄

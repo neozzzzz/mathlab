@@ -8,6 +8,7 @@ import { getWorksheet, type WorksheetRow, type WorksheetProblems, type Worksheet
 import { type MatchProblem, type CalcProblem, type Calc3Problem, type ScreenshotAdditionProblem } from "@/lib/math-generator";
 
 import { BoxCell, NumberBox, NumberBoxRowCells, splitToCells } from "@/components/math/BoxCell";
+import { printAfterPaint } from "@/lib/print";
 
 interface SharedProblemAny {
   top?: number[];
@@ -718,7 +719,7 @@ export default function SharePage() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={() => window.print()}
+              onClick={printAfterPaint}
               className="px-4 py-2 bg-gray-900 text-white rounded-lg font-bold text-sm hover:bg-black cursor-pointer"
             >
               <Printer className="w-4 h-4 inline mr-1" strokeWidth={1.5} />인쇄
