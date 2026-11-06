@@ -1,4 +1,4 @@
-import { ArrowRight, PencilLine, Layers, Link2, UsersRound, Clock, Timer } from "lucide-react";
+import { ArrowRight, PencilLine, Layers, Link2, UsersRound, Clock, Timer, AlarmClock } from "lucide-react";
 import TrackedLink from "@/components/TrackedLink";
 import { GA_EVENTS } from "@/lib/ga";
 
@@ -62,6 +62,16 @@ const MODES = [
     accent: "from-teal-100/80 via-white to-cyan-100/30",
     hover: "hover:border-slate-400",
     badgeClass: "bg-teal-50 text-teal-700",
+  },
+  {
+    href: "/time3",
+    title: "시간 3",
+    desc: "시각 읽기부터 걸린 시간까지\n유형별로 풀어 보세요",
+    badge: "거울 시계 · 시각 비교 · 서술형",
+    icon: AlarmClock,
+    accent: "from-rose-100/80 via-white to-orange-100/30",
+    hover: "hover:border-slate-400",
+    badgeClass: "bg-rose-50 text-rose-700",
   },
 ] as const;
 

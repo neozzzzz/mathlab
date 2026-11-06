@@ -1499,3 +1499,810 @@ export function generateTime2Sheet(params: Time2Params, queryString: string, she
 export function generateTime2AllSheets(params: Time2Params, queryString: string): Time2Problem[][] {
   return Array.from({ length: params.sheets }, (_, i) => generateTime2Sheet(params, queryString, i));
 }
+
+// ── 시간 3: 시각과 시간 유형 세트 ───────────────────────────────────
+// 교재 「유형 뽀개기」 두 펼침면(문제 429~450, 22문항)의 모든 문항 형식을 숫자·상황만 바꿔 낸다.
+// 22문항이 한 세트이고, 세트 수만큼 인쇄하면 장수와 문제 수가 같은 비율로 늘어난다.
+// 시각 값은 0시 기준 분으로 다루고 화면에는 12시간제로 적는다.
+
+/** 설명하는 시각: 짧은바늘 h와 h+1 사이, 긴바늘 mark → h시 (5×mark)분 */
+export interface Time3DescribeProblem {
+  kind: "describe";
+  text: string;
+  lines: [string, string];
+  hour: number;
+  mark: number;
+  answer: number;
+}
+
+/** 긴바늘이 mark에서 작은 눈금 less칸 덜 간 곳 */
+export interface Time3DescribeBeforeProblem {
+  kind: "describe_before";
+  text: string;
+  hour: number;
+  mark: number;
+  less: number;
+  answer: number;
+}
+
+/** 두 어린이가 말한 바늘 위치로 시각 구하기(긴바늘은 12에서 작은 눈금 less칸 덜 간 곳) */
+export interface Time3DescribeTalkProblem {
+  kind: "describe_talk";
+  text: string;
+  names: [string, string];
+  lines: [string, string];
+  hour: number;
+  less: number;
+  answer: number;
+}
+
+/** '○시 ○분 전'과 '○시 ○분' 중 더 늦게(일찍) 일어난 어린이 */
+export interface Time3CompareTwoProblem {
+  kind: "compare_two";
+  text: string;
+  names: [string, string];
+  times: [number, number];
+  labels: [string, string];
+  ask: "later" | "earlier";
+  answer: string;
+}
+
+/** 아날로그 시계와 디지털 시계 중 더 일찍 도착한 어린이 */
+export interface Time3CompareClockDigitalProblem {
+  kind: "compare_clock_digital";
+  text: string;
+  names: [string, string];
+  times: [number, number];
+  answer: string;
+}
+
+/** (1) ○시 ○분 전은 몇 시 몇 분 (2) 일찍 도착한 어린이부터 차례로 */
+export interface Time3OrderThreeProblem {
+  kind: "order_three";
+  text: string;
+  names: string[];
+  times: number[];
+  labels: string[];
+  beforeIndex: number;
+  question1: string;
+  question2: string;
+  beforeAnswer: number;
+  answer: string[];
+}
+
+/** 세 시계 중 가장 나중에(먼저) 한 일 */
+export interface Time3LatestClockProblem {
+  kind: "latest_clock";
+  text: string;
+  activities: string[];
+  times: number[];
+  ask: "latest" | "earliest";
+  answer: string;
+}
+
+/** 거울에 비친 시계가 나타내는 시각 */
+export interface Time3MirrorReadProblem {
+  kind: "mirror_read";
+  text: string;
+  time: number;
+  answer: number;
+}
+
+/** 거울에 비친 시계를 보고 몇 시 몇 분 전 */
+export interface Time3MirrorBeforeProblem {
+  kind: "mirror_before";
+  text: string;
+  time: number;
+  answerHour: number;
+  answerBefore: number;
+}
+
+/** 거울에 비친 시계를 바르게 읽은 어린이(한 명은 거울 그대로 읽음) */
+export interface Time3MirrorWhoProblem {
+  kind: "mirror_who";
+  text: string;
+  time: number;
+  statements: { name: string; time: number }[];
+  answer: string;
+}
+
+/** 시간·분 같은 것끼리 잇기 */
+export interface Time3MatchConvertProblem {
+  kind: "match_convert";
+  text: string;
+  left: number[];
+  right: number[];
+}
+
+/** 틀린 것을 찾아 기호 쓰기 */
+export interface Time3FindWrongProblem {
+  kind: "find_wrong";
+  text: string;
+  items: { symbol: string; left: string; right: string; correct: boolean }[];
+  answer: string;
+}
+
+/** minutesA분 = □시간 ㉠분, hoursB시간 minutesB분 = ㉡분 → ㉠ + ㉡ */
+export interface Time3SumBlanksProblem {
+  kind: "sum_blanks";
+  text: string;
+  minutesA: number;
+  hoursB: number;
+  minutesB: number;
+  answer: number;
+}
+
+/** ○시간 ○분과 ○분 중 더 오래 한 어린이 */
+export interface Time3CompareDurationProblem {
+  kind: "compare_duration";
+  text: string;
+  names: [string, string];
+  durations: [number, number];
+  answer: string;
+}
+
+/** 시작·끝 시계를 보고 걸린 시간(몇 시간 몇 분) */
+export interface Time3ClockElapsedProblem {
+  kind: "clock_elapsed";
+  text: string;
+  labels: [string, string];
+  start: number;
+  end: number;
+  answer: number;
+}
+
+/** 문장 속 시작 시각부터 시계의 시각까지 몇 분 */
+export interface Time3UntilClockProblem {
+  kind: "until_clock";
+  text: string;
+  start: number;
+  end: number;
+  answer: number;
+}
+
+/** 1시간 하기로 했을 때 몇 분 더 할 수 있는지 */
+export interface Time3RemainingProblem {
+  kind: "remaining";
+  text: string;
+  labels: [string, string];
+  start: number;
+  now: number;
+  answer: number;
+}
+
+export interface Time3ActivityRange {
+  name: string;
+  start: number;
+  end: number;
+}
+
+/** 걸린 시간이 같은 활동끼리 잇기(왼쪽 2개, 오른쪽 3개) */
+export interface Time3MatchElapsedProblem {
+  kind: "match_elapsed";
+  text: string;
+  left: Time3ActivityRange[];
+  right: Time3ActivityRange[];
+}
+
+/** 시작한 시각 시계를 보고 끝난 시각의 시곗바늘 그리기 */
+export interface Time3DrawEndProblem {
+  kind: "draw_end";
+  text: string;
+  start: number;
+  duration: number;
+  answer: number;
+}
+
+/** 한 과목에 each분씩 times과목 → 끝난 시각의 시곗바늘 그리기 */
+export interface Time3DrawEndRepeatProblem {
+  kind: "draw_end_repeat";
+  text: string;
+  start: number;
+  each: number;
+  times: number;
+  answer: number;
+}
+
+/** 서술형: 온 지 지난 시간을 비교해 가장 먼저 온 어린이 */
+export interface Time3EssayArrivalProblem {
+  kind: "essay_arrival";
+  text: string;
+  names: string[];
+  durations: number[];
+  steps: [string, string];
+  answer: string;
+}
+
+export type Time3Problem =
+  | Time3DescribeProblem
+  | Time3DescribeBeforeProblem
+  | Time3DescribeTalkProblem
+  | Time3CompareTwoProblem
+  | Time3CompareClockDigitalProblem
+  | Time3OrderThreeProblem
+  | Time3LatestClockProblem
+  | Time3MirrorReadProblem
+  | Time3MirrorBeforeProblem
+  | Time3MirrorWhoProblem
+  | Time3MatchConvertProblem
+  | Time3FindWrongProblem
+  | Time3SumBlanksProblem
+  | Time3CompareDurationProblem
+  | Time3ClockElapsedProblem
+  | Time3UntilClockProblem
+  | Time3RemainingProblem
+  | Time3MatchElapsedProblem
+  | Time3DrawEndProblem
+  | Time3DrawEndRepeatProblem
+  | Time3EssayArrivalProblem;
+
+export type Time3Kind = Time3Problem["kind"];
+
+/**
+ * 한 세트의 문항 순서(쉬운 유형 → 어려운 유형).
+ * 시각 읽기 → 몇 시 몇 분 전·시각 비교 → 거울에 비친 시계 → 시간과 분 → 걸린 시간 → 끝난 시각 그리기 → 서술형.
+ * 걸린 시간(시계 두 개)은 교재처럼 기차·동화책 두 문항을 낸다.
+ */
+export const TIME3_SET_ORDER: readonly Time3Kind[] = [
+  "describe", // 439
+  "describe_before", // 441
+  "describe_talk", // 440
+  "compare_two", // 445
+  "compare_clock_digital", // 446
+  "order_three", // 447
+  "latest_clock", // 448
+  "mirror_read", // 442
+  "mirror_before", // 444
+  "mirror_who", // 443
+  "match_convert", // 432
+  "find_wrong", // 433
+  "sum_blanks", // 434
+  "compare_duration", // 449
+  "clock_elapsed", // 435
+  "clock_elapsed", // 436
+  "until_clock", // 437
+  "remaining", // 430
+  "match_elapsed", // 438
+  "draw_end", // 429
+  "draw_end_repeat", // 431
+  "essay_arrival", // 450
+];
+
+export const TIME3_SET_OPTIONS: readonly number[] = [1, 2, 3, 4, 5];
+
+export interface Time3Params {
+  sets: number;
+}
+
+export function encodeTime3Params(params: Time3Params): string {
+  return new URLSearchParams({ sets: String(params.sets) }).toString();
+}
+
+export function parseTime3Params(search: string | URLSearchParams): Time3Params | null {
+  const sets = safeNumber(parseSource(search).get("sets"));
+  if (!isIntInRange(sets, 1, Math.max(...TIME3_SET_OPTIONS))) return null;
+  return { sets };
+}
+
+/**
+ * A4 한 열(약 330px 너비)에서 문항이 차지하는 높이(px). 미리보기를 시드 20개로 렌더링해 잰 최댓값에 8~10px 여유를 더했다.
+ * 미리보기는 남는 높이를 문항 아래 풀이 공간으로 고르게 나눈다.
+ */
+const TIME3_KIND_PX: Record<Time3Kind, number> = {
+  describe: 140,
+  describe_before: 160,
+  describe_talk: 170,
+  compare_two: 175,
+  compare_clock_digital: 232,
+  order_three: 282,
+  latest_clock: 204,
+  mirror_read: 147,
+  mirror_before: 147,
+  mirror_who: 210,
+  match_convert: 152,
+  find_wrong: 165,
+  sum_blanks: 140,
+  compare_duration: 115,
+  clock_elapsed: 260,
+  until_clock: 160,
+  remaining: 236,
+  match_elapsed: 212,
+  draw_end: 204,
+  draw_end_repeat: 204,
+  essay_arrival: 332,
+};
+const TIME3_GAP_PX = 14;
+/** 미리보기 A4 한 장에서 문항이 들어가는 열 높이(머리글 제외, 실제 약 959px)보다 조금 낮게 잡았다. */
+const TIME3_COLUMN_PX = 940;
+
+/** 순서대로 열을 채운다. 열 높이 cap 을 넘으면 다음 열로 넘어간다. */
+function fillTime3Columns(cap: number): number[][] {
+  const columns: number[][] = [[]];
+  let used = 0;
+  TIME3_SET_ORDER.forEach((kind, index) => {
+    const h = TIME3_KIND_PX[kind];
+    const column = columns[columns.length - 1];
+    const next = column.length === 0 ? h : used + TIME3_GAP_PX + h;
+    if (column.length > 0 && next > cap) {
+      columns.push([index]);
+      used = h;
+    } else {
+      column.push(index);
+      used = next;
+    }
+  });
+  return columns;
+}
+
+/** 문항 번호(0부터) 목록을 한 열에 쌓았을 때의 예상 높이(px) */
+export function time3ColumnHeight(indices: readonly number[]): number {
+  if (indices.length === 0) return 0;
+  return indices.reduce((sum, i) => sum + TIME3_KIND_PX[TIME3_SET_ORDER[i]], 0) + TIME3_GAP_PX * (indices.length - 1);
+}
+
+/**
+ * 한 세트의 장 나누기: [장][열(왼쪽·오른쪽)][문항 번호(0부터)].
+ * 1) 필요한 장수를 정하고, 2) 그 장수의 열 수 안에서 가장 낮은 열 높이로 다시 채운 뒤,
+ * 3) 장마다 왼쪽·오른쪽 열의 경계를 옮겨 두 열 중 높은 쪽이 가장 낮아지게 한다(한쪽 열 아래만 크게 비지 않도록).
+ */
+export function layoutTime3Set(): number[][][] {
+  const pages = Math.ceil(fillTime3Columns(TIME3_COLUMN_PX).length / 2);
+  let cap = Math.max(...Object.values(TIME3_KIND_PX));
+  while (fillTime3Columns(cap).length > pages * 2) cap += 5;
+  const columns = fillTime3Columns(cap);
+  while (columns.length < pages * 2) columns.push([]);
+  return Array.from({ length: pages }, (_, p) => {
+    const items = [...columns[p * 2], ...columns[p * 2 + 1]];
+    let split = items.length;
+    let best = time3ColumnHeight(items);
+    for (let k = 0; k < items.length; k++) {
+      const tallest = Math.max(time3ColumnHeight(items.slice(0, k)), time3ColumnHeight(items.slice(k)));
+      if (tallest < best) {
+        best = tallest;
+        split = k;
+      }
+    }
+    return [items.slice(0, split), items.slice(split)];
+  });
+}
+
+export function time3PagesPerSet(): number {
+  return layoutTime3Set().length;
+}
+
+/** 1·3·6·7·8·0 으로 끝나는 수는 받침이 있다(일·삼·육·칠·팔·십). '3과 4 사이', '2와 3 사이' */
+function numberWithAnd(n: number): string {
+  return `${n}${[0, 1, 3, 6, 7, 8].includes(n % 10) ? "과" : "와"}`;
+}
+
+function nameWithAnd(name: string): string {
+  return `${name}${hasBatchim(name) ? "과" : "와"}`;
+}
+
+function hour12(hour: number): number {
+  return ((hour - 1) % 12 + 12) % 12 + 1;
+}
+
+function hoursBetweenLine(hour: number): string {
+  return `${numberWithAnd(hour12(hour))} ${hour12(hour + 1)} 사이`;
+}
+
+/** 거울에 비친 시계를 그대로 읽은 시각(0~719분) */
+export function mirrorClockMinutes(minuteOfDay: number): number {
+  return (720 - (minuteOfDay % 720)) % 720;
+}
+
+const TIME3_CHILDREN = [
+  "은호", "민주", "정훈", "경진", "현서", "연재", "서우", "종현", "현아", "지원", "미주", "원호",
+  "준석", "수지", "민우", "우진", "유준", "민성", "주희", "우성", "시아", "도윤", "하은", "예린",
+];
+
+const TIME3_STATIONS: readonly [string, string][] = [
+  ["서울역", "대전역"],
+  ["용산역", "광주역"],
+  ["부산역", "동대구역"],
+  ["수원역", "전주역"],
+  ["서울역", "강릉역"],
+];
+
+const TIME3_HOME_ACTIVITIES = ["피아노 치기", "TV 시청", "책 읽기", "숙제하기", "줄넘기", "저녁 식사", "블록 쌓기", "일기 쓰기"];
+
+const TIME3_RANGE_ACTIVITIES = ["책 읽기", "색종이 접기", "음악 감상", "그림 그리기", "산책하기", "줄넘기", "블록 쌓기", "피아노 연습"];
+
+const TIME3_DURATION_ACTIVITIES: readonly { did: string; longer: string }[] = [
+  { did: "수학 문제집을 풀었습니다", longer: "수학 문제집을 더 오래 푼" },
+  { did: "줄넘기를 했습니다", longer: "줄넘기를 더 오래 한" },
+  { did: "책을 읽었습니다", longer: "책을 더 오래 읽은" },
+  { did: "피아노를 쳤습니다", longer: "피아노를 더 오래 친" },
+];
+
+const TIME3_UNTIL_ACTIVITIES: readonly { what: string; did: string; doing: string }[] = [
+  { what: "컴퓨터를", did: "하였습니다", doing: "컴퓨터를 한" },
+  { what: "그림을", did: "그렸습니다", doing: "그림을 그린" },
+  { what: "블록 놀이를", did: "하였습니다", doing: "블록 놀이를 한" },
+  { what: "만들기를", did: "하였습니다", doing: "만들기를 한" },
+];
+
+const TIME3_REMAINING_PLANS: readonly { plan: string; label: string; ask: string }[] = [
+  { plan: "친구들과 1시간 동안 놀이터에서 놀기로", label: "놀기 시작한 시각", ask: "몇 분 더 놀 수 있는지" },
+  { plan: "1시간 동안 자전거를 타기로", label: "타기 시작한 시각", ask: "몇 분 더 탈 수 있는지" },
+  { plan: "친구와 1시간 동안 보드게임을 하기로", label: "게임 시작한 시각", ask: "몇 분 더 할 수 있는지" },
+];
+
+const TIME3_DRAW_ACTIVITIES: readonly { did: string; noun: string }[] = [
+  { did: "수학 공부를 했습니다", noun: "수학 공부를" },
+  { did: "독서를 했습니다", noun: "독서를" },
+  { did: "피아노 연습을 했습니다", noun: "피아노 연습을" },
+  { did: "영어 공부를 했습니다", noun: "영어 공부를" },
+];
+
+const TIME3_ESSAY_PLACES = ["놀이터", "도서관", "수영장", "공원"];
+
+const TIME3_SYMBOLS = ["㉠", "㉡", "㉢"];
+
+/** 차례로 이름을 꺼낸다. 한 문항 안에서는 이름이 겹치지 않는다(이름 수보다 적게 꺼낼 때). */
+function time3NamePicker(rng: () => number): (count: number) => string[] {
+  const pool = shuffleInPlace([...TIME3_CHILDREN], rng);
+  let next = 0;
+  return (count) =>
+    Array.from({ length: count }, () => {
+      const name = pool[next % pool.length];
+      next += 1;
+      return name;
+    });
+}
+
+function pickOne<T>(items: readonly T[], rng: () => number): T {
+  return items[randInt(rng, 0, items.length - 1)];
+}
+
+/** 5분 단위, 60의 배수가 아닌 [min, max] 사이 시간(분) */
+function randDurationNot60(rng: () => number, min: number, max: number): number {
+  for (let tries = 0; tries < 100; tries++) {
+    const value = randStep(rng, min, max, 5);
+    if (value % 60 !== 0) return value;
+  }
+  return min % 60 === 0 ? min + 5 : min;
+}
+
+function generateTime3Problem(kind: Time3Kind, occurrence: number, rng: () => number, names: (count: number) => string[]): Time3Problem {
+  switch (kind) {
+    case "describe": {
+      const hour = randInt(rng, 1, 12);
+      const mark = randInt(rng, 1, 11);
+      return {
+        kind,
+        text: "설명하는 시각을 구하시오.",
+        lines: [`짧은바늘: ${hoursBetweenLine(hour)}`, `긴바늘: ${mark}`],
+        hour,
+        mark,
+        answer: hour * 60 + mark * 5,
+      };
+    }
+    case "describe_before": {
+      const [name] = names(1);
+      const hour = randInt(rng, 1, 11);
+      const mark = randInt(rng, 1, 11);
+      const less = randInt(rng, 1, 4);
+      const who = callName(name);
+      return {
+        kind,
+        text:
+          `${who}가 시계를 보았더니 짧은바늘은 ${hoursBetweenLine(hour)}를 가리키고, 긴바늘은 ${mark}에서 작은 눈금 ${less}칸 덜 간 곳을 가리키고 있었습니다. ` +
+          `${who}가 본 시계가 나타내는 시각은 몇 시 몇 분인지 구하시오.`,
+        hour,
+        mark,
+        less,
+        answer: hour * 60 + mark * 5 - less,
+      };
+    }
+    case "describe_talk": {
+      const [a, b] = names(2);
+      const hour = randInt(rng, 1, 11);
+      const less = randInt(rng, 1, 4);
+      return {
+        kind,
+        text: `${nameWithAnd(a)} ${callName(b)}가 본 시계의 시각을 쓰시오.`,
+        names: [a, b],
+        lines: [`짧은바늘은 ${hoursBetweenLine(hour)}를 가리키고 있어.`, `긴바늘은 12에서 작은 눈금 ${less}칸 덜 간 곳을 가리키고 있어.`],
+        hour,
+        less,
+        answer: hour * 60 + 60 - less,
+      };
+    }
+    case "compare_two": {
+      const [a, b] = names(2);
+      const hour = randInt(rng, 6, 8);
+      const before = pickOne([5, 10, 15], rng);
+      const ta = hour * 60 - before;
+      const tb = ta + pickOne([-20, -15, -10, -5, 5, 10, 15, 20], rng);
+      const ask = rng() < 0.5 ? "later" : "earlier";
+      const later = ta > tb ? a : b;
+      const earlier = ta > tb ? b : a;
+      return {
+        kind,
+        text: `${nameWithAnd(a)} ${callName(b)}가 오늘 아침에 일어난 시각입니다. 두 어린이 중에서 더 ${ask === "later" ? "늦게" : "일찍"} 일어난 어린이는 누구입니까?`,
+        names: [a, b],
+        times: [ta, tb],
+        labels: [`${hour}시 ${before}분 전`, formatClockKorean(tb)],
+        ask,
+        answer: ask === "later" ? later : earlier,
+      };
+    }
+    case "compare_clock_digital": {
+      const [a, b] = names(2);
+      const ta = randStep(rng, 15 * 60 + 10, 17 * 60 + 45, 5);
+      const tb = ta + pickOne([-12, -9, -7, -4, -3, 3, 4, 7, 9, 12], rng);
+      return {
+        kind,
+        text: `${nameWithAnd(a)} ${callName(b)}가 각각 집에 도착한 시각을 나타낸 것입니다. 집에 더 일찍 도착한 어린이는 누구입니까?`,
+        names: [a, b],
+        times: [ta, tb],
+        answer: ta < tb ? a : b,
+      };
+    }
+    case "order_three": {
+      const trio = names(3);
+      const hour = randInt(rng, 13, 16);
+      const before = pickOne([5, 10, 15], rng);
+      const beforeTime = (hour + 1) * 60 - before;
+      const candidates = shuffleInPlace(
+        Array.from({ length: 9 }, (_, i) => hour * 60 + 25 + i * 5).filter((t) => t !== beforeTime),
+        rng,
+      );
+      const beforeIndex = randInt(rng, 0, 2);
+      const times = [candidates[0], candidates[1]];
+      times.splice(beforeIndex, 0, beforeTime);
+      const labels = times.map((t, i) => (i === beforeIndex ? `${hour12(hour + 1)}시 ${before}분 전` : formatClockKorean(t)));
+      const order = [0, 1, 2].sort((x, y) => times[x] - times[y]);
+      return {
+        kind,
+        text: `${callName(trio[0])}와 친구들이 학원에 도착한 시각을 나타낸 것입니다.`,
+        names: trio,
+        times,
+        labels,
+        beforeIndex,
+        question1: `${labels[beforeIndex]}은 몇 시 몇 분입니까?`,
+        question2: "일찍 도착한 어린이부터 차례로 이름을 쓰시오.",
+        beforeAnswer: beforeTime,
+        answer: order.map((i) => trio[i]),
+      };
+    }
+    case "latest_clock": {
+      const [name] = names(1);
+      const activities = shuffleInPlace([...TIME3_HOME_ACTIVITIES], rng).slice(0, 3);
+      // 30분 이상 떨어진 세 시각(오후 3시~8시)
+      const base = randStep(rng, 15 * 60, 16 * 60 + 30, 5);
+      const sorted = [base, base + randStep(rng, 35, 70, 5)];
+      sorted.push(sorted[1] + randStep(rng, 35, 70, 5));
+      const times = shuffleInPlace(sorted, rng);
+      const ask = rng() < 0.5 ? "latest" : "earliest";
+      const pick = ask === "latest" ? Math.max(...times) : Math.min(...times);
+      return {
+        kind,
+        text: `어느 날 ${callName(name)}가 집에 와서 한 일입니다. 가장 ${ask === "latest" ? "나중에" : "먼저"} 한 일은 무엇입니까?`,
+        activities,
+        times,
+        ask,
+        answer: activities[times.indexOf(pick)],
+      };
+    }
+    case "mirror_read": {
+      let time = 0;
+      do {
+        time = randInt(rng, 1, 12) * 60 + pickOne([5, 10, 15, 20, 25, 35, 40, 45, 50, 55], rng);
+      } while (mirrorClockMinutes(time) === time % 720);
+      return { kind, text: "오른쪽은 거울에 비친 시계입니다. 이 시계가 나타내는 시각은 몇 시 몇 분입니까?", time, answer: time };
+    }
+    case "mirror_before": {
+      const hour = randInt(rng, 1, 11);
+      const minute = pickOne([40, 45, 50, 55], rng);
+      return {
+        kind,
+        text: "오른쪽 거울에 비친 시계를 보고 몇 시 몇 분 전인지 구하시오.",
+        time: hour * 60 + minute,
+        answerHour: hour + 1,
+        answerBefore: 60 - minute,
+      };
+    }
+    case "mirror_who": {
+      const pair = names(2);
+      let time = 0;
+      do {
+        time = randInt(rng, 1, 12) * 60 + randInt(rng, 1, 59);
+      } while (time % 5 === 0 || mirrorClockMinutes(time) === time % 720);
+      const correctIndex = randInt(rng, 0, 1);
+      const statements = pair.map((name, i) => ({ name, time: i === correctIndex ? time : mirrorClockMinutes(time) }));
+      return {
+        kind,
+        text: "거울에 비친 시계를 보고 시각을 바르게 말한 어린이의 이름을 쓰시오.",
+        time,
+        statements,
+        answer: pair[correctIndex],
+      };
+    }
+    case "match_convert": {
+      const pool = shuffleInPlace(Array.from({ length: 23 }, (_, i) => 65 + i * 5).filter((m) => m % 60 !== 0), rng);
+      const left = pool.slice(0, 3);
+      let right = [...left];
+      while (right.some((m, i) => m === left[i])) right = shuffleInPlace([...left], rng);
+      return { kind, text: "같은 것끼리 이어 보시오.", left, right };
+    }
+    case "find_wrong": {
+      const wrongIndex = randInt(rng, 0, 2);
+      const exactHours = randInt(rng, 2, 5);
+      const mixed = shuffleInPlace(Array.from({ length: 30 }, (_, i) => 65 + i * 5).filter((m) => m % 60 !== 0), rng).slice(0, 2);
+      const items = [
+        // 시간 → 분 실수: 1시간을 100분으로 보아 4시간 = 400분
+        { left: `${(wrongIndex === 0 ? 100 : 60) * exactHours}분`, right: `${exactHours}시간`, correct: wrongIndex !== 0 },
+        ...mixed.map((m, k) => {
+          const wrong = wrongIndex === k + 1;
+          const h = Math.floor(m / 60);
+          return { left: formatHoursMinutes(m), right: `${wrong ? h * 100 + (m % 60) : m}분`, correct: !wrong };
+        }),
+      ];
+      const shuffled = shuffleInPlace(items, rng).map((item, i) => ({ symbol: TIME3_SYMBOLS[i], ...item }));
+      return { kind, text: "틀린 것을 찾아 기호를 쓰시오.", items: shuffled, answer: shuffled.find((item) => !item.correct)!.symbol };
+    }
+    case "sum_blanks": {
+      const minutesA = randDurationNot60(rng, 125, 235);
+      const hoursB = randInt(rng, 1, 2);
+      const minutesB = randStep(rng, 5, 55, 5);
+      return {
+        kind,
+        text: "㉠과 ㉡에 알맞은 수의 합을 구하시오.",
+        minutesA,
+        hoursB,
+        minutesB,
+        answer: (minutesA % 60) + hoursB * 60 + minutesB,
+      };
+    }
+    case "compare_duration": {
+      const [a, b] = names(2);
+      const activity = pickOne(TIME3_DURATION_ACTIVITIES, rng);
+      const d0 = randDurationNot60(rng, 75, 115);
+      let d1 = d0;
+      while (d1 === d0) d1 = d0 + pickOne([-20, -15, -10, -5, 5, 10, 15, 20], rng);
+      return {
+        kind,
+        text: `${callName(a)}는 ${formatHoursMinutes(d0)}, ${callName(b)}는 ${d1}분 동안 ${activity.did}. ${activity.longer} 어린이는 누구입니까?`,
+        names: [a, b],
+        durations: [d0, d1],
+        answer: d0 > d1 ? a : b,
+      };
+    }
+    case "clock_elapsed": {
+      let start = 0;
+      let answer = 0;
+      do {
+        start = randStep(rng, 8 * 60, 15 * 60, 5);
+        answer = randDurationNot60(rng, 65, 175);
+      } while (crossesNoon(start, start + answer));
+      if (occurrence === 0) {
+        const [from, to] = pickOne(TIME3_STATIONS, rng);
+        return {
+          kind,
+          text: `기차가 ${from}${objectParticle(from)} 출발한 시각과 ${to}에 도착한 시각을 나타낸 것입니다. 기차가 ${from}에서 ${to}까지 가는 데 걸린 시간은 몇 시간 몇 분입니까?`,
+          labels: ["출발한 시각", "도착한 시각"],
+          start,
+          end: start + answer,
+          answer,
+        };
+      }
+      const [name] = names(1);
+      return {
+        kind,
+        text: `시계를 보고 ${callName(name)}가 동화책을 읽은 시간은 몇 시간 몇 분인지 구하시오.`,
+        labels: ["시작한 시각", "끝난 시각"],
+        start,
+        end: start + answer,
+        answer,
+      };
+    }
+    case "until_clock": {
+      const [name] = names(1);
+      const activity = pickOne(TIME3_UNTIL_ACTIVITIES, rng);
+      const start = randStep(rng, 15 * 60 + 5, 18 * 60 + 55, 5);
+      const answer = randStep(rng, 65, 115, 5);
+      const who = callName(name);
+      return {
+        kind,
+        text: `${who}는 ${activity.what} ${formatClockKorean(start)}부터 오른쪽 시계가 나타내는 시각까지 ${activity.did}. ${who}가 ${activity.doing} 시간은 몇 분인지 구하시오.`,
+        start,
+        end: start + answer,
+        answer,
+      };
+    }
+    case "remaining": {
+      const [name] = names(1);
+      const plan = pickOne(TIME3_REMAINING_PLANS, rng);
+      const start = randInt(rng, 13, 17) * 60 + pickOne([0, 30], rng);
+      const now = start + randStep(rng, 15, 50, 5);
+      return {
+        kind,
+        text: `${callName(name)}는 ${plan.plan} 했습니다. 시계를 보고 ${plan.ask} 구하시오.`,
+        labels: [plan.label, "현재 시각"],
+        start,
+        now,
+        answer: start + 60 - now,
+      };
+    }
+    case "match_elapsed": {
+      const durations = shuffleInPlace([60, 70, 80, 90, 100], rng).slice(0, 3);
+      const activities = shuffleInPlace([...TIME3_RANGE_ACTIVITIES], rng);
+      const range = (name: string, duration: number): Time3ActivityRange => {
+        let start = 0;
+        do start = randStep(rng, 8 * 60, 17 * 60, 10);
+        while (crossesNoon(start, start + duration));
+        return { name, start, end: start + duration };
+      };
+      const right = durations.map((d, i) => range(activities[i], d));
+      const leftDurations = shuffleInPlace([...durations], rng).slice(0, 2);
+      const left = leftDurations.map((d, i) => range(activities[3 + i], d));
+      return { kind, text: "걸린 시간이 같은 활동끼리 이어 보시오.", left, right: shuffleInPlace(right, rng) };
+    }
+    case "draw_end": {
+      const [name] = names(1);
+      const activity = pickOne(TIME3_DRAW_ACTIVITIES, rng);
+      const start = randStep(rng, 13 * 60 + 5, 18 * 60 + 55, 5);
+      const duration = pickOne([40, 50, 60, 70, 80, 90], rng);
+      return {
+        kind,
+        text: `${callName(name)}는 ${duration}분 동안 ${activity.did}. ${activity.noun} 시작한 시각을 보고 끝난 시각의 시곗바늘을 그려 넣으시오.`,
+        start,
+        duration,
+        answer: start + duration,
+      };
+    }
+    case "draw_end_repeat": {
+      const [name] = names(1);
+      const each = pickOne([20, 30, 40], rng);
+      const times = each === 40 ? randInt(rng, 2, 3) : randInt(rng, 2, 4);
+      const start = randStep(rng, 13 * 60, 17 * 60 + 30, 5);
+      return {
+        kind,
+        text: `${callName(name)}는 한 과목에 ${each}분씩 ${times}과목을 쉬지 않고 공부했습니다. 공부를 시작한 시각을 보고 끝난 시각의 시곗바늘을 그려 넣으시오.`,
+        start,
+        each,
+        times,
+        answer: start + each * times,
+      };
+    }
+    case "essay_arrival": {
+      const trio = names(3);
+      const place = pickOne(TIME3_ESSAY_PLACES, rng);
+      const d0 = randDurationNot60(rng, 65, 115);
+      let d1 = d0;
+      while (d1 === d0 || d1 % 60 === 0) d1 = d0 + pickOne([-15, -10, -5, 5, 10, 15], rng);
+      const d2 = randStep(rng, 30, 55, 5);
+      const durations = [d0, d1, d2];
+      const [a, b, c] = trio;
+      return {
+        kind,
+        text:
+          `${place}에서 ${a}, ${b}, ${callName(c)}가 놀고 있습니다. ${place}에 온 지 ${callName(a)}는 ${formatHoursMinutes(d0)}, ${callName(b)}는 ${d1}분, ${callName(c)}는 ${d2}분이 지났다면 ` +
+          `가장 먼저 ${place}에 온 어린이는 누구인지 풀이 과정을 쓰고, 답을 구하시오.`,
+        names: trio,
+        durations,
+        steps: [`${formatHoursMinutes(d0)}은 몇 분인지 구하기`, `가장 먼저 ${place}에 온 어린이 구하기`],
+        answer: trio[durations.indexOf(Math.max(...durations))],
+      };
+    }
+  }
+}
+
+/** 한 세트(22문항)를 TIME3_SET_ORDER 순서로 만든다. 세트마다 숫자·이름·상황이 다르다. */
+export function generateTime3Set(queryString: string, setIndex = 0): Time3Problem[] {
+  const rng = mulberry32(buildSeed("time3", queryString, setIndex));
+  const names = time3NamePicker(rng);
+  const seen: Partial<Record<Time3Kind, number>> = {};
+  return TIME3_SET_ORDER.map((kind) => {
+    const occurrence = seen[kind] ?? 0;
+    seen[kind] = occurrence + 1;
+    return generateTime3Problem(kind, occurrence, rng, names);
+  });
+}
+
+export function generateTime3AllSets(params: Time3Params, queryString: string): Time3Problem[][] {
+  return Array.from({ length: params.sets }, (_, i) => generateTime3Set(queryString, i));
+}
